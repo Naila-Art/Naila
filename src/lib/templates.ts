@@ -1,12 +1,11 @@
 import type { Template } from "./types";
 
 /**
- * Template registry. To add one of Ziad's Google Flow videos:
- *   1. Put the files in /public/templates/<id>/ (opening.mp4 + poster.jpg)
- *   2. Add an entry here with videoUrl and posterUrl.
- * Later this moves to the `templates` table in Supabase.
+ * Built-in fallback template (CSS envelope, no video).
+ * Ziad's Google Flow templates are uploaded from the admin dashboard (/admin/{key}/templates)
+ * and stored by src/lib/store.ts; getTemplate() there looks in both.
  */
-export const templates: Template[] = [
+export const builtInTemplates: Template[] = [
   {
     id: "ivory-seal",
     name: "Ivory Seal",
@@ -22,7 +21,3 @@ export const templates: Template[] = [
     },
   },
 ];
-
-export function getTemplate(id: string): Template {
-  return templates.find((t) => t.id === id) ?? templates[0];
-}

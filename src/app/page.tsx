@@ -9,6 +9,7 @@ export default function Home() {
     { href: "/i/demo-en", label: "General invitation (English)" },
     { href: "/i/demo-en/p5d2h8v3kc", label: "Named invitation: Mr. Karim" },
     { href: "/c/m7q2x9k4t8w3z6p1", label: "صفحة العميل (إدارة المعازيم)" },
+    { href: "/admin/admin-dev-k7p3x9/templates", label: "داشبورد الإدارة: التيمبليتس (dev)" },
   ];
   return (
     <main style={{ padding: 24, maxWidth: 480, margin: "0 auto", lineHeight: 2 }}>

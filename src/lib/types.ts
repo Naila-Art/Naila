@@ -22,7 +22,15 @@ export interface Template {
     /** Wax-seal colour for the CSS fallback envelope. */
     seal: string;
   };
+  /** Set for templates uploaded from the admin dashboard (not the built-in fallback). */
+  createdAt?: string;
 }
+
+export const CATEGORY_LABELS: Record<Category, string> = {
+  wedding: "فرح",
+  engagement: "خطوبة",
+  katb_kitab: "كتب كتاب",
+};
 
 export interface EventData {
   id: string;

@@ -2,7 +2,8 @@ import "server-only";
 import { promises as fs } from "fs";
 import path from "path";
 import { randomBytes, randomUUID } from "crypto";
-import type { EventData, Guest, GuestInput, GuestView, GuestWithStatus, Rsvp, RsvpStatus, Wish } from "./types";
+import { builtInTemplates } from "./templates";
+import type { EventData, Guest, GuestInput, GuestView, GuestWithStatus, Rsvp, RsvpStatus, Template, Wish } from "./types";
 
 /**
  * Data access for the invitation pages.
@@ -19,6 +20,8 @@ interface Db {
   rsvps: Rsvp[];
   wishes: Wish[];
   views: GuestView[];
+  /** Uploaded from the admin dashboard. Optional so older db.json files still load. */
+  templates?: Template[];
 }
 
 const DB_PATH = path.join(process.cwd(), "data", "db.json");
@@ -66,6 +69,7 @@ function seed(): Db {
     rsvps: [],
     wishes: [],
     views: [],
+    templates: [],
   };
 }
 
@@ -216,4 +220,47 @@ export function addWish(input: { eventId: string; guestId?: string; name: string
     db.wishes.push(wish);
     return wish;
   });
+}
+
+// ---------------------------------------------------------------------------
+// Templates (admin dashboard)
+// ---------------------------------------------------------------------------
+
+/** Uploaded templates first (newest first), then the built-in fallback. */
+export async function listTemplates(): Promise<Template[]> {
+  const db = await read();
+  const uploaded = [...(db.templates ?? [])].sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
+  return [...uploaded, ...builtInTemplates];
+}
+
+export async function findTemplate(id: string): Promise<Template | null> {
+  return (await listTemplates()).find((t) => t.id === id) ?? null;
+}
+
+/** Never fails: an unknown id (e.g. a deleted template) falls back to the built-in envelope. */
+export async function getTemplate(id: string): Promise<Template> {
+  return (await findTemplate(id)) ?? builtInTemplates[0];
+}
+
+export function addTemplate(template: Template): Promise<Template> {
+  return mutate((db) => {
+    db.templates = [...(db.templates ?? []), template];
+    return template;
+  });
+}
+
+/** Removes an uploaded template. Returns how many events were using it (they fall back to the built-in one). */
+export function deleteTemplate(id: string): Promise<{ deleted: boolean; eventsUsing: number }> {
+  return mutate((db) => {
+    const before = db.templates?.length ?? 0;
+    db.templates = (db.templates ?? []).filter((t) => t.id !== id);
+    return { deleted: db.templates.length < before, eventsUsing: db.events.filter((e) => e.templateId === id).length };
+  });
+}
+
+export async function templateUsage(): Promise<Record<string, number>> {
+  const db = await read();
+  const usage: Record<string, number> = {};
+  for (const e of db.events) usage[e.templateId] = (usage[e.templateId] ?? 0) + 1;
+  return usage;
 }

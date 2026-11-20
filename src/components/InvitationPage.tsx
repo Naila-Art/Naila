@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import Invitation from "./Invitation";
-import { getEventBySlug, getGuestByToken, getRsvpForGuest } from "@/lib/store";
-import { getTemplate } from "@/lib/templates";
+import { getEventBySlug, getGuestByToken, getRsvpForGuest, getTemplate } from "@/lib/store";
 import { displayName, fillPersonalText } from "@/lib/text";
 import { t } from "@/lib/i18n";
 import type { EventData } from "@/lib/types";
@@ -61,7 +60,7 @@ export async function invitationMetadata(slug: string, token?: string): Promise<
 
 export default async function InvitationPage({ slug, token }: { slug: string; token?: string }) {
   const { event, guest } = await load(slug, token);
-  const template = getTemplate(event.templateId);
+  const template = await getTemplate(event.templateId);
   const rsvp = guest ? await getRsvpForGuest(event.id, guest.id) : null;
   const { date, time } = formatDate(event);
 
