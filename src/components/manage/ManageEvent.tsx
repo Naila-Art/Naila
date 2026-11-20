@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import styles from "./manage.module.css";
 import GuestImport from "./GuestImport";
 import { guestKey, toCsv, validateGuest, type ParsedGuest } from "@/lib/guests";
@@ -20,6 +20,11 @@ interface Props {
   couple: string;
   initialTexts: { generalText: string; personalText: string };
   initial: Dashboard;
+  /** Max named guests from the client's package; 0 = general link only. */
+  namesLimit: number;
+  showWishes: boolean;
+  /** Order, payment, details, music and change-request panels, rendered under the header. */
+  children?: ReactNode;
 }
 
 const TITLES = ["أستاذ", "أستاذة", "دكتور", "دكتورة", "مهندس", "مهندسة", "الحاج", "الحاجة"];
@@ -42,7 +47,7 @@ async function copy(text: string) {
   }
 }
 
-export default function ManageEvent({ manageToken, slug, couple, initialTexts, initial }: Props) {
+export default function ManageEvent({ manageToken, slug, couple, initialTexts, initial, namesLimit, showWishes, children }: Props) {
   const [data, setData] = useState<Dashboard>(initial);
   const [origin, setOrigin] = useState("");
   const [toast, setToast] = useState<string | null>(null);
@@ -86,8 +91,8 @@ export default function ManageEvent({ manageToken, slug, couple, initialTexts, i
       body: JSON.stringify({ guests: guests.map(({ title, name, phone }) => ({ title, name, phone })) }),
     });
     if (!res.ok) throw new Error(String(res.status));
-    const r = (await res.json()) as { added: number; duplicates: number; invalid: number };
-    setToast(`اتضاف ${r.added} معزوم`);
+    const r = (await res.json()) as { added: number; duplicates: number; invalid: number; overLimit?: number };
+    setToast(r.overLimit ? `اتضاف ${r.added} معزوم، و${r.overLimit} فوق الحد بتاع باقتك (${namesLimit})` : `اتضاف ${r.added} معزوم`);
     await refresh();
   };
 
@@ -137,6 +142,8 @@ export default function ManageEvent({ manageToken, slug, couple, initialTexts, i
         </a>
       </header>
 
+      {children}
+
       <section className={styles.stats}>
         <Stat label="معزوم بالاسم" value={stats.total} />
         <Stat label="فتحوا الدعوة" value={stats.opened} />
@@ -157,6 +164,8 @@ export default function ManageEvent({ manageToken, slug, couple, initialTexts, i
 
       <TextsEditor api={api} initial={initialTexts} onSaved={() => setToast("اتحفظ")} />
 
+      {namesLimit > 0 ? (
+        <>
       <AddGuestForm onAdd={(g) => saveGuests([g])} existingKeys={existingKeys} />
 
       <GuestImport existingKeys={existingKeys} onSave={saveGuests} />
@@ -219,6 +228,16 @@ export default function ManageEvent({ manageToken, slug, couple, initialTexts, i
           </>
         )}
       </section>
+        </>
+      ) : (
+        <section className={styles.panel}>
+          <h2>دعوة باسم كل معزوم</h2>
+          <p className={styles.hint}>
+            باقتك فيها لينك عام واحد لكل الناس. لو عايز كل معزوم يفتح دعوة مكتوب فيها اسمه، وتعرف مين فتح ومين أكد، ضيف
+            إضافة &quot;دعوة باسم كل معزوم&quot; من الطلب فوق قبل الدفع، أو كلمنا.
+          </p>
+        </section>
+      )}
 
       {data.generalRsvps.length > 0 && (
         <section className={styles.panel}>
@@ -236,7 +255,7 @@ export default function ManageEvent({ manageToken, slug, couple, initialTexts, i
         </section>
       )}
 
-      <section className={styles.panel}>
+      {showWishes && <section className={styles.panel}>
         <h2>التهاني ({data.wishes.length})</h2>
         {data.wishes.length === 0 ? (
           <p className={styles.empty}>لسه مفيش تهاني.</p>
@@ -250,7 +269,7 @@ export default function ManageEvent({ manageToken, slug, couple, initialTexts, i
             ))}
           </ul>
         )}
-      </section>
+      </section>}
 
       {toast && <div className={styles.toast} role="status">{toast}</div>}
     </main>

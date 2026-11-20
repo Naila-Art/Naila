@@ -1,6 +1,7 @@
 import "server-only";
 import { DeleteObjectsCommand, GetObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { createHmac, randomBytes, timingSafeEqual } from "crypto";
 import { promises as fs } from "fs";
 import { deleteMediaDir, mediaPath, sniff } from "./media";
 
@@ -15,11 +16,16 @@ import { deleteMediaDir, mediaPath, sniff } from "./media";
  * endpoint that writes to data/uploads, served by /media/[...path].
  */
 
-export type UploadKind = "video" | "poster";
+export type UploadKind = "video" | "poster" | "music" | "proof";
+
+const IMAGE_TYPES = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
 
 export const UPLOAD_RULES: Record<UploadKind, { types: Record<string, string>; maxBytes: number }> = {
   video: { types: { "video/mp4": "mp4" }, maxBytes: 20 * 1024 * 1024 },
-  poster: { types: { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" }, maxBytes: 3 * 1024 * 1024 },
+  poster: { types: IMAGE_TYPES, maxBytes: 3 * 1024 * 1024 },
+  music: { types: { "audio/mpeg": "mp3", "audio/mp4": "m4a", "audio/x-m4a": "m4a" }, maxBytes: 12 * 1024 * 1024 },
+  /** Instapay transfer screenshot. */
+  proof: { types: IMAGE_TYPES, maxBytes: 6 * 1024 * 1024 },
 };
 
 /** Signed upload URLs stay valid this long. */
@@ -62,17 +68,68 @@ export function storageMode(): "r2" | "local" {
   return r2Config() ? "r2" : "local";
 }
 
-/** Object keys we hand out look like templates/tpl_0123456789/opening.mp4 — nothing else is accepted. */
 export const TEMPLATE_ID = /^tpl_[0-9a-f]{10}$/;
-const OBJECT_KEY = /^templates\/tpl_[0-9a-f]{10}\/(opening\.mp4|poster\.(jpg|png|webp))$/;
 
-export function isTemplateObjectKey(key: string): boolean {
-  return OBJECT_KEY.test(key);
+/**
+ * The only object keys we hand out. Anything else is refused.
+ *   templates/tpl_x/opening.mp4 · templates/tpl_x/poster.jpg   (admin)
+ *   music/trk_x-rand.mp3                                       (admin music library)
+ *   events/evt_x/music-rand.mp3                                (client's own song)
+ *   payments/ord_x/proof-rand.jpg                              (Instapay screenshot)
+ * Files that can be replaced get a random suffix, because public URLs are cached forever.
+ */
+const OBJECT_KEYS: Record<UploadKind, RegExp> = {
+  video: /^templates\/tpl_[0-9a-f]{10}\/opening\.mp4$/,
+  poster: /^templates\/tpl_[0-9a-f]{10}\/poster\.(jpg|png|webp)$/,
+  music: /^(music\/trk_[0-9a-f]{10}|events\/evt_[0-9a-z_]{1,40}\/music)-[0-9a-f]{8}\.(mp3|m4a)$/,
+  proof: /^payments\/ord_[0-9a-f]{10}\/proof-[0-9a-f]{8}\.(jpg|png|webp)$/,
+};
+
+export function kindOfKey(key: string): UploadKind | null {
+  return (Object.keys(OBJECT_KEYS) as UploadKind[]).find((k) => OBJECT_KEYS[k].test(key)) ?? null;
 }
 
-export function objectKeyFor(templateId: string, kind: UploadKind, contentType: string): string {
+export function isTemplateObjectKey(key: string): boolean {
+  const kind = kindOfKey(key);
+  return kind === "video" || kind === "poster";
+}
+
+/** `owner` is the folder: "templates/tpl_x", "music/trk_x", "events/evt_x" or "payments/ord_x". */
+export function objectKeyFor(owner: string, kind: UploadKind, contentType: string): string {
   const ext = UPLOAD_RULES[kind].types[contentType];
-  return `templates/${templateId}/${kind === "video" ? "opening.mp4" : `poster.${ext}`}`;
+  const rand = randomBytes(4).toString("hex");
+  switch (kind) {
+    case "video":
+      return `${owner}/opening.mp4`;
+    case "poster":
+      return `${owner}/poster.${ext}`;
+    case "music":
+      return owner.startsWith("music/") ? `${owner}-${rand}.${ext}` : `${owner}/music-${rand}.${ext}`;
+    case "proof":
+      return `${owner}/proof-${rand}.${ext}`;
+  }
+}
+
+/** Turns a public URL we issued back into its object key (null if it isn't one of ours). */
+export function keyFromPublicUrl(url: string): string | null {
+  const c = r2Config();
+  const prefix = c ? `${c.publicUrl}/` : "/media/";
+  if (!url.startsWith(prefix)) return null;
+  const key = url.slice(prefix.length);
+  return kindOfKey(key) ? key : null;
+}
+
+// Local (development) uploads are authorised with a signature, like an R2 signed URL.
+// Derived (not random per module) because in development each route bundle gets its own copy of this module.
+// Only used when R2 isn't configured, which production refuses.
+const LOCAL_SECRET = createHmac("sha256", "local-uploads").update(process.env.ADMIN_TOKEN ?? "dev").digest();
+const localSig = (key: string, exp: number) => createHmac("sha256", LOCAL_SECRET).update(`${key}|${exp}`).digest("hex");
+
+export function verifyLocalUpload(key: string, exp: number, sig: string): boolean {
+  if (!Number.isFinite(exp) || exp < Date.now() || !kindOfKey(key)) return false;
+  const a = Buffer.from(localSig(key, exp));
+  const b = Buffer.from(sig);
+  return a.length === b.length && timingSafeEqual(a, b);
 }
 
 export function publicUrl(objectKey: string): string {
@@ -81,9 +138,12 @@ export function publicUrl(objectKey: string): string {
 }
 
 /** Where the browser should PUT the file. */
-export async function createUploadUrl(objectKey: string, contentType: string, adminKey: string): Promise<string> {
+export async function createUploadUrl(objectKey: string, contentType: string): Promise<string> {
   const c = r2Config();
-  if (!c) return `/api/admin/${adminKey}/uploads?key=${encodeURIComponent(objectKey)}`;
+  if (!c) {
+    const exp = Date.now() + UPLOAD_URL_TTL_SECONDS * 1000;
+    return `/api/uploads/local?key=${encodeURIComponent(objectKey)}&exp=${exp}&sig=${localSig(objectKey, exp)}`;
+  }
   return getSignedUrl(
     s3(c),
     new PutObjectCommand({
@@ -134,8 +194,25 @@ export async function verifyUpload(objectKey: string, kind: UploadKind): Promise
 
   if (size > UPLOAD_RULES[kind].maxBytes) return "too_large";
   const type = sniff(head);
-  if (kind === "video" ? type !== "mp4" : !type || type === "mp4") return "wrong_type";
-  return "ok";
+  const ok =
+    kind === "video" ? type === "mp4" : kind === "music" ? type === "mp3" || type === "mp4" : type === "jpg" || type === "png" || type === "webp";
+  return ok ? "ok" : "wrong_type";
+}
+
+/** Deletes one file (best effort: a leftover file is harmless). */
+export async function deleteObject(objectKey: string): Promise<void> {
+  if (!kindOfKey(objectKey)) return;
+  const c = r2Config();
+  try {
+    if (!c) {
+      const full = mediaPath(objectKey.split("/"));
+      if (full) await fs.rm(full, { force: true });
+      return;
+    }
+    await s3(c).send(new DeleteObjectsCommand({ Bucket: c.bucket, Delete: { Objects: [{ Key: objectKey }] } }));
+  } catch {
+    // ignore
+  }
 }
 
 /** Deletes every file of a template. */

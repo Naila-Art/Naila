@@ -27,6 +27,10 @@ export interface InvitationProps {
   musicUrl?: string;
   calendarUrl: string;
   initialRsvp: RsvpStatus | null;
+  /** Package 2+ only. */
+  showWishes?: boolean;
+  /** Draft (not paid yet): ribbon on top, replies off. */
+  isPreview?: boolean;
 }
 
 type Stage = "sealed" | "opening" | "open";
@@ -108,6 +112,7 @@ export default function Invitation(props: InvitationProps) {
 
   return (
     <main className={styles.page} style={themeVars} dir={lang === "ar" ? "rtl" : "ltr"} lang={lang}>
+      {props.isPreview && <div className={styles.previewRibbon}>{s.previewRibbon}</div>}
       <div className={styles.column}>
         {/* ---------- Opening (fades away once the letter takes over) ---------- */}
         <section className={styles.hero} data-stage={stage} aria-hidden={stage === "open"}>
@@ -176,13 +181,23 @@ export default function Invitation(props: InvitationProps) {
 
             <section className={`${styles.card} ${styles.reveal}`}>
               <h2 className={styles.sectionTitle}>{s.rsvpTitle}</h2>
-              <RsvpForm slug={props.slug} token={props.token} strings={s} initial={props.initialRsvp} />
+              {props.isPreview ? (
+                <p className={styles.muted}>{s.previewNoReplies}</p>
+              ) : (
+                <RsvpForm slug={props.slug} token={props.token} strings={s} initial={props.initialRsvp} />
+              )}
             </section>
 
-            <section className={`${styles.card} ${styles.reveal}`}>
-              <h2 className={styles.sectionTitle}>{s.wishesTitle}</h2>
-              <WishForm slug={props.slug} token={props.token} strings={s} />
-            </section>
+            {props.showWishes !== false && (
+              <section className={`${styles.card} ${styles.reveal}`}>
+                <h2 className={styles.sectionTitle}>{s.wishesTitle}</h2>
+                {props.isPreview ? (
+                  <p className={styles.muted}>{s.previewNoReplies}</p>
+                ) : (
+                  <WishForm slug={props.slug} token={props.token} strings={s} />
+                )}
+              </section>
+            )}
 
             {/* Location comes last, per the design rules. */}
             <section className={`${styles.card} ${styles.reveal}`}>

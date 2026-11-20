@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 import Invitation from "./Invitation";
 import { getEventBySlug, getGuestByToken, getRsvpForGuest, getTemplate } from "@/lib/store";
+import { eventContext } from "@/lib/event-context";
+import ClosedInvitation from "./ClosedInvitation";
 import { displayName, fillPersonalText } from "@/lib/text";
 import { t } from "@/lib/i18n";
 import type { EventData } from "@/lib/types";
@@ -44,6 +46,7 @@ function calendarUrl(event: EventData) {
 export async function invitationMetadata(slug: string, token?: string): Promise<Metadata> {
   const { event, guest } = await load(slug, token);
   const couple = `${event.partnerA} ${t(event.lang).and} ${event.partnerB}`;
+  if (event.status === "cancelled") return { title: event.lang === "ar" ? "الدعوة غير متاحة" : "Invitation unavailable", robots: { index: false, follow: false } };
   const title = guest
     ? event.lang === "ar"
       ? `دعوة خاصة لـ ${displayName(guest)}`
@@ -60,7 +63,9 @@ export async function invitationMetadata(slug: string, token?: string): Promise<
 
 export default async function InvitationPage({ slug, token }: { slug: string; token?: string }) {
   const { event, guest } = await load(slug, token);
+  if (event.status === "cancelled") return <ClosedInvitation lang={event.lang} />;
   const template = await getTemplate(event.templateId);
+  const ctx = await eventContext(event);
   const rsvp = guest ? await getRsvpForGuest(event.id, guest.id) : null;
   const { date, time } = formatDate(event);
 
@@ -80,8 +85,10 @@ export default async function InvitationPage({ slug, token }: { slug: string; to
       timeLabel={time}
       venueName={event.venueName}
       venueAddress={event.venueAddress}
-      mapsUrl={event.mapsUrl}
-      musicUrl={event.musicUrl}
+      mapsUrl={ctx.features.maps ? event.mapsUrl : undefined}
+      musicUrl={ctx.musicUrl}
+      showWishes={ctx.features.wishes}
+      isPreview={ctx.isDraft}
       calendarUrl={calendarUrl(event)}
       initialRsvp={rsvp?.status ?? null}
     />

@@ -29,17 +29,20 @@ export async function deleteMediaDir(parts: string[]): Promise<void> {
 }
 
 /** Checks the file's first bytes, not just its name or the browser's claimed type. */
-export function sniff(data: Uint8Array): "mp4" | "jpg" | "png" | "webp" | null {
+export function sniff(data: Uint8Array): "mp4" | "mp3" | "jpg" | "png" | "webp" | null {
   const ascii = (from: number, to: number) => String.fromCharCode(...data.subarray(from, to));
   if (data.length > 12 && ascii(4, 8) === "ftyp") return "mp4";
   if (data[0] === 0xff && data[1] === 0xd8 && data[2] === 0xff) return "jpg";
   if (data[0] === 0x89 && ascii(1, 4) === "PNG") return "png";
   if (ascii(0, 4) === "RIFF" && ascii(8, 12) === "WEBP") return "webp";
+  if (ascii(0, 3) === "ID3" || (data[0] === 0xff && (data[1] & 0xe0) === 0xe0)) return "mp3";
   return null;
 }
 
 export const CONTENT_TYPES: Record<string, string> = {
   mp4: "video/mp4",
+  mp3: "audio/mpeg",
+  m4a: "audio/mp4",
   jpg: "image/jpeg",
   png: "image/png",
   webp: "image/webp",

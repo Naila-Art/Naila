@@ -1,6 +1,6 @@
 import "server-only";
 import { NextResponse } from "next/server";
-import { getEventBySlug, getGuestByToken } from "./store";
+import { getEventByManageToken, getEventBySlug, getGuestByToken, getOrder } from "./store";
 import type { EventData, Guest } from "./types";
 
 export const MAX_NAME = 80;
@@ -17,6 +17,7 @@ export async function resolve(
 ): Promise<{ event: EventData; guest: Guest | null } | NextResponse> {
   const event = await getEventBySlug(slug);
   if (!event) return bad("not_found", 404);
+  if (event.status === "cancelled") return bad("cancelled", 410);
   if (token === undefined || token === null || token === "") return { event, guest: null };
   if (typeof token !== "string") return bad("invalid_token");
   const guest = await getGuestByToken(event.id, token);
@@ -37,4 +38,17 @@ export function cleanText(value: unknown, max: number): string | null {
   if (typeof value !== "string") return null;
   const v = value.replace(/\s+/g, " ").trim();
   return v.length === 0 || v.length > max ? null : v;
+}
+
+/** Our public site address, for payment redirects. SITE_URL wins over the request's own origin. */
+export function siteUrl(req: Request): string {
+  return (process.env.SITE_URL?.trim() || new URL(req.url).origin).replace(/\/+$/, "");
+}
+
+/** Event + order behind a client's private link, or null. */
+export async function manageContext(manageToken: string) {
+  const event = await getEventByManageToken(manageToken);
+  if (!event || event.status === "cancelled") return null;
+  const order = event.orderId ? await getOrder(event.orderId) : null;
+  return { event, order };
 }

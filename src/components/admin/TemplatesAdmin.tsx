@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import m from "../manage/manage.module.css";
 import a from "./admin.module.css";
 import { CATEGORY_LABELS, type Category, type Template } from "@/lib/types";
+import { UPLOAD_ERRORS, UploadError, postJson, putFile } from "@/lib/upload-client";
 
 interface Props {
   adminKey: string;
@@ -42,8 +43,7 @@ const ERRORS: Record<string, string> = {
   poster_too_large: "الصورة أكبر من 3 ميجا.",
   poster_not_image: "الصورة لازم تكون JPG أو PNG أو WebP.",
   not_found: "اللينك ده مش شغال.",
-  upload_missing: "الملف ماوصلش للتخزين. جرب تاني.",
-  storage_rejected: "التخزين رفض الملف. جرب تاني.",
+  ...UPLOAD_ERRORS,
   network: "النت فصل أثناء الرفع، أو إعدادات CORS على R2 ناقصة. جرب تاني.",
   upload_failed: "حصلت مشكلة في الرفع. جرب تاني.",
 };
@@ -52,45 +52,16 @@ const mb = (bytes: number) => (bytes / 1024 / 1024).toFixed(1);
 
 const POSTER_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
-class UploadError extends Error {
-  constructor(public code: string) {
-    super(code);
-  }
-}
-
 interface Slot {
   templateId: string;
   objectKey: string;
   uploadUrl: string;
 }
 
-async function requestSlot(
+const requestSlot = (
   adminKey: string,
   body: { kind: "video" | "poster"; contentType: string; size: number; templateId?: string },
-): Promise<Slot> {
-  const res = await fetch(`/api/admin/${adminKey}/templates/uploads`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new UploadError(data.error ?? "");
-  return data as Slot;
-}
-
-/** PUTs a file to its upload URL (R2 in production). XHR rather than fetch, for progress. */
-function putFile(url: string, file: Blob, contentType: string, onProgress: (loaded: number) => void): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open("PUT", url);
-    xhr.setRequestHeader("Content-Type", contentType);
-    xhr.upload.onprogress = (ev) => onProgress(ev.loaded);
-    xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new UploadError("storage_rejected")));
-    // A CORS problem on the R2 bucket also lands here.
-    xhr.onerror = () => reject(new UploadError("network"));
-    xhr.send(file);
-  });
-}
+) => postJson<Slot>(`/api/admin/${adminKey}/templates/uploads`, body);
 
 /** Grabs a frame near the start of the video as a JPEG, used as the poster when none is uploaded. */
 function captureFrame(video: HTMLVideoElement): Promise<Blob | null> {
@@ -194,22 +165,15 @@ export default function TemplatesAdmin({ adminKey, initialTemplates, initialUsag
 
         // 3. Save the template; the server checks the files before accepting it.
         setProgress(100);
-        const res = await fetch(`/api/admin/${adminKey}/templates`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            templateId: slot.templateId,
-            name: name.trim(),
-            category,
-            theme,
-            videoKey: slot.objectKey,
-            posterKey,
-          }),
+        const body = await postJson<{ template: Template }>(`/api/admin/${adminKey}/templates`, {
+          templateId: slot.templateId,
+          name: name.trim(),
+          category,
+          theme,
+          videoKey: slot.objectKey,
+          posterKey,
         });
-        const body = (await res.json().catch(() => ({}))) as { template?: Template; error?: string };
-        if (res.status !== 201 || !body.template) throw new UploadError(body.error ?? "");
-
-        setTemplates((list) => [body.template!, ...list]);
+        setTemplates((list) => [body.template, ...list]);
         setToast("التيمبليت اترفع");
         setName("");
         setVideo(null);

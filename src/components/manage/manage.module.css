@@ -420,3 +420,72 @@
   .addRow input[inputmode="tel"] { grid-column: 1 / -1; }
   .addRow .primary { grid-column: 1 / -1; }
 }
+
+/* ---------- order & payment panels ---------- */
+.notice {
+  border-color: var(--m-accent);
+  background: color-mix(in srgb, var(--m-accent) 7%, var(--m-surface));
+}
+
+.checkRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.checkRow input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--m-accent);
+  flex: none;
+}
+
+.instapay {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1px dashed var(--m-line);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.instapay h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.mono {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  background: var(--m-bg);
+  padding: 2px 6px;
+  border-radius: 6px;
+  user-select: all;
+}
+
+.summary {
+  cursor: pointer;
+  font-weight: 700;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+}
+
+.detailsForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.twoCols {
+  display: grid;
+  gap: 12px;
+}
+
+@media (min-width: 560px) {
+  .twoCols {
+    grid-template-columns: 1fr 1fr;
+  }
+}

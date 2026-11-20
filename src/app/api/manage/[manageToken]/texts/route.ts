@@ -8,7 +8,7 @@ const MAX_TEXT = 200;
 export async function PUT(req: Request, { params }: { params: Promise<{ manageToken: string }> }) {
   const { manageToken } = await params;
   const event = await getEventByManageToken(manageToken);
-  if (!event) return bad("not_found", 404);
+  if (!event || event.status === "cancelled") return bad("not_found", 404);
 
   const body = await readJson(req);
   const generalText = cleanText(body?.generalText, MAX_TEXT);

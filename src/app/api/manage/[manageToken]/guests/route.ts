@@ -2,12 +2,14 @@ import { NextResponse } from "next/server";
 import { bad, readJson } from "@/lib/api";
 import { guestKey, MAX_GUESTS_PER_IMPORT, validateGuest } from "@/lib/guests";
 import { addGuests, deleteGuest, getEventByManageToken, getEventDashboard } from "@/lib/store";
+import { eventContext } from "@/lib/event-context";
 
 type Ctx = { params: Promise<{ manageToken: string }> };
 
 async function eventFor(ctx: Ctx) {
   const { manageToken } = await ctx.params;
-  return getEventByManageToken(manageToken);
+  const event = await getEventByManageToken(manageToken);
+  return event?.status === "cancelled" ? null : event;
 }
 
 export async function GET(_req: Request, ctx: Ctx) {
@@ -24,6 +26,10 @@ export async function POST(req: Request, ctx: Ctx) {
   const input = body?.guests;
   if (!Array.isArray(input) || input.length === 0) return bad("no_guests");
   if (input.length > MAX_GUESTS_PER_IMPORT) return bad("too_many_guests");
+
+  // Named links are an add-on, capped by the guest-count tier the client paid for.
+  const { features } = await eventContext(event);
+  if (features.namesLimit === 0) return bad("names_not_included", 403);
 
   const { guests: existing } = await getEventDashboard(event.id);
   const seen = new Set(existing.map(guestKey));
@@ -46,8 +52,10 @@ export async function POST(req: Request, ctx: Ctx) {
     valid.push({ title: g.title, name: g.name, phone: g.phone });
   }
 
-  const created = valid.length ? await addGuests(event.id, valid) : [];
-  return NextResponse.json({ added: created.length, invalid, duplicates });
+  const room = Math.max(0, features.namesLimit - existing.length);
+  const overLimit = Math.max(0, valid.length - room);
+  const created = room > 0 && valid.length ? await addGuests(event.id, valid.slice(0, room)) : [];
+  return NextResponse.json({ added: created.length, invalid, duplicates, overLimit, limit: features.namesLimit });
 }
 
 export async function DELETE(req: Request, ctx: Ctx) {

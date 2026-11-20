@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { bad, cleanText, MAX_NAME, readJson, resolve } from "@/lib/api";
 import { upsertRsvp } from "@/lib/store";
+import { eventContext } from "@/lib/event-context";
 import { displayName } from "@/lib/text";
 
 export async function POST(req: Request, { params }: { params: Promise<{ slug: string }> }) {
@@ -11,6 +12,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   const resolved = await resolve(slug, body.token);
   if (resolved instanceof NextResponse) return resolved;
   const { event, guest } = resolved;
+  if ((await eventContext(event)).isDraft) return bad("not_active", 403);
 
   const status = body.status;
   if (status !== "attending" && status !== "declined") return bad("invalid_status");

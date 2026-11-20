@@ -28,6 +28,10 @@ const strings = {
     unmute: "تشغيل الصوت",
     error: "حصلت مشكلة، جرب تاني",
     nameRequired: "اكتب اسمك الأول",
+    previewRibbon: "معاينة · الدعوة هتتفعّل بعد الدفع",
+    previewNoReplies: "الردود هتشتغل بعد تفعيل الدعوة",
+    closedTitle: "الدعوة دي مش متاحة",
+    closedBody: "اللينك ده اتقفل. لو محتاج تتأكد من حاجة، كلم أصحاب الدعوة.",
   },
   en: {
     tapToOpen: "Tap to open",
@@ -56,6 +60,10 @@ const strings = {
     unmute: "Unmute",
     error: "Something went wrong, please try again",
     nameRequired: "Please enter your name",
+    previewRibbon: "Preview · the invitation goes live after payment",
+    previewNoReplies: "Replies open once the invitation is live",
+    closedTitle: "This invitation is no longer available",
+    closedBody: "This link has been closed. Please contact the hosts if you need anything.",
   },
 } as const;
 

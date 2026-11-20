@@ -30,7 +30,7 @@ export async function POST(req: Request, ctx: Ctx) {
   if (templateId === undefined) templateId = `tpl_${randomBytes(5).toString("hex")}`;
   if (typeof templateId !== "string" || !TEMPLATE_ID.test(templateId)) return bad("invalid_template");
 
-  const objectKey = objectKeyFor(templateId, kind, contentType);
-  const uploadUrl = await createUploadUrl(objectKey, contentType, key);
+  const objectKey = objectKeyFor(`templates/${templateId}`, kind, contentType);
+  const uploadUrl = await createUploadUrl(objectKey, contentType);
   return NextResponse.json({ templateId, objectKey, uploadUrl });
 }

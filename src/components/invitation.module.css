@@ -506,3 +506,36 @@
     animation: none;
   }
 }
+
+/* Draft invitations (not paid yet) carry this ribbon so a preview link can't pass for the real one. */
+.previewRibbon {
+  position: fixed;
+  top: 0;
+  inset-inline: 0;
+  z-index: 30;
+  padding: 8px 12px;
+  text-align: center;
+  font-family: "Tajawal", system-ui, sans-serif;
+  font-size: 0.85rem;
+  color: #fff;
+  background: repeating-linear-gradient(-45deg, #8a2b2b 0 14px, #9b3535 14px 28px);
+  pointer-events: none;
+}
+
+.closed {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+  text-align: center;
+  background: #f6f3ee;
+  color: #3b2a22;
+  font-family: "Tajawal", system-ui, sans-serif;
+}
+
+.closed h1 {
+  font-family: "Amiri", serif;
+  font-weight: 400;
+  font-size: 1.6rem;
+  margin-bottom: 8px;
+}

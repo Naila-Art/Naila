@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { bad, cleanText, MAX_NAME, MAX_WISH, readJson, resolve } from "@/lib/api";
 import { addWish } from "@/lib/store";
+import { eventContext } from "@/lib/event-context";
 import { displayName } from "@/lib/text";
 
 export async function POST(req: Request, { params }: { params: Promise<{ slug: string }> }) {
@@ -11,6 +12,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   const resolved = await resolve(slug, body.token);
   if (resolved instanceof NextResponse) return resolved;
   const { event, guest } = resolved;
+  const ctx = await eventContext(event);
+  if (ctx.isDraft) return bad("not_active", 403);
+  if (!ctx.features.wishes) return bad("not_included", 403);
 
   const message = cleanText(body.body, MAX_WISH);
   if (!message) return bad("invalid_message");
