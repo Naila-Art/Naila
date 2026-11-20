@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { bad, readJson } from "@/lib/api";
 import { guestKey, MAX_GUESTS_PER_IMPORT, validateGuest } from "@/lib/guests";
-import { addGuests, deleteGuest, getEventByManageToken, getEventDashboard } from "@/lib/store";
+import { addGuests, deleteGuest, getEventByManageToken, getEventDashboard, updateGuestMessage } from "@/lib/store";
 import { eventContext } from "@/lib/event-context";
 
 type Ctx = { params: Promise<{ manageToken: string }> };
@@ -49,13 +49,25 @@ export async function POST(req: Request, ctx: Ctx) {
       continue;
     }
     seen.add(key);
-    valid.push({ title: g.title, name: g.name, phone: g.phone });
+    valid.push({ title: g.title, name: g.name, phone: g.phone, message: g.message });
   }
 
   const room = Math.max(0, features.namesLimit - existing.length);
   const overLimit = Math.max(0, valid.length - room);
   const created = room > 0 && valid.length ? await addGuests(event.id, valid.slice(0, room)) : [];
   return NextResponse.json({ added: created.length, invalid, duplicates, overLimit, limit: features.namesLimit });
+}
+
+/** Body: { id, message } — sets (or with an empty message, clears) one guest's personal message. */
+export async function PATCH(req: Request, ctx: Ctx) {
+  const event = await eventFor(ctx);
+  if (!event) return bad("not_found", 404);
+  const body = await readJson(req);
+  if (typeof body?.id !== "string") return bad("id_required");
+  const g = validateGuest({ name: "x", message: body.message });
+  if (g.error) return bad("message_too_long");
+  const ok = await updateGuestMessage(event.id, body.id, g.message);
+  return ok ? NextResponse.json({ ok: true, message: g.message ?? null }) : bad("not_found", 404);
 }
 
 export async function DELETE(req: Request, ctx: Ctx) {

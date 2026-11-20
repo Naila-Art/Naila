@@ -1,6 +1,6 @@
 import "server-only";
 import { featuresOf } from "./pricing";
-import { getMusic, getOrder, getPricing, type EventDetailsPatch } from "./store";
+import { getMusic, getOrder, listMusic, type EventDetailsPatch } from "./store";
 import { cleanText } from "./api";
 import { cairoLocalToIso } from "./time";
 import type { EventData, Features, Lang, Order } from "./types";
@@ -15,12 +15,13 @@ export interface EventContext {
 
 export async function eventContext(event: EventData): Promise<EventContext> {
   const order = event.orderId ? await getOrder(event.orderId) : null;
-  const features = featuresOf(event, order, await getPricing());
+  const features = featuresOf(event, order);
   let musicUrl: string | undefined;
   if (features.music) {
-    const ownSongAllowed = !order || order.addons.customMusic;
-    if (ownSongAllowed && event.musicUrl) musicUrl = event.musicUrl;
-    else if (event.musicTrackId) musicUrl = (await getMusic(event.musicTrackId))?.url;
+    if (event.musicTrackId) musicUrl = (await getMusic(event.musicTrackId))?.url;
+    // Demo events may carry a direct URL; samples play the newest library track.
+    else if (!order && event.musicUrl) musicUrl = event.musicUrl;
+    else if (event.samplePackage) musicUrl = (await listMusic())[0]?.url;
   }
   return { order, features, isDraft: event.status === "draft", musicUrl };
 }

@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import m from "../manage/manage.module.css";
 import a from "./admin.module.css";
-import { ADDON_LABELS, formatEgp, getPackage, type Pricing } from "@/lib/pricing";
+import { formatEgp, getPackage, type Pricing } from "@/lib/pricing";
 import { CATEGORY_LABELS, type ChangeRequest, type CustomStage, type Order } from "@/lib/types";
 import { UploadError, postJson } from "@/lib/upload-client";
 
@@ -181,17 +181,6 @@ export default function AdminOrders({
                   {e && <span className={m.hint}>· المناسبة {dateFmt(e.date)}</span>}
                 </div>
 
-                <p className={m.hint}>
-                  {[
-                    o.addons.arabic && ADDON_LABELS.arabic,
-                    o.addons.maps && ADDON_LABELS.maps,
-                    o.addons.customMusic && ADDON_LABELS.customMusic,
-                    o.addons.names && `${ADDON_LABELS.names} (${pricing.namesTiers[o.addons.names].label})`,
-                  ]
-                    .filter(Boolean)
-                    .join(" · ") || "من غير إضافات"}
-                </p>
-
                 {o.brief && (
                   <div className={a.brief}>
                     <strong>{CATEGORY_LABELS[o.brief.category]}</strong>
@@ -259,6 +248,32 @@ export default function AdminOrders({
                       onClick={() => confirm("تعلّم الطلب مدفوع (كاش أو تحويل تاني)؟") && act(o, { action: "mark_paid" }, "اتعلم مدفوع")}
                     >
                       اتدفع بطريقة تانية
+                    </button>
+                  )}
+                  {!o.cancelledAt && o.kind === "custom" && !e && (
+                    <button
+                      type="button"
+                      className={m.primary}
+                      disabled={busy}
+                      onClick={() =>
+                        confirm("تعمل صفحة الدعوة للعميل ده؟ هتاخد لينك تبعتهوله يكمل فيه البيانات ويضيف المعازيم.") &&
+                        act(o, { action: "create_event" }, "اتعملت صفحة الدعوة. افتح صفحة العميل وابعتله اللينك")
+                      }
+                    >
+                      اعمل صفحة الدعوة
+                    </button>
+                  )}
+                  {!o.cancelledAt && o.kind === "custom" && o.payment !== "paid" && (
+                    <button
+                      type="button"
+                      className={m.secondary}
+                      disabled={busy}
+                      onClick={() => {
+                        const v = prompt("السعر المتفق عليه (جنيه)", String(o.total));
+                        if (v !== null && v.trim()) void act(o, { action: "set_total", total: Number(v) }, "السعر اتعدل");
+                      }}
+                    >
+                      تعديل السعر
                     </button>
                   )}
                   {!o.cancelledAt && o.kind === "custom" && (

@@ -12,46 +12,43 @@ Open http://localhost:3000 (the storefront). Demo links are at http://localhost:
 All settings live in `.env.local` (git-ignored); `.env.example` lists them. On Vercel they go in Project → Settings → Environment Variables.
 
 ## How it works
-1. **Storefront** (`/`): templates by category, packages and add-ons. Prices are edited in `/admin/{key}/pricing` (defaults: Ziad's PDF, `DEFAULT_PRICING` in `src/lib/pricing.ts`). Orders keep the total and guest cap they were sold with.
-2. **Builder** (`/create`): template → details → package 1/2 + add-ons → name + WhatsApp. Creates a **draft** and sends the client to their private page.
-   Packages 3–4 go to `/request` instead (a brief; we follow up on WhatsApp).
-3. **Client page** (`/c/{manageToken}`, no password): preview, change package/add-ons, edit details, own song upload, wording, guests (named-link add-on, capped by tier), approve and pay, ask us for a change.
-4. **Draft** invitations carry a "preview" ribbon and refuse replies. Payment (Paymob, or Instapay confirmed by us) makes them **active**.
-5. **Cancelled** orders (from our dashboard, optionally marked as refunded) close the invitation, every guest link and the client page. "Restore" reopens them.
+1. **Storefront** (`/`): templates by category and packages. Prices are edited in `/admin/{key}/pricing` (defaults: Ziad's PDF). Orders keep the total they were sold with. **No add-ons**: Arabic/English, the location and getting the link on WhatsApp are included in every package.
+2. **Samples** (`/samples`, and "شوف مثال" on each package): one live invitation per package at fixed links (`/i/sample-1` … `/i/sample-4/{guest}`), created on first visit. They always use the newest uploaded design of their category and a date 45 days ahead.
+3. **Packages 1–2** (`/create`): the client builds the invitation and gets a **draft** on their private page `/c/{manageToken}` (no password): preview, edit details, wording, approve and pay.
+4. **Packages 3–4** (`/request`): the client leaves a brief. In `/admin/{key}/orders` we set the agreed price and press **"اعمل صفحة الدعوة"**, then send the client their page link. There they add guests by hand or from Excel; each guest gets their own link with their name, and optionally **a personal message** shown only on their invitation.
+5. **Draft** invitations carry a "preview" ribbon and refuse replies. Payment (Paymob, or Instapay confirmed by us, or marked paid by us) makes them **active**.
+6. **Cancelled** orders (optionally as a refund) close the invitation, every guest link and the client page. "Restore" reopens them.
 
-### What each package unlocks (`featuresOf` in `src/lib/pricing.ts`, fixed in code; names, prices, points and on/off are edited in the dashboard)
-| | Package 1 | Package 2 | 3–4 |
-|---|---|---|---|
-| Seal animation, names, RSVP, countdown | ✓ | ✓ | ✓ |
-| Wishes | | ✓ | ✓ |
-| Music | own song add-on | library or own song | ✓ |
-| Google Maps button | add-on | add-on | ✓ |
-| Named link per guest | add-on, by tier | add-on, by tier | 4 includes it |
-
-Arabic invitations carry the Arabic add-on automatically. The 300-guest and unlimited tier prices are placeholders until Ziad confirms them (edit them in the dashboard).
+### What each package unlocks (`packageFeatures` in `src/lib/pricing.ts`)
+| | 1 البسيطة | 2 المميزة | 3 على ذوقك | 4 الخاصة |
+|---|---|---|---|---|
+| Seal animation, names, RSVP, countdown, location | ✓ | ✓ | ✓ | ✓ |
+| Wishes, music from our library | | ✓ | ✓ | ✓ |
+| Named link per guest + personal message | | | ✓ | ✓ |
+| Made by | client (storefront) | client (storefront) | our team | our team |
 
 ## Routes
 | Route | What it is |
 |---|---|
-| `/` · `/t/{templateId}` | Storefront · public template preview |
+| `/` · `/t/{templateId}` · `/samples` | Storefront · public template preview · one sample invitation per package |
 | `/create` · `/request?p=3` | Builder (packages 1–2) · request form (packages 3–4) |
 | `/i/{slug}` · `/i/{slug}/{token}` | General invitation · named invitation |
 | `/c/{manageToken}` | Client page |
 | `/admin/{ADMIN_TOKEN}` | Our dashboard: clients, this month's revenue, last 6 months, by package, to-do |
-| `/admin/{ADMIN_TOKEN}/orders` | Orders: confirm/reject Instapay, mark paid, custom stages, change requests, **cancel / refund**, restore |
-| `/admin/{ADMIN_TOKEN}/pricing` | Packages (name, price, points, shown/hidden), add-ons on/off and prices, guest-count tiers. Add-ons are off by default: language is a free choice, location is free for everyone, named links come with package 4 only |
+| `/admin/{ADMIN_TOKEN}/orders` | Orders: confirm/reject Instapay, mark paid, packages 3–4 (stage, agreed price, create the client page), change requests, **cancel / refund**, restore |
+| `/admin/{ADMIN_TOKEN}/pricing` | Packages: name, price, points, shown/hidden |
 | `/admin/{ADMIN_TOKEN}/templates` · `/music` | Upload Google Flow templates · music library |
 | `POST /api/orders` · `POST /api/requests` | Create a draft · a package 3–4 request |
-| `PUT /api/manage/{t}/order` · `/details` · `/texts` · `/music` | Client edits (package/add-ons only before payment) |
-| `POST /api/manage/{t}/uploads` · `/payment` · `/changes` | Upload slot (song, transfer screenshot) · pay (Paymob / Instapay) · change request |
-| `GET/POST/DELETE /api/manage/{t}/guests` | Guests (cap = tier limit) |
+| `PUT /api/manage/{t}/order` · `/details` · `/texts` | Client edits (switch package 1↔2 only before payment) |
+| `POST /api/manage/{t}/uploads` · `/payment` · `/changes` | Upload slot (transfer screenshot) · pay (Paymob / Instapay) · change request |
+| `GET/POST/PATCH/DELETE /api/manage/{t}/guests` | Guests (packages 3–4) · PATCH `{ id, message }` sets a guest's personal message |
 | `POST /api/invitations/{slug}/open` · `/rsvp` · `/wishes` | Guest actions ("opened" fires on the seal tap, not page load) |
 | `POST /api/payments/paymob/webhook` | Paymob callback: HMAC checked, amount must match |
 | `GET /api/cron/retention` | Daily (vercel.json): deletes guest data a year after the event. Needs `CRON_SECRET` |
 | `PUT /api/uploads/local` · `/media/...` | Development only, without R2: signed local uploads and serving |
 
 ### Guest import rules
-- Columns are found by header in Arabic or English (اللقب/title, الاسم/name, رقم الموبايل/phone…). With no header row: 3 columns = title, name, phone; 2 columns = name, phone.
+- Columns are found by header in Arabic or English (اللقب/title, الاسم/name, رقم الموبايل/phone, رسالة خاصة/message). With no header row: 4 columns = title, name, phone, message; 3 = title, name, phone; 2 = name, phone.
 - Phones are normalised to `+20…`. Fixes the leading 0 that Excel drops, and Arabic digits.
 - A duplicate means the same title + name + phone (two people sharing one number are kept).
 - Exports are CSV with a BOM so Excel shows Arabic correctly, with formula injection neutralised.
@@ -70,7 +67,7 @@ File contents are checked (real MP4 / JPG / PNG / WebP / MP3), not just the exte
 Without a video, the built-in template falls back to a CSS envelope with a wax seal.
 
 ## Storage: Cloudflare R2
-Keys: `templates/{id}/opening.mp4|poster.jpg`, `music/trk_…-rand.mp3`, `events/{id}/music-rand.mp3`, `payments/{orderId}/proof-rand.jpg`.
+Keys: `templates/{id}/opening.mp4|poster.jpg`, `music/trk_…-rand.mp3`, `payments/{orderId}/proof-rand.jpg`.
 The browser uploads straight to R2 with a 15-minute signed URL, so files never go through Vercel (4.5 MB body limit). Guests load them from the bucket's public domain, which serves Range requests (iPhone needs them for video).
 
 Setup:
@@ -83,3 +80,6 @@ Without R2 settings, development stores files in `data/uploads/`. In production 
 
 ## Data
 Development stores data in `data/db.json` (git-ignored, seeded with demo events on first run). All access goes through `src/lib/store.ts`, which is swapped for Supabase before deploying; the JSON file does not persist on Vercel.
+
+To check a production build while `npm run dev` is running, build into another folder: `NEXT_DIST_DIR=.next-prod npx next build && NEXT_DIST_DIR=.next-prod npx next start -p 3124`.
+(In development, Next.js embeds debug copies of server data in pages; production doesn't.)

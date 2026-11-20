@@ -4,6 +4,8 @@ import type { GuestInput } from "./types";
 
 export const MAX_TITLE = 30;
 export const MAX_GUEST_NAME = 80;
+/** Personal note shown on one guest's invitation. */
+export const MAX_GUEST_MESSAGE = 300;
 export const MAX_GUESTS_PER_IMPORT = 2000;
 
 const ARABIC_DIGITS = /[٠-٩۰-۹]/g;
@@ -36,7 +38,7 @@ export function normalizePhone(raw: unknown): string | null {
 export interface ParsedGuest extends GuestInput {
   /** Row number in the sheet (1-based, as Excel shows it). */
   row: number;
-  error?: "name_missing" | "name_too_long" | "title_too_long" | "phone_invalid";
+  error?: "name_missing" | "name_too_long" | "title_too_long" | "phone_invalid" | "message_too_long";
   duplicate?: boolean;
 }
 
@@ -46,35 +48,52 @@ function cell(v: unknown): string {
   return String(v).replace(/\s+/g, " ").trim();
 }
 
-export function validateGuest(input: { title?: unknown; name?: unknown; phone?: unknown }, row = 0): ParsedGuest {
+/** Like cell() but keeps line breaks, for the personal message. */
+function multiline(v: unknown): string {
+  if (v === null || v === undefined || v instanceof Date) return "";
+  return String(v)
+    .replace(/\r\n?/g, "\n")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+export function validateGuest(
+  input: { title?: unknown; name?: unknown; phone?: unknown; message?: unknown },
+  row = 0,
+): ParsedGuest {
   const title = cell(input.title);
   const name = cell(input.name);
   const phoneRaw = cell(input.phone);
   const phone = phoneRaw ? normalizePhone(input.phone) : null;
-  const guest: ParsedGuest = { row, title: title || undefined, name, phone: phone ?? undefined };
+  const message = multiline(input.message);
+  const guest: ParsedGuest = { row, title: title || undefined, name, phone: phone ?? undefined, message: message || undefined };
   if (!name) guest.error = "name_missing";
   else if (name.length > MAX_GUEST_NAME) guest.error = "name_too_long";
   else if (title.length > MAX_TITLE) guest.error = "title_too_long";
   else if (phoneRaw && !phone) guest.error = "phone_invalid";
+  else if (message.length > MAX_GUEST_MESSAGE) guest.error = "message_too_long";
   return guest;
 }
 
-const HEADERS: Record<"title" | "name" | "phone", RegExp> = {
+const HEADERS: Record<"title" | "name" | "phone" | "message", RegExp> = {
   title: /^(title|اللقب|لقب|الصفة)$/i,
   name: /^(name|full ?name|الاسم|اسم|الإسم)$/i,
   phone: /^(phone|mobile|whatsapp|number|رقم|الرقم|الموبايل|موبايل|التليفون|تليفون|الهاتف|واتساب|رقم الموبايل|رقم التليفون|رقم الهاتف)$/i,
+  message: /^(message|note|personal message|رسالة|الرسالة|رسالة خاصة|الرسالة الخاصة|ملاحظة)$/i,
 };
 
 /**
  * Turns spreadsheet rows into guests. Columns are found by header (Arabic or English).
- * Without a recognised header row: 3 columns = title, name, phone; 2 columns = name, phone; 1 = name.
+ * Without a recognised header row: 4 columns = title, name, phone, message; 3 = title, name, phone;
+ * 2 = name, phone; 1 = name.
  */
 export function parseSheet(rows: unknown[][]): ParsedGuest[] {
   const nonEmpty = rows.filter((r) => r.some((c) => cell(c) !== ""));
   if (nonEmpty.length === 0) return [];
 
   const header = nonEmpty[0].map(cell);
-  const col = { title: -1, name: -1, phone: -1 };
+  const col = { title: -1, name: -1, phone: -1, message: -1 };
   header.forEach((h, i) => {
     for (const key of Object.keys(HEADERS) as (keyof typeof HEADERS)[]) {
       if (col[key] === -1 && HEADERS[key].test(h)) col[key] = i;
@@ -86,7 +105,8 @@ export function parseSheet(rows: unknown[][]): ParsedGuest[] {
     dataRows = nonEmpty.slice(1);
   } else {
     const width = Math.max(...nonEmpty.map((r) => r.length));
-    if (width >= 3) Object.assign(col, { title: 0, name: 1, phone: 2 });
+    if (width >= 4) Object.assign(col, { title: 0, name: 1, phone: 2, message: 3 });
+    else if (width === 3) Object.assign(col, { title: 0, name: 1, phone: 2 });
     else if (width === 2) Object.assign(col, { name: 0, phone: 1 });
     else col.name = 0;
   }
@@ -94,7 +114,12 @@ export function parseSheet(rows: unknown[][]): ParsedGuest[] {
   const seen = new Set<string>();
   return dataRows.map((r) => {
     const g = validateGuest(
-      { title: col.title >= 0 ? r[col.title] : "", name: r[col.name], phone: col.phone >= 0 ? r[col.phone] : "" },
+      {
+        title: col.title >= 0 ? r[col.title] : "",
+        name: r[col.name],
+        phone: col.phone >= 0 ? r[col.phone] : "",
+        message: col.message >= 0 ? r[col.message] : "",
+      },
       rows.indexOf(r) + 1,
     );
     const key = guestKey(g);

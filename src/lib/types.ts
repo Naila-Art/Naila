@@ -60,22 +60,17 @@ export interface EventData {
    */
   status?: "draft" | "active" | "cancelled";
   category?: Category;
-  /** A track from our music library (package 2+). A client's own song goes in musicUrl. */
+  /** A track from our music library (package 2+). */
   musicTrackId?: string;
   createdAt?: string;
+  /**
+   * Set on the storefront's sample invitations (one per package). They show that package's
+   * features, the newest uploaded design and a date that's always ahead.
+   */
+  samplePackage?: PackageId;
 }
 
 export type PackageId = 1 | 2 | 3 | 4;
-export type NamesTier = "100" | "300" | "unlimited";
-
-export interface Addons {
-  arabic: boolean;
-  maps: boolean;
-  /** The client uploads their own song. */
-  customMusic: boolean;
-  /** Personalised link per guest, priced by guest count. null = general link only. */
-  names: NamesTier | null;
-}
 
 export type PaymentState = "unpaid" | "pending_review" | "paid";
 export type PaymentMethod = "paymob" | "instapay" | "manual";
@@ -91,11 +86,8 @@ export interface Order {
   /** WhatsApp number, +20… */
   clientPhone: string;
   packageId: PackageId;
-  addons: Addons;
   /** EGP, fixed when the order is made or changed; later price edits don't touch it. */
   total: number;
-  /** Named-guest cap sold with this order (snapshot of the tier at the time). */
-  namesLimit?: number;
   payment: PaymentState;
   paymentMethod?: PaymentMethod;
   /** Instapay transfer screenshot. */
@@ -128,7 +120,7 @@ export interface MusicTrack {
   createdAt: string;
 }
 
-/** What an event may use, from its package and add-ons. */
+/** What an event may use, from its package. */
 export interface Features {
   wishes: boolean;
   music: boolean;
@@ -145,6 +137,8 @@ export interface Guest {
   title?: string;
   name: string;
   phone?: string;
+  /** Optional personal note shown on this guest's invitation only (packages 3-4). */
+  message?: string;
 }
 
 export interface Rsvp {
@@ -175,6 +169,7 @@ export interface GuestInput {
   title?: string;
   name: string;
   phone?: string;
+  message?: string;
 }
 
 export interface GuestView {

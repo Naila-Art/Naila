@@ -489,3 +489,19 @@
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* ---------- personal message per guest ---------- */
+.guestMessage {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 0.85rem;
+  width: 100%;
+}
+
+.guestMessage em {
+  font-style: normal;
+  color: var(--m-muted);
+  white-space: pre-wrap;
+}

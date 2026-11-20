@@ -1,13 +1,8 @@
 import Link from "next/link";
 import styles from "@/components/store/store.module.css";
 import TemplateGallery from "@/components/store/TemplateGallery";
-import {
-  ADDON_LABELS,
-  NAMES_TIER_IDS,
-  anyAddonEnabled,
-  formatEgp,
-  isSelfServe,
-} from "@/lib/pricing";
+import { INCLUDED_IN_ALL, formatEgp, isSelfServe } from "@/lib/pricing";
+import { sampleLink } from "@/lib/samples";
 import { siteSettings, whatsappLink } from "@/lib/site";
 import { getPricing, listTemplates } from "@/lib/store";
 
@@ -33,6 +28,7 @@ export default async function Home() {
           <div className={styles.navLinks}>
             <a href="#templates">التصميمات</a>
             <a href="#packages">الأسعار</a>
+            <a href="/samples">أمثلة</a>
           </div>
         </nav>
 
@@ -130,46 +126,14 @@ export default async function Home() {
                       اطلبها
                     </Link>
                   )}
+                  <a className={styles.sampleLink} href={sampleLink(p.id)} target="_blank" rel="noopener noreferrer">
+                    شوف مثال ↗
+                  </a>
                 </div>
               ))}
           </div>
 
-          {anyAddonEnabled(pricing) && (
-            <div className={styles.addonList}>
-              <h3>إضافات على أي باقة</h3>
-              <ul>
-                {pricing.addonsEnabled.arabic && (
-                  <li>
-                    <span>{ADDON_LABELS.arabic}</span>
-                    <span>+{pricing.addons.arabic}</span>
-                  </li>
-                )}
-                {pricing.addonsEnabled.maps && (
-                  <li>
-                    <span>{ADDON_LABELS.maps}</span>
-                    <span>+{pricing.addons.maps}</span>
-                  </li>
-                )}
-                {pricing.addonsEnabled.customMusic && (
-                  <li>
-                    <span>{ADDON_LABELS.customMusic}</span>
-                    <span>+{pricing.addons.customMusic}</span>
-                  </li>
-                )}
-                {pricing.addonsEnabled.names &&
-                  NAMES_TIER_IDS.map((id) => pricing.namesTiers[id]).map(
-                    (tier) => (
-                      <li key={tier.label}>
-                        <span>
-                          {ADDON_LABELS.names} ({tier.label})
-                        </span>
-                        <span>+{tier.price}</span>
-                      </li>
-                    ),
-                  )}
-              </ul>
-            </div>
-          )}
+          <p className={styles.includedAll}>في كل الباقات: {INCLUDED_IN_ALL.join(" · ")}</p>
         </section>
       </div>
 

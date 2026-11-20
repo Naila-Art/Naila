@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import styles from "./manage.module.css";
 import GuestImport from "./GuestImport";
-import { guestKey, toCsv, validateGuest, type ParsedGuest } from "@/lib/guests";
+import { MAX_GUEST_MESSAGE, guestKey, toCsv, validateGuest, type ParsedGuest } from "@/lib/guests";
 import { displayName, fillPersonalText } from "@/lib/text";
 import type { GuestWithStatus, Rsvp, Wish } from "@/lib/types";
 
@@ -88,7 +88,7 @@ export default function ManageEvent({ manageToken, slug, couple, initialTexts, i
     const res = await fetch(`${api}/guests`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ guests: guests.map(({ title, name, phone }) => ({ title, name, phone })) }),
+      body: JSON.stringify({ guests: guests.map(({ title, name, phone, message }) => ({ title, name, phone, message })) }),
     });
     if (!res.ok) throw new Error(String(res.status));
     const r = (await res.json()) as { added: number; duplicates: number; invalid: number; overLimit?: number };
@@ -121,8 +121,8 @@ export default function ManageEvent({ manageToken, slug, couple, initialTexts, i
 
   const exportCsv = () => {
     const csv = toCsv([
-      ["اللقب", "الاسم", "رقم الموبايل", "اللينك", "الحالة"],
-      ...data.guests.map((g) => [g.title, g.name, g.phone, linkFor(g), statusOf(g).label]),
+      ["اللقب", "الاسم", "رقم الموبايل", "رسالة خاصة", "اللينك", "الحالة"],
+      ...data.guests.map((g) => [g.title, g.name, g.phone, g.message, linkFor(g), statusOf(g).label]),
     ]);
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
     const a = document.createElement("a");
@@ -207,6 +207,14 @@ export default function ManageEvent({ manageToken, slug, couple, initialTexts, i
                     <div className={styles.guestMain}>
                       <strong>{displayName(g)}</strong>
                       {g.phone && <span dir="ltr" className={styles.phone}>{g.phone}</span>}
+                      <GuestMessage
+                        api={api}
+                        guest={g}
+                        onSaved={async (msg) => {
+                          setToast(msg ? "الرسالة اتحفظت" : "الرسالة اتشالت");
+                          await refresh();
+                        }}
+                      />
                     </div>
                     <span className={`${styles.badge} ${st.cls}`}>{st.label}</span>
                     <div className={styles.guestActions}>
@@ -233,8 +241,8 @@ export default function ManageEvent({ manageToken, slug, couple, initialTexts, i
         <section className={styles.panel}>
           <h2>دعوة باسم كل معزوم</h2>
           <p className={styles.hint}>
-            باقتك فيها لينك عام واحد لكل الناس. لو عايز كل معزوم يفتح دعوة مكتوب فيها اسمه، وتعرف مين فتح ومين أكد، ضيف
-            إضافة &quot;دعوة باسم كل معزوم&quot; من الطلب فوق قبل الدفع، أو كلمنا.
+            باقتك فيها لينك عام واحد لكل الناس. الدعوة باسم كل معزوم (ورسالة خاصة لأي حد) موجودة في باقة &quot;على
+            ذوقك&quot; والباقة الخاصة. كلمنا لو حابب تغيّر.
           </p>
         </section>
       )}
@@ -343,14 +351,17 @@ function AddGuestForm({ onAdd, existingKeys }: { onAdd: (g: ParsedGuest) => Prom
   const [title, setTitle] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [message, setMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    const g = validateGuest({ title, name, phone });
+    const g = validateGuest({ title, name, phone, message });
     if (g.error) {
-      setError(g.error === "phone_invalid" ? "الرقم مش صحيح" : "اكتب الاسم");
+      setError(
+        g.error === "phone_invalid" ? "الرقم مش صحيح" : g.error === "message_too_long" ? "الرسالة طويلة (300 حرف بحد أقصى)" : "اكتب الاسم",
+      );
       return;
     }
     if (existingKeys.has(guestKey(g))) {
@@ -363,6 +374,7 @@ function AddGuestForm({ onAdd, existingKeys }: { onAdd: (g: ParsedGuest) => Prom
       await onAdd(g);
       setName("");
       setPhone("");
+      setMessage("");
     } catch {
       setError("حصلت مشكلة، جرب تاني");
     } finally {
@@ -386,7 +398,87 @@ function AddGuestForm({ onAdd, existingKeys }: { onAdd: (g: ParsedGuest) => Prom
           إضافة
         </button>
       </div>
+      <textarea
+        className={styles.input}
+        rows={2}
+        maxLength={MAX_GUEST_MESSAGE}
+        placeholder="رسالة خاصة ليه (اختياري): هتظهر في دعوته هو بس"
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+      />
       {error && <p className={styles.error}>{error}</p>}
     </form>
+  );
+}
+
+/** A guest's personal message: shown under their name, editable in place. */
+function GuestMessage({ api, guest, onSaved }: { api: string; guest: GuestWithStatus; onSaved: (msg: string | null) => Promise<void> }) {
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(guest.message ?? "");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  async function save(value: string) {
+    setBusy(true);
+    setError("");
+    try {
+      const res = await fetch(`${api}/guests`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: guest.id, message: value }),
+      });
+      if (!res.ok) throw new Error();
+      setEditing(false);
+      await onSaved(value.trim() || null);
+    } catch {
+      setError("ماتحفظتش، جرب تاني");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!editing) {
+    return (
+      <span className={styles.guestMessage}>
+        {guest.message && <em>✉ {guest.message}</em>}
+        <button
+          type="button"
+          className={styles.linkBtn}
+          onClick={() => {
+            setText(guest.message ?? "");
+            setEditing(true);
+          }}
+        >
+          {guest.message ? "تعديل الرسالة" : "+ رسالة خاصة"}
+        </button>
+      </span>
+    );
+  }
+  return (
+    <span className={styles.guestMessage}>
+      <textarea
+        className={styles.input}
+        rows={2}
+        maxLength={MAX_GUEST_MESSAGE}
+        value={text}
+        autoFocus
+        placeholder="هتظهر في دعوته هو بس"
+        onChange={(e) => setText(e.target.value)}
+      />
+      <span className={styles.inlineActions}>
+        <button type="button" className={styles.primary} disabled={busy} onClick={() => save(text)}>
+          حفظ
+        </button>
+        {guest.message && (
+          <button type="button" className={styles.secondary} disabled={busy} onClick={() => save("")}>
+            شيل الرسالة
+          </button>
+        )}
+        <button type="button" className={styles.linkBtn} onClick={() => setEditing(false)}>
+          إلغاء
+        </button>
+      </span>
+      {error && <span className={styles.error}>{error}</span>}
+    </span>
   );
 }

@@ -29,6 +29,8 @@ export interface InvitationProps {
   initialRsvp: RsvpStatus | null;
   /** Package 2+ only. */
   showWishes?: boolean;
+  /** A personal note written for this guest only (packages 3-4). */
+  personalMessage?: string;
   /** Draft (not paid yet): ribbon on top, replies off. */
   isPreview?: boolean;
 }
@@ -160,6 +162,7 @@ export default function Invitation(props: InvitationProps) {
           <article className={styles.letter}>
             <header className={styles.letterHead}>
               <p className={props.isNamed ? styles.greetingNamed : styles.greeting}>{props.greeting}</p>
+              {props.personalMessage && <p className={styles.personalMessage}>{props.personalMessage}</p>}
               <div className={styles.divider} />
               {couple}
               <div className={styles.divider} />

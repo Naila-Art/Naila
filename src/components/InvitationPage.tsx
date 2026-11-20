@@ -2,19 +2,33 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import Invitation from "./Invitation";
-import { getEventBySlug, getGuestByToken, getRsvpForGuest, getTemplate } from "@/lib/store";
+import { getEventBySlug, getGuestByToken, getRsvpForGuest, getTemplate, listTemplates } from "@/lib/store";
 import { eventContext } from "@/lib/event-context";
 import ClosedInvitation from "./ClosedInvitation";
 import { displayName, fillPersonalText } from "@/lib/text";
 import { t } from "@/lib/i18n";
-import type { EventData } from "@/lib/types";
+import type { Category, EventData, Template } from "@/lib/types";
+import { cairoLocalToIso } from "@/lib/time";
 
 const TIME_ZONE = "Africa/Cairo";
 
+/** Samples always show an event about six weeks ahead, at 7 pm Cairo time, so the countdown is live. */
+function sampleDate(): string {
+  const d = new Date(Date.now() + 45 * 24 * 60 * 60 * 1000);
+  return cairoLocalToIso(`${d.toISOString().slice(0, 10)}T19:00`)!;
+}
+
+/** Samples use the newest uploaded design of their category (any uploaded design, else the built-in one). */
+async function sampleTemplate(category: Category | undefined): Promise<Template> {
+  const uploaded = (await listTemplates()).filter((t) => t.createdAt);
+  return uploaded.find((t) => t.category === category) ?? uploaded[0] ?? (await getTemplate("ivory-seal"));
+}
+
 // cache(): generateMetadata and the page share one lookup per request.
 const load = cache(async (slug: string, token?: string) => {
-  const event = await getEventBySlug(slug);
-  if (!event) notFound();
+  const found = await getEventBySlug(slug);
+  if (!found) notFound();
+  const event = found.samplePackage ? { ...found, date: sampleDate() } : found;
   const guest = token ? await getGuestByToken(event.id, token) : null;
   // A wrong token is a 404 rather than a silent fallback, so typos in shared links get noticed.
   if (token && !guest) notFound();
@@ -64,7 +78,7 @@ export async function invitationMetadata(slug: string, token?: string): Promise<
 export default async function InvitationPage({ slug, token }: { slug: string; token?: string }) {
   const { event, guest } = await load(slug, token);
   if (event.status === "cancelled") return <ClosedInvitation lang={event.lang} />;
-  const template = await getTemplate(event.templateId);
+  const template = event.samplePackage ? await sampleTemplate(event.category) : await getTemplate(event.templateId);
   const ctx = await eventContext(event);
   const rsvp = guest ? await getRsvpForGuest(event.id, guest.id) : null;
   const { date, time } = formatDate(event);
@@ -88,6 +102,7 @@ export default async function InvitationPage({ slug, token }: { slug: string; to
       mapsUrl={ctx.features.maps ? event.mapsUrl : undefined}
       musicUrl={ctx.musicUrl}
       showWishes={ctx.features.wishes}
+      personalMessage={guest && ctx.features.namesLimit > 0 ? guest.message : undefined}
       isPreview={ctx.isDraft}
       calendarUrl={calendarUrl(event)}
       initialRsvp={rsvp?.status ?? null}

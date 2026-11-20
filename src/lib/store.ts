@@ -4,6 +4,7 @@ import path from "path";
 import { randomBytes, randomUUID } from "crypto";
 import { builtInTemplates } from "./templates";
 import { withDefaults, type Pricing } from "./pricing";
+import { SAMPLES, isSampleSlug } from "./samples";
 import type {
   ChangeRequest,
   EventData,
@@ -128,7 +129,39 @@ function mutate<T>(fn: (db: Db) => T): Promise<T> {
 
 export async function getEventBySlug(slug: string): Promise<EventData | null> {
   const db = await read();
-  return db.events.find((e) => e.slug === slug) ?? null;
+  const found = db.events.find((e) => e.slug === slug);
+  if (found || !isSampleSlug(slug)) return found ?? null;
+  // Sample invitations are created the first time someone opens one.
+  await ensureSamples();
+  return (await read()).events.find((e) => e.slug === slug) ?? null;
+}
+
+/** Creates any missing sample invitation (one per package) with its named guest. */
+function ensureSamples(): Promise<void> {
+  return mutate((db) => {
+    for (const s of SAMPLES) {
+      if (db.events.some((e) => e.slug === s.slug)) continue;
+      const eventId = `evt_${s.slug.replace("-", "_")}`;
+      db.events.push({
+        ...s.event,
+        id: eventId,
+        slug: s.slug,
+        manageToken: randomToken(20),
+        templateId: "auto",
+        category: s.category,
+        lang: "ar",
+        // Replaced at render time with a date that's always ahead.
+        date: new Date().toISOString(),
+        status: "active",
+        samplePackage: s.packageId,
+        createdAt: new Date().toISOString(),
+      });
+      if (s.guest && !db.guests.some((g) => g.token === s.guest!.token)) {
+        const { token, ...guest } = s.guest;
+        db.guests.push({ id: randomUUID(), eventId, token, ...guest });
+      }
+    }
+  });
 }
 
 export async function getGuestByToken(eventId: string, token: string): Promise<Guest | null> {
@@ -211,10 +244,20 @@ export function addGuests(eventId: string, rows: GuestInput[]): Promise<Guest[]>
     const created = rows.map((row): Guest => {
       const token = newGuestToken(taken);
       taken.add(token);
-      return { id: randomUUID(), eventId, token, title: row.title, name: row.name, phone: row.phone };
+      return { id: randomUUID(), eventId, token, title: row.title, name: row.name, phone: row.phone, message: row.message };
     });
     db.guests.push(...created);
     return created;
+  });
+}
+
+/** Sets or clears a guest's personal message. */
+export function updateGuestMessage(eventId: string, guestId: string, message: string | undefined): Promise<boolean> {
+  return mutate((db) => {
+    const guest = db.guests.find((g) => g.eventId === eventId && g.id === guestId);
+    if (!guest) return false;
+    guest.message = message;
+    return true;
   });
 }
 
@@ -325,6 +368,35 @@ export function createCustomRequest(order: Omit<Order, "id" | "kind" | "payment"
     const o: Order = { ...order, id: newId("ord"), kind: "custom", payment: "unpaid", stage: "new", createdAt: new Date().toISOString() };
     (db.orders ??= []).push(o);
     return o;
+  });
+}
+
+/**
+ * Packages 3-4: once we've talked to the client, we create their invitation page from the dashboard.
+ * The client then fills in the details and their guests (names + personal messages) on /c/{manageToken}.
+ */
+export function createEventForOrder(
+  orderId: string,
+  event: Omit<EventData, "id" | "slug" | "manageToken" | "orderId" | "status" | "createdAt">,
+): Promise<EventData | null> {
+  return mutate((db) => {
+    const order = db.orders?.find((o) => o.id === orderId);
+    if (!order || order.eventId) return null;
+    const slugs = new Set(db.events.map((e) => e.slug));
+    let slug = randomToken(8);
+    while (slugs.has(slug)) slug = randomToken(8);
+    const e: EventData = {
+      ...event,
+      id: newId("evt"),
+      slug,
+      manageToken: randomToken(20),
+      orderId,
+      status: order.payment === "paid" ? "active" : "draft",
+      createdAt: new Date().toISOString(),
+    };
+    db.events.push(e);
+    order.eventId = e.id;
+    return e;
   });
 }
 

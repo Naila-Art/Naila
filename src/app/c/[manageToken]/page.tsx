@@ -64,7 +64,6 @@ export default async function Page({ params, searchParams }: Props) {
           lang: event.lang,
           templateId: event.templateId,
           musicTrackId: event.musicTrackId ?? "",
-          musicUrl: event.musicUrl ?? "",
         }}
         features={{ music: ctx.features.music, maps: ctx.features.maps }}
         templates={templates.map(({ id, name }) => ({ id, name }))}

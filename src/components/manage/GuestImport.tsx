@@ -9,6 +9,7 @@ const ERROR_LABEL: Record<NonNullable<ParsedGuest["error"]>, string> = {
   name_too_long: "الاسم طويل",
   title_too_long: "اللقب طويل",
   phone_invalid: "الرقم مش صحيح",
+  message_too_long: "الرسالة طويلة (300 حرف بحد أقصى)",
 };
 
 interface Props {
@@ -26,10 +27,10 @@ export default function GuestImport({ existingKeys, onSave }: Props) {
 
   const downloadTemplate = () => {
     const csv = toCsv([
-      ["اللقب", "الاسم", "رقم الموبايل"],
-      ["أستاذ", "محمود علي", "01001234567"],
-      ["دكتورة", "منى حسن", "01112345678"],
-      ["", "كريم", ""],
+      ["اللقب", "الاسم", "رقم الموبايل", "رسالة خاصة"],
+      ["أستاذ", "محمود علي", "01001234567", "وجودك معانا هيفرّحنا جداً"],
+      ["دكتورة", "منى حسن", "01112345678", ""],
+      ["", "كريم", "", ""],
     ]);
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
     const a = document.createElement("a");
@@ -94,7 +95,7 @@ export default function GuestImport({ existingKeys, onSave }: Props) {
           تحميل نموذج
         </button>
       </div>
-      <p className={styles.hint}>الأعمدة: اللقب (اختياري) · الاسم · رقم الموبايل (اختياري). أول صف ممكن يكون عناوين.</p>
+      <p className={styles.hint}>الأعمدة: اللقب (اختياري) · الاسم · رقم الموبايل (اختياري) · رسالة خاصة (اختياري). أول صف ممكن يكون عناوين.</p>
 
       <label className={styles.dropzone}>
         <input
@@ -124,6 +125,7 @@ export default function GuestImport({ existingKeys, onSave }: Props) {
                   <th>اللقب</th>
                   <th>الاسم</th>
                   <th>الموبايل</th>
+                  <th>رسالة</th>
                   <th>الحالة</th>
                 </tr>
               </thead>
@@ -134,6 +136,7 @@ export default function GuestImport({ existingKeys, onSave }: Props) {
                     <td>{r.title}</td>
                     <td>{r.name}</td>
                     <td dir="ltr">{r.phone}</td>
+                    <td>{r.message ? "✉" : ""}</td>
                     <td>{r.error ? ERROR_LABEL[r.error] : r.duplicate ? "مكرر" : "✓"}</td>
                   </tr>
                 ))}

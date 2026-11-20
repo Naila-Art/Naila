@@ -6,9 +6,9 @@ import styles from "./manage.module.css";
 import store from "../store/store.module.css";
 import OrderOptions from "../store/OrderOptions";
 import { DETAIL_ERRORS } from "../store/Builder";
-import { ADDON_LABELS, anyAddonEnabled, formatEgp, getPackage, type Pricing } from "@/lib/pricing";
+import { formatEgp, getPackage, type Pricing } from "@/lib/pricing";
 import { UPLOAD_ERRORS, UploadError, contentTypeOf, postJson, putFile } from "@/lib/upload-client";
-import type { Addons, ChangeRequest, Lang, MusicTrack, Order, PackageId, Template } from "@/lib/types";
+import type { ChangeRequest, Lang, MusicTrack, Order, PackageId, Template } from "@/lib/types";
 
 export interface EventDetails {
   partnerA: string;
@@ -21,7 +21,6 @@ export interface EventDetails {
   lang: Lang;
   templateId: string;
   musicTrackId: string;
-  musicUrl: string;
 }
 
 interface Props {
@@ -52,16 +51,6 @@ const ERRORS: Record<string, string> = {
 };
 const errorText = (err: unknown) => ERRORS[err instanceof UploadError ? err.code : "failed"] ?? ERRORS.failed;
 
-function addonSummary(order: Order, pricing: Pricing): string[] {
-  const out: string[] = [];
-  if (order.addons.arabic) out.push(ADDON_LABELS.arabic);
-  if (order.addons.maps) out.push(ADDON_LABELS.maps);
-  if (order.addons.customMusic) out.push(ADDON_LABELS.customMusic);
-  if (order.packageId === 4) out.push(`${ADDON_LABELS.names} (مشمولة)`);
-  else if (order.addons.names) out.push(`${ADDON_LABELS.names}: ${pricing.namesTiers[order.addons.names].label}`);
-  return out;
-}
-
 /** Order status, payment, details, music and change requests on the client's page. */
 export default function OrderPanels(props: Props) {
   const { order } = props;
@@ -78,9 +67,8 @@ export default function OrderPanels(props: Props) {
         </section>
       )}
       <PaymentPanel {...props} api={api} />
-      {order.payment === "unpaid" && <OrderEditor api={api} order={order} lang={props.details.lang} pricing={props.pricing} />}
+      {order.payment === "unpaid" && order.kind === "self" && <OrderEditor api={api} order={order} pricing={props.pricing} />}
       <DetailsEditor {...props} api={api} />
-      {order.addons.customMusic && props.features.music && <CustomMusic api={api} current={props.details.musicUrl} />}
       <ChangeRequests api={api} initial={props.changeRequests} whatsappUrl={props.whatsappUrl} />
     </>
   );
@@ -145,9 +133,6 @@ function PaymentPanel(props: Props & { api: string }) {
       <p>
         باقة <strong>{pkg.name}</strong> · {formatEgp(order.total)}
       </p>
-      {addonSummary(order, props.pricing).length > 0 && (
-        <p className={styles.hint}>{addonSummary(order, props.pricing).join(" · ")}</p>
-      )}
 
       {order.payment === "paid" && <p className={styles.ok}>تم الدفع. ابعت اللينكات للمعازيم من تحت.</p>}
 
@@ -229,19 +214,17 @@ function PaymentPanel(props: Props & { api: string }) {
   );
 }
 
-function OrderEditor({ api, order, lang, pricing }: { api: string; order: Order; lang: Lang; pricing: Pricing }) {
+function OrderEditor({ api, order, pricing }: { api: string; order: Order; pricing: Pricing }) {
   const router = useRouter();
   const [packageId, setPackageId] = useState<PackageId>(order.packageId);
-  const [addons, setAddons] = useState<Addons>(order.addons);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const changed = packageId !== order.packageId || JSON.stringify({ ...addons, arabic: lang === "ar" }) !== JSON.stringify(order.addons);
 
   async function save() {
     setBusy(true);
     setError("");
     try {
-      await postJson(`${api}/order`, { packageId, addons }, "PUT");
+      await postJson(`${api}/order`, { packageId }, "PUT");
       router.refresh();
     } catch (err) {
       setError(errorText(err));
@@ -252,21 +235,12 @@ function OrderEditor({ api, order, lang, pricing }: { api: string; order: Order;
 
   return (
     <details className={styles.panel}>
-      <summary className={styles.summary}>{anyAddonEnabled(pricing) ? "تغيير الباقة أو الإضافات" : "تغيير الباقة"}</summary>
+      <summary className={styles.summary}>تغيير الباقة</summary>
       <div className={store.page} style={{ minHeight: 0, background: "transparent" }}>
-        <OrderOptions
-          pricing={pricing}
-          packageId={packageId}
-          addons={addons}
-          lang={lang}
-          onChange={(n) => {
-            setPackageId(n.packageId);
-            setAddons(n.addons);
-          }}
-        />
+        <OrderOptions pricing={pricing} packageId={packageId} onChange={setPackageId} />
       </div>
       {error && <p className={styles.error}>{error}</p>}
-      <button type="button" className={styles.primary} disabled={!changed || busy} onClick={save}>
+      <button type="button" className={styles.primary} disabled={packageId === order.packageId || busy} onClick={save}>
         حفظ التغيير
       </button>
     </details>
@@ -349,7 +323,7 @@ function DetailsEditor(props: Props & { api: string }) {
             </select>
           </label>
         </div>
-        {props.features.music && props.music.length > 0 && !d.musicUrl && (
+        {props.features.music && props.music.length > 0 && (
           <label className={styles.field}>
             <span>المزيكا</span>
             <select className={styles.input} value={d.musicTrackId} onChange={(e) => set({ musicTrackId: e.target.value })}>
@@ -368,42 +342,6 @@ function DetailsEditor(props: Props & { api: string }) {
         </button>
       </form>
     </details>
-  );
-}
-
-function CustomMusic({ api, current }: { api: string; current: string }) {
-  const router = useRouter();
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-
-  async function upload(file: File | undefined) {
-    if (!file) return;
-    setBusy(true);
-    setError("");
-    try {
-      const contentType = contentTypeOf(file);
-      const slot = await postJson<{ objectKey: string; uploadUrl: string }>(`${api}/uploads`, { kind: "music", contentType, size: file.size });
-      await putFile(slot.uploadUrl, file, contentType);
-      await postJson(`${api}/music`, { objectKey: slot.objectKey }, "PUT");
-      router.refresh();
-    } catch (err) {
-      setError(errorText(err));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <section className={styles.panel}>
-      <h2>أغنيتك</h2>
-      {current ? <audio controls src={current} preload="none" style={{ width: "100%" }} /> : <p className={styles.hint}>لسه مارفعتش أغنية.</p>}
-      <label className={styles.field}>
-        <span>{current ? "غيّر الأغنية" : "ارفع الأغنية"} (MP3 أو M4A، لحد 12 ميجا)</span>
-        <input type="file" accept="audio/mpeg,audio/mp4,.mp3,.m4a" disabled={busy} onChange={(e) => upload(e.target.files?.[0])} />
-      </label>
-      {busy && <p className={styles.hint}>بترفع...</p>}
-      {error && <p className={styles.error}>{error}</p>}
-    </section>
   );
 }
 

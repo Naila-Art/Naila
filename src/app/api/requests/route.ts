@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { bad, cleanText, readJson } from "@/lib/api";
 import { normalizePhone } from "@/lib/guests";
-import { NO_ADDONS, getPackage, isSelfServe, namesLimitOf } from "@/lib/pricing";
+import { getPackage, isSelfServe } from "@/lib/pricing";
 import { createCustomRequest, getPricing } from "@/lib/store";
 import { CATEGORY_LABELS, type Category, type PackageId } from "@/lib/types";
 
@@ -23,14 +23,11 @@ export async function POST(req: Request) {
   const notes = typeof body.notes === "string" ? body.notes.trim().slice(0, 2000) : "";
   const date = typeof body.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.date) ? body.date : undefined;
 
-  const addons = { ...NO_ADDONS, names: packageId === 4 ? ("unlimited" as const) : null };
   await createCustomRequest({
     clientName,
     clientPhone,
     packageId,
-    addons,
     total: pkg.price,
-    namesLimit: namesLimitOf(pricing, packageId, addons),
     brief: { category: category as Category, date, notes },
   });
   return NextResponse.json({ ok: true }, { status: 201 });

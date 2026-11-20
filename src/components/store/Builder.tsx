@@ -4,18 +4,9 @@ import { useState, type FormEvent } from "react";
 import styles from "./store.module.css";
 import OrderOptions from "./OrderOptions";
 import TemplateGallery from "./TemplateGallery";
-import {
-  NO_ADDONS,
-  anyAddonEnabled,
-  formatEgp,
-  isSelfServe,
-  mapsIncluded,
-  priceOf,
-  sanitizeAddons,
-  type Pricing,
-} from "@/lib/pricing";
+import { formatEgp, isSelfServe, priceOf, type Pricing } from "@/lib/pricing";
 import { UploadError, postJson } from "@/lib/upload-client";
-import type { Addons, Lang, MusicTrack, PackageId, Template } from "@/lib/types";
+import type { Lang, MusicTrack, PackageId, Template } from "@/lib/types";
 
 interface Props {
   pricing: Pricing;
@@ -36,12 +27,11 @@ export const DETAIL_ERRORS: Record<string, string> = {
   invalid_template: "اختار تصميم.",
   invalid_package: "اختار باقة.",
   invalid_music: "المزيكا دي مش موجودة، اختار غيرها.",
-  lang_locked: "مينفعش تغير اللغة بعد الدفع.",
   failed: "حصلت مشكلة. جرب تاني.",
 };
 
 /**
- * The storefront builder: template → details → package & add-ons → contact.
+ * The storefront builder: template → details → package → contact.
  * Creates a draft the client previews before paying (names can be added right after, on their page).
  */
 export default function Builder({ pricing, templates, music, initialTemplateId, initialPackageId }: Props) {
@@ -59,16 +49,13 @@ export default function Builder({ pricing, templates, music, initialTemplateId, 
   const [packageId, setPackageId] = useState<PackageId>(
     initialPackageId && onSale.includes(initialPackageId) ? initialPackageId : (onSale[0] ?? 1),
   );
-  const [addons, setAddons] = useState<Addons>(NO_ADDONS);
   const [musicTrackId, setMusicTrackId] = useState("");
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const total = priceOf(pricing, packageId, sanitizeAddons(pricing, addons, lang));
-  // While the maps add-on is off, every invitation gets the location button.
-  const freeMaps = !pricing.addonsEnabled.maps;
+  const total = priceOf(pricing, packageId);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -83,9 +70,8 @@ export default function Builder({ pricing, templates, music, initialTemplateId, 
         date,
         venueName,
         venueAddress,
-        mapsUrl: mapsIncluded(pricing, packageId, addons) ? mapsUrl : "",
+        mapsUrl,
         packageId,
-        addons,
         musicTrackId: packageId >= 2 ? musicTrackId : "",
         clientName,
         clientPhone,
@@ -149,41 +135,32 @@ export default function Builder({ pricing, templates, music, initialTemplateId, 
             <input value={venueAddress} onChange={(e) => setVenueAddress(e.target.value)} maxLength={120} />
           </label>
         </div>
-        {freeMaps && (
-          <label className={styles.field}>
-            <span>لينك المكان من جوجل ماب (اختياري)</span>
-            <input
-              type="url"
-              dir="ltr"
-              inputMode="url"
-              placeholder="https://maps.app.goo.gl/..."
-              value={mapsUrl}
-              onChange={(e) => setMapsUrl(e.target.value)}
-            />
-          </label>
-        )}
+        <label className={styles.field}>
+          <span>لينك المكان من جوجل ماب (اختياري)</span>
+          <input
+            type="url"
+            dir="ltr"
+            inputMode="url"
+            placeholder="https://maps.app.goo.gl/..."
+            value={mapsUrl}
+            onChange={(e) => setMapsUrl(e.target.value)}
+          />
+        </label>
         <p className={styles.hint}>صيغة الدعوة وأسامي المعازيم بتكتبهم من صفحتك بعد الخطوة دي.</p>
       </section>
 
       <section className={styles.card}>
         <h2>
           <span className={styles.stepNum}>3</span>
-          {anyAddonEnabled(pricing) ? "الباقة والإضافات" : "الباقة"}
+          الباقة
         </h2>
         <OrderOptions
           pricing={pricing}
           packageId={packageId}
-          addons={addons}
-          lang={lang}
-          onChange={(n) => {
-            setPackageId(n.packageId);
-            setAddons(n.addons);
-          }}
+          onChange={setPackageId}
           music={music}
           musicTrackId={musicTrackId}
           onMusicChange={setMusicTrackId}
-          mapsUrl={mapsUrl}
-          onMapsUrlChange={setMapsUrl}
         />
       </section>
 
