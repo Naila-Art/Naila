@@ -279,6 +279,7 @@
 }
 
 .templateThumb {
+  position: relative;
   aspect-ratio: 9 / 16;
   display: grid;
   place-items: center;
@@ -1135,4 +1136,28 @@
 .hint a {
   display: inline-flex;
   align-items: center;
+}
+
+/* Template badge set from the dashboard ("مميز" / "الأكثر طلباً" / "جديد"). */
+.templateBadge {
+  position: absolute;
+  top: 10px;
+  inset-inline-start: 10px;
+  z-index: 1;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.4;
+  background: #8a5a2b;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.templateBadge[data-badge="popular"] {
+  background: #a1251c;
+}
+
+.templateBadge[data-badge="new"] {
+  background: #1f7a45;
 }

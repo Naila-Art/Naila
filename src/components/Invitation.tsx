@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-img-element -- decorative template artwork straight from storage, no optimisation needed */
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import styles from "./invitation.module.css";
@@ -103,6 +104,15 @@ export default function Invitation(props: InvitationProps) {
     "--seal": template.theme.seal,
   } as CSSProperties;
 
+  const art = template.art ?? {};
+  // Decorative only: empty alt, and they never catch taps.
+  const corners = art.corner ? (
+    <>
+      <img className={`${styles.artCorner} ${styles.artCornerStart}`} src={art.corner} alt="" aria-hidden />
+      <img className={`${styles.artCorner} ${styles.artCornerEnd}`} src={art.corner} alt="" aria-hidden />
+    </>
+  ) : null;
+
   const couple = (
     <h1 className={styles.couple}>
       <span>{props.partnerA}</span>
@@ -166,6 +176,7 @@ export default function Invitation(props: InvitationProps) {
         {stage === "open" && (
           <article className={styles.letter}>
             <header className={styles.letterHead}>
+              {art.top && <img className={styles.artTop} src={art.top} alt="" aria-hidden />}
               <p className={props.isNamed ? styles.greetingNamed : styles.greeting}>{props.greeting}</p>
               {props.personalMessage && <p className={styles.personalMessage}>{props.personalMessage}</p>}
               <div className={styles.divider} />
@@ -179,7 +190,8 @@ export default function Invitation(props: InvitationProps) {
               <p className={styles.where}>{props.venueName}</p>
             </header>
 
-            <section className={`${styles.card} ${styles.reveal}`}>
+            <section className={`${styles.card} ${styles.reveal}`} data-art={art.corner ? "corner" : undefined}>
+              {corners}
               <h2 className={styles.sectionTitle}>{s.countdown}</h2>
               <Countdown dateIso={props.dateIso} strings={s} />
               <a className={styles.linkButton} href={props.calendarUrl} target="_blank" rel="noopener noreferrer">
@@ -188,7 +200,8 @@ export default function Invitation(props: InvitationProps) {
             </section>
 
             {props.showWishes !== false && (
-              <section className={`${styles.card} ${styles.reveal}`}>
+              <section className={`${styles.card} ${styles.reveal}`} data-art={art.corner ? "corner" : undefined}>
+              {corners}
                 <h2 className={styles.sectionTitle}>{s.wishesTitle}</h2>
                 {props.isPreview ? (
                   <p className={styles.muted}>{s.previewNoReplies}</p>
@@ -199,7 +212,8 @@ export default function Invitation(props: InvitationProps) {
             )}
 
             {/* Location comes last, per the design rules. */}
-            <section className={`${styles.card} ${styles.reveal}`}>
+            <section className={`${styles.card} ${styles.reveal}`} data-art={art.corner ? "corner" : undefined}>
+              {corners}
               <h2 className={styles.sectionTitle}>{s.location}</h2>
               <p className={styles.where}>{props.venueName}</p>
               {props.venueAddress && <p className={styles.muted}>{props.venueAddress}</p>}
@@ -209,6 +223,7 @@ export default function Invitation(props: InvitationProps) {
                 </a>
               )}
             </section>
+            {art.bottom && <img className={styles.artBottom} src={art.bottom} alt="" aria-hidden />}
           </article>
         )}
       </div>

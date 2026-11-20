@@ -565,3 +565,48 @@
   background-repeat: repeat;
   background-size: 260px 180px;
 }
+
+/* ---------------- Optional template artwork (uploaded per template) ---------------- */
+
+.artTop {
+  display: block;
+  width: calc(100% + 16px);
+  max-height: 34svh;
+  object-fit: contain;
+  margin: -12px -8px 12px;
+  pointer-events: none;
+}
+
+.card[data-art="corner"] {
+  position: relative;
+  padding-inline: 40px;
+}
+
+.artCorner {
+  position: absolute;
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+/* Top corner on the reading side, then the same image turned round in the opposite bottom corner. */
+.artCornerStart {
+  top: 6px;
+  inset-inline-start: 0;
+}
+
+.artCornerEnd {
+  bottom: 6px;
+  inset-inline-end: 0;
+  transform: rotate(180deg);
+}
+
+.artBottom {
+  display: block;
+  width: calc(100% + 16px);
+  max-height: 30svh;
+  object-fit: contain;
+  margin: 12px -8px -60px;
+  pointer-events: none;
+}

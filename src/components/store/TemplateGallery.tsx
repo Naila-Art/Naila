@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import styles from "./store.module.css";
-import { CATEGORY_LABELS, type Category, type Template } from "@/lib/types";
+import { BADGE_LABELS, CATEGORY_LABELS, type Category, type Template, type TemplateBadge } from "@/lib/types";
 import Icon from "../Icon";
 
 interface Props {
@@ -12,9 +12,17 @@ interface Props {
   onSelect?: (id: string) => void;
 }
 
-export function TemplateThumb({ template }: { template: Template }) {
+const BADGE_ORDER = Object.keys(BADGE_LABELS) as TemplateBadge[];
+const badgeRank = (t: Template) => (t.badge ? BADGE_ORDER.indexOf(t.badge) : BADGE_ORDER.length);
+
+export function TemplateThumb({ template, showBadge = true }: { template: Template; showBadge?: boolean }) {
   return (
     <div className={styles.templateThumb} style={{ background: template.theme.background }}>
+      {showBadge && template.badge && (
+        <span className={styles.templateBadge} data-badge={template.badge}>
+          {BADGE_LABELS[template.badge]}
+        </span>
+      )}
       {template.posterUrl ? (
         // eslint-disable-next-line @next/next/no-img-element -- R2 URLs, no Next image optimisation needed
         <img src={template.posterUrl} alt="" loading="lazy" />
@@ -29,7 +37,8 @@ export function TemplateThumb({ template }: { template: Template }) {
 export default function TemplateGallery({ templates, selectedId, onSelect }: Props) {
   const categories = (Object.keys(CATEGORY_LABELS) as Category[]).filter((c) => templates.some((t) => t.category === c));
   const [filter, setFilter] = useState<Category | "all">("all");
-  const shown = filter === "all" ? templates : templates.filter((t) => t.category === filter);
+  // Badged ones first (مميز, then الأكثر طلباً, then جديد); otherwise the order stays as it was. Array sort is stable.
+  const shown = (filter === "all" ? templates : templates.filter((t) => t.category === filter)).slice().sort((x, y) => badgeRank(x) - badgeRank(y));
 
   return (
     <>

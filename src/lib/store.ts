@@ -18,6 +18,7 @@ import type {
   PaymentMethodConfig,
   Rsvp,
   RsvpStatus,
+  ArtSlot,
   Template,
   Wish,
 } from "./types";
@@ -330,6 +331,37 @@ export function addTemplate(template: Template): Promise<Template> {
 }
 
 /** Removes an uploaded template. Returns how many events were using it (they fall back to the built-in one). */
+/** Renames / recolours an uploaded template. Returns null if it doesn't exist. */
+export function updateTemplateDetails(
+  id: string,
+  details: Pick<Template, "name" | "category" | "theme" | "badge">,
+): Promise<Template | null> {
+  return mutate((db) => {
+    const tpl = (db.templates ?? []).find((t) => t.id === id);
+    if (!tpl) return null;
+    tpl.name = details.name;
+    tpl.category = details.category;
+    tpl.theme = details.theme;
+    if (details.badge) tpl.badge = details.badge;
+    else delete tpl.badge;
+    return { ...tpl };
+  });
+}
+
+/** Sets (or clears, with undefined) one artwork slot of an uploaded template. Returns the old URL. */
+export function setTemplateArt(id: string, slot: ArtSlot, url: string | undefined): Promise<{ found: boolean; oldUrl?: string }> {
+  return mutate((db) => {
+    const tpl = (db.templates ?? []).find((t) => t.id === id);
+    if (!tpl) return { found: false };
+    const oldUrl = tpl.art?.[slot];
+    const art = { ...(tpl.art ?? {}) };
+    if (url) art[slot] = url;
+    else delete art[slot];
+    tpl.art = Object.keys(art).length ? art : undefined;
+    return { found: true, oldUrl };
+  });
+}
+
 export function deleteTemplate(id: string): Promise<{ deleted: boolean; eventsUsing: number }> {
   return mutate((db) => {
     const before = db.templates?.length ?? 0;

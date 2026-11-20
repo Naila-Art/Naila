@@ -353,7 +353,7 @@ export default function Builder({ pricing, templates, music, initialTemplateId, 
           <div className={styles.review}>
             {template && (
               <div className={styles.reviewThumb}>
-                <TemplateThumb template={template} />
+                <TemplateThumb template={template} showBadge={false} />
               </div>
             )}
             <dl className={styles.reviewList}>

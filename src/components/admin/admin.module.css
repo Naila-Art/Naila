@@ -585,3 +585,122 @@
   color: var(--m-muted);
   font-size: 0.85rem;
 }
+
+/* ---------- Template artwork dialog ---------- */
+.artCount {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--m-accent, #8a5a2b);
+  color: #fff;
+  font-size: 0.75rem;
+}
+
+.artBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.artDialog {
+  width: min(560px, 100%);
+  max-height: calc(100svh - 32px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  border-radius: 16px;
+  background: var(--m-surface, #fff);
+}
+
+.artHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.artHead h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.artPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.artSlot {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px;
+  border: 1px solid var(--m-line);
+  border-radius: 12px;
+}
+
+.artThumb {
+  flex: none;
+  width: 88px;
+  height: 88px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--m-line);
+  border-radius: 10px;
+  color: #a2958a;
+  overflow: hidden;
+}
+
+.artThumb img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.artInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.artInfo label {
+  cursor: pointer;
+}
+
+.artSection {
+  margin: 8px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--m-line);
+  font-size: 1.05rem;
+}
+
+/* Template badge ("مميز" / "الأكثر طلباً" / "جديد"), same colours as on the site. */
+.badgeTag {
+  display: inline-block;
+  margin-inline-start: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  vertical-align: middle;
+  background: #8a5a2b;
+  color: #fff;
+}
+
+.badgeTag[data-badge="popular"] {
+  background: #a1251c;
+}
+
+.badgeTag[data-badge="new"] {
+  background: #1f7a45;
+}

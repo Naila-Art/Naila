@@ -16,13 +16,15 @@ import { deleteMediaDir, mediaPath, sniff } from "./media";
  * endpoint that writes to data/uploads, served by /media/[...path].
  */
 
-export type UploadKind = "video" | "poster" | "music" | "proof" | "reference";
+export type UploadKind = "video" | "poster" | "art" | "music" | "proof" | "reference";
 
 const IMAGE_TYPES = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
 
 export const UPLOAD_RULES: Record<UploadKind, { types: Record<string, string>; maxBytes: number }> = {
   video: { types: { "video/mp4": "mp4" }, maxBytes: 20 * 1024 * 1024 },
   poster: { types: IMAGE_TYPES, maxBytes: 3 * 1024 * 1024 },
+  /** Template page artwork (PNG/WebP with a transparent background works best). */
+  art: { types: IMAGE_TYPES, maxBytes: 3 * 1024 * 1024 },
   music: { types: { "audio/mpeg": "mp3", "audio/mp4": "m4a", "audio/x-m4a": "m4a" }, maxBytes: 12 * 1024 * 1024 },
   /** Instapay transfer screenshot. */
   proof: { types: IMAGE_TYPES, maxBytes: 6 * 1024 * 1024 },
@@ -87,6 +89,7 @@ export const TEMPLATE_ID = /^tpl_[0-9a-f]{10}$/;
 const OBJECT_KEYS: Record<UploadKind, RegExp> = {
   video: /^templates\/tpl_[0-9a-f]{10}\/opening\.mp4$/,
   poster: /^templates\/tpl_[0-9a-f]{10}\/poster\.(jpg|png|webp)$/,
+  art: /^templates\/tpl_[0-9a-f]{10}\/art-(top|corner|bottom)-[0-9a-f]{8}\.(jpg|png|webp)$/,
   music: /^(music\/trk_[0-9a-f]{10}|events\/evt_[0-9a-z_]{1,40}\/music)-[0-9a-f]{8}\.(mp3|m4a)$/,
   proof: /^payments\/ord_[0-9a-f]{10}\/proof-[0-9a-f]{8}\.(jpg|png|webp)$/,
   reference: /^orders\/ord_[0-9a-f]{10}\/ref-[0-9a-f]{8}\.(jpg|png|webp|mp4|mov)$/,
@@ -98,7 +101,7 @@ export function kindOfKey(key: string): UploadKind | null {
 
 export function isTemplateObjectKey(key: string): boolean {
   const kind = kindOfKey(key);
-  return kind === "video" || kind === "poster";
+  return kind === "video" || kind === "poster" || kind === "art";
 }
 
 /** `owner` is the folder: "templates/tpl_x", "music/trk_x", "events/evt_x" or "payments/ord_x". */
@@ -110,6 +113,8 @@ export function objectKeyFor(owner: string, kind: UploadKind, contentType: strin
       return `${owner}/opening.mp4`;
     case "poster":
       return `${owner}/poster.${ext}`;
+    case "art":
+      throw new Error("use artObjectKey for template artwork");
     case "music":
       return owner.startsWith("music/") ? `${owner}-${rand}.${ext}` : `${owner}/music-${rand}.${ext}`;
     case "proof":
@@ -117,6 +122,12 @@ export function objectKeyFor(owner: string, kind: UploadKind, contentType: strin
     case "reference":
       return `${owner}/ref-${rand}.${ext}`;
   }
+}
+
+/** Object key for one artwork slot of a template; a fresh name each time so browsers never show a stale copy. */
+export function artObjectKey(templateId: string, slot: string, contentType: string): string {
+  const ext = UPLOAD_RULES.art.types[contentType];
+  return `templates/${templateId}/art-${slot}-${randomBytes(4).toString("hex")}.${ext}`;
 }
 
 /** Turns a public URL we issued back into its object key (null if it isn't one of ours). */

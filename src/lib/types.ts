@@ -22,9 +22,26 @@ export interface Template {
     /** Wax-seal colour for the CSS fallback envelope. */
     seal: string;
   };
+  /** Optional label on the shop card ("مميز", "الأكثر طلباً", "جديد"); badged templates are listed first. */
+  badge?: TemplateBadge;
+  /** Optional artwork drawn in the video's style, placed on the page after the opening. */
+  art?: TemplateArt;
   /** Set for templates uploaded from the admin dashboard (not the built-in fallback). */
   createdAt?: string;
 }
+
+export type TemplateBadge = "featured" | "popular" | "new";
+/** In the order they're listed on the site. */
+export const BADGE_LABELS: Record<TemplateBadge, string> = {
+  featured: "مميز",
+  popular: "الأكثر طلباً",
+  new: "جديد",
+};
+
+/** Where each optional artwork image goes on the invitation page. */
+export type ArtSlot = "top" | "corner" | "bottom";
+export const ART_SLOTS: ArtSlot[] = ["top", "corner", "bottom"];
+export type TemplateArt = Partial<Record<ArtSlot, string>>;
 
 export const CATEGORY_LABELS: Record<Category, string> = {
   wedding: "فرح",
