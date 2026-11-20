@@ -18,6 +18,7 @@ import {
 } from "@/lib/guests";
 import { displayName, fillPersonalText } from "@/lib/text";
 import type { GuestWithStatus, Wish } from "@/lib/types";
+import Icon from "../Icon";
 
 export interface Dashboard {
   guests: GuestWithStatus[];
@@ -35,6 +36,8 @@ interface Props {
   namesLimit: number;
   /** Not paid yet: no shareable links (general, per guest, copy-all, export); previews only. */
   locked: boolean;
+  /** The client's order page (receipt, payment, change requests to us). */
+  orderUrl?: string;
   showWishes: boolean;
   /** Order, payment, details, music and change-request panels, rendered under the header. */
   children?: ReactNode;
@@ -76,6 +79,7 @@ export default function ManageEvent({
   namesLimit,
   showWishes,
   locked,
+  orderUrl,
   children,
 }: Props) {
   const [data, setData] = useState<Dashboard>(initial);
@@ -206,24 +210,26 @@ export default function ManageEvent({
             target="_blank"
             rel="noopener noreferrer"
           >
-            {locked ? "المعاينة ↗" : "الدعوة ↗"}
+            {locked ? "المعاينة" : "الدعوة"}
           </a>
-          <a href="#payment">{locked ? "الدفع" : "الطلب"}</a>
+          {orderUrl && <a href={orderUrl}>طلبي</a>}
           {namesLimit > 0 && <a href="#guests">الضيوف</a>}
           {showWishes && <a href="#wishes">التهاني</a>}
-          <a href="#texts">الصيغة</a>
+          {namesLimit > 0 && <a href="#texts">الصيغة</a>}
         </div>
       </nav>
 
       <div className={styles.layout}>
         <aside className={styles.sideCol}>
           {children}
-          <TextsEditor
-            api={api}
-            initial={initialTexts}
-            withNames={namesLimit > 0}
-            onSaved={() => setToast("اتحفظ")}
-          />
+          {namesLimit > 0 && (
+            <TextsEditor
+              api={api}
+              initial={initialTexts}
+              withNames
+              onSaved={() => setToast("اتحفظ")}
+            />
+          )}
         </aside>
 
         <div className={styles.mainCol}>
@@ -237,7 +243,7 @@ export default function ManageEvent({
             <h2>اللينك العام</h2>
             {locked ? (
               <p className={styles.locked}>
-                🔒 لينك الدعوة بيتفتح بعد الدفع. لحد كده تقدر تشوف المعاينة بس.
+                لينك الدعوة بيتفتح بعد الدفع. لحد كده تقدر تشوف المعاينة بس.
               </p>
             ) : (
               <>
@@ -294,7 +300,7 @@ export default function ManageEvent({
 
                 {locked && data.guests.length > 0 && (
                   <p className={styles.locked}>
-                    🔒 لينكات الضيوف ونسخها وتصديرها بيتفتحوا بعد الدفع. تقدر
+                    لينكات الضيوف ونسخها وتصديرها بيتفتحوا بعد الدفع. تقدر
                     تشوف معاينة أي ضيف.
                   </p>
                 )}
@@ -355,7 +361,7 @@ export default function ManageEvent({
                                   target="_blank"
                                   rel="noopener noreferrer"
                                 >
-                                  معاينة ↗
+                                  <Icon name="eye" size={16} /> معاينة
                                 </a>
                               ) : (
                                 <>
@@ -379,7 +385,7 @@ export default function ManageEvent({
                                     rel="noopener noreferrer"
                                     aria-label="فتح الدعوة"
                                   >
-                                    ↗
+                                    <Icon name="external" size={16} />
                                   </a>
                                 </>
                               )}
@@ -389,7 +395,7 @@ export default function ManageEvent({
                                 onClick={() => removeGuest(g)}
                                 aria-label="مسح"
                               >
-                                ✕
+                                <Icon name="x" />
                               </button>
                             </div>
                           </li>
@@ -403,16 +409,7 @@ export default function ManageEvent({
                 )}
               </section>
             </>
-          ) : (
-            <section className={styles.panel}>
-              <h2>دعوة باسم كل ضيف</h2>
-              <p className={styles.hint}>
-                باقتك فيها لينك عام واحد لكل الناس. الدعوة باسم كل ضيف (ورسالة
-                خاصة لأي حد) موجودة في باقة &quot;على ذوقك&quot; والباقة الخاصة.
-                كلمنا لو حابب تغيّر.
-              </p>
-            </section>
-          )}
+        ) : null}
 
           {showWishes && (
             <section className={styles.panel} id="wishes">
@@ -464,7 +461,7 @@ function TextsEditor({
   withNames: boolean;
   onSaved: () => void;
 }) {
-  const [generalText, setGeneralText] = useState(initial.generalText);
+  const generalText = initial.generalText;
   const [personalText, setPersonalText] = useState(initial.personalText);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -497,17 +494,8 @@ function TextsEditor({
     <form className={styles.panel} onSubmit={save} id="texts">
       <h2>صيغة الدعوة</h2>
       <label className={styles.field}>
-        <span>
-          {withNames
-            ? "الدعوة العامة (من غير اسم)"
-            : "الجملة اللي في أول الدعوة"}
-        </span>
-        <input
-          className={styles.input}
-          value={generalText}
-          maxLength={200}
-          onChange={(e) => setGeneralText(e.target.value)}
-        />
+        <span>الجملة اللي في أول الدعوة (بتتعدل من عندنا بس)</span>
+        <input className={styles.input} value={generalText} readOnly aria-readonly />
       </label>
       {withNames && (
         <>
@@ -693,7 +681,11 @@ function GuestMessage({
   if (!editing) {
     return (
       <span className={styles.guestMessage}>
-        {guest.message && <em>✉ {guest.message}</em>}
+        {guest.message && (
+          <em>
+            <Icon name="mail" size={14} /> {guest.message}
+          </em>
+        )}
         <button
           type="button"
           className={styles.linkBtn}

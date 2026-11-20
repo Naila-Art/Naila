@@ -5,9 +5,11 @@ import styles from "./store.module.css";
 import OrderOptions from "./OrderOptions";
 import TemplateGallery, { TemplateThumb } from "./TemplateGallery";
 import DateTimePicker from "../DateTimePicker";
+import WhatsApp from "../WhatsApp";
 import { formatEgp, getPackage, isSelfServe, priceOf, type Pricing } from "@/lib/pricing";
 import { UploadError, postJson } from "@/lib/upload-client";
 import { CATEGORY_LABELS, type Category, type Lang, type MusicTrack, type PackageId, type Template } from "@/lib/types";
+import Icon from "../Icon";
 
 interface Props {
   pricing: Pricing;
@@ -194,7 +196,7 @@ export default function Builder({ pricing, templates, music, initialTemplateId, 
       try {
         localStorage.removeItem(DRAFT_KEY);
       } catch {}
-      window.location.href = `/c/${manageToken}?new=1`;
+      window.location.href = `/order/${manageToken}?new=1`;
     } catch (err) {
       setError(DETAIL_ERRORS[err instanceof UploadError ? err.code : "failed"] ?? DETAIL_ERRORS.failed);
       setBusy(false);
@@ -207,7 +209,7 @@ export default function Builder({ pricing, templates, music, initialTemplateId, 
         {STEPS.map((label, i) => (
           <li key={label} data-state={i < d.step ? "done" : i === d.step ? "current" : "todo"}>
             <button type="button" disabled={i > d.step} onClick={() => go(i)} aria-current={i === d.step ? "step" : undefined}>
-              <span className={styles.progressNum}>{i < d.step ? "✓" : i + 1}</span>
+              <span className={styles.progressNum}>{i < d.step ? <Icon name="check" size={15} strokeWidth={2.4} /> : i + 1}</span>
               <span className={styles.progressLabel}>{label}</span>
             </button>
           </li>
@@ -339,7 +341,9 @@ export default function Builder({ pricing, templates, music, initialTemplateId, 
               />
             </label>
           </div>
-          <p className={styles.hint}>هتاخد لينك صفحتك الخاصة: منها تشوف المعاينة وتعدّل وتدفع. اللينك هيوصلك على واتساب كمان.</p>
+          <p className={styles.hint}>
+            هتاخد لينك صفحة طلبك: منها تشوف المعاينة وتعدّل وتدفع. ولينك الدعوة هيوصلك على <WhatsApp /> بعد الدفع.
+          </p>
         </section>
       )}
 
@@ -395,12 +399,12 @@ export default function Builder({ pricing, templates, music, initialTemplateId, 
           <div className={styles.navButtons}>
             {d.step > 0 && (
               <button type="button" className={styles.ctaGhost} onClick={() => go(d.step - 1)} disabled={busy}>
-                → رجوع
+                <Icon name="arrowRight" size={18} /> رجوع
               </button>
             )}
             {d.step < STEPS.length - 1 ? (
               <button type="button" className={styles.cta} onClick={next}>
-                التالي ←
+                التالي <Icon name="arrowLeft" size={18} />
               </button>
             ) : (
               <button type="button" className={styles.cta} onClick={submit} disabled={busy}>

@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import styles from "./store.module.css";
 import { DETAIL_ERRORS } from "./Builder";
 import DateTimePicker from "../DateTimePicker";
+import WhatsApp from "../WhatsApp";
 import { formatEgp, type PackageInfo } from "@/lib/pricing";
 import { CATEGORY_LABELS, type Category, type PackageId } from "@/lib/types";
 import { UploadError, postJson } from "@/lib/upload-client";
@@ -37,8 +38,10 @@ export default function RequestForm({ pkg, whatsappUrl }: { pkg: PackageInfo; wh
   if (sent) {
     return (
       <div className={`${styles.card} ${styles.success}`} role="status">
-        <h2 style={{ justifyContent: "center" }}>وصلنا طلبك 🤍</h2>
-        <p>هنكلمك على واتساب على {clientPhone} في أقرب وقت.</p>
+        <h2 style={{ justifyContent: "center" }}>وصلنا طلبك</h2>
+        <p>
+          هنكلمك على <WhatsApp /> على <bdi dir="ltr">{clientPhone}</bdi> في أقرب وقت.
+        </p>
         {whatsappUrl && (
           <a className={styles.cta} href={whatsappUrl} target="_blank" rel="noopener noreferrer">
             أو كلمنا دلوقتي على واتساب
@@ -70,7 +73,7 @@ export default function RequestForm({ pkg, whatsappUrl }: { pkg: PackageInfo; wh
             <input type="tel" dir="ltr" inputMode="tel" value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} required placeholder="01xxxxxxxxx" />
           </label>
         </div>
-        <div className={styles.row}>
+        <div className={styles.stack}>
           <label className={styles.field}>
             <span>المناسبة</span>
             <select value={category} onChange={(e) => setCategory(e.target.value as Category)}>

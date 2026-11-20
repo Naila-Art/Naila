@@ -70,7 +70,7 @@ export async function createCheckout(order: Order, event: EventData, siteUrl: st
       },
       special_reference: reference(order.id),
       notification_url: `${siteUrl}/api/payments/paymob/webhook`,
-      redirection_url: `${siteUrl}/c/${event.manageToken}?paid=1`,
+      redirection_url: `${siteUrl}/order/${event.manageToken}?paid=1`,
     }),
   });
   if (!res.ok) throw new Error(`Paymob intention failed: ${res.status} ${await res.text().catch(() => "")}`);

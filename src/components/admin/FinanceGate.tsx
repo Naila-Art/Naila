@@ -5,6 +5,7 @@ import { useState, type FormEvent } from "react";
 import m from "../manage/manage.module.css";
 import a from "./admin.module.css";
 import { UploadError, postJson } from "@/lib/upload-client";
+import Icon from "../Icon";
 
 const ERRORS: Record<string, string> = {
   wrong_password: "الباسورد غلط.",
@@ -42,9 +43,10 @@ export default function FinanceGate({ mode }: { mode: "unlock" | "setup" }) {
   return (
     <form className={`${m.panel} ${a.gate}`} onSubmit={submit}>
       <div className={a.gateIcon} aria-hidden>
-        🔒
+        <Icon name="lock" size={34} strokeWidth={1.5} />
       </div>
       <h2>{mode === "setup" ? "حدد باسورد الحسابات" : "الصفحة دي محمية"}</h2>
+      <div className={a.gateNote}>نفس الباسورد بيفتح صفحة الحسابات وصفحة طرق الدفع.</div>
       <p className={m.hint}>
         {mode === "setup"
           ? "أول مرة بس: اكتب كود الإعداد (ADMIN_TOKEN من ملف الإعدادات)، واختار باسورد للحسابات منفصل عن باسورد الدخول."
@@ -116,7 +118,7 @@ export function FinanceTools() {
     <div className={a.financeTools}>
       <div className={m.inlineActions}>
         <button type="button" className={m.secondary} onClick={lock}>
-          🔒 اقفل الحسابات
+          <Icon name="lock" /> اقفل الحسابات
         </button>
         <button type="button" className={m.linkBtn} onClick={() => setOpen((o) => !o)}>
           تغيير باسورد الحسابات

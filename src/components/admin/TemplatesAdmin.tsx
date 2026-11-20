@@ -5,6 +5,7 @@ import m from "../manage/manage.module.css";
 import a from "./admin.module.css";
 import { CATEGORY_LABELS, type Category, type Template } from "@/lib/types";
 import { UPLOAD_ERRORS, UploadError, postJson, putFile } from "@/lib/upload-client";
+import Icon from "../Icon";
 
 interface Props {
   initialTemplates: Template[];
@@ -372,7 +373,7 @@ export default function TemplatesAdmin({ initialTemplates, initialUsage }: Props
                   </div>
                   <div className={m.inlineActions}>
                     <a className={m.secondary} href={`/admin/templates/${t.id}`} target="_blank" rel="noreferrer">
-                      معاينة ↗
+                      <Icon name="eye" size={16} /> معاينة
                     </a>
                     {t.createdAt && (
                       <button type="button" className={m.linkBtn} onClick={() => remove(t)}>

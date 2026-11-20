@@ -1,36 +1,33 @@
 import Link from "next/link";
+import Icon from "@/components/Icon";
+import WhatsApp from "@/components/WhatsApp";
 import styles from "@/components/store/store.module.css";
+import SiteFooter from "@/components/store/SiteFooter";
 import SiteHeader from "@/components/store/SiteHeader";
 import TemplateGallery from "@/components/store/TemplateGallery";
-import { INCLUDED_IN_ALL, formatEgp, isSelfServe } from "@/lib/pricing";
+import { formatEgp, isSelfServe } from "@/lib/pricing";
 import { sampleLink } from "@/lib/samples";
-import { siteSettings, whatsappLink } from "@/lib/site";
+import { getSiteSettings, whatsappLink } from "@/lib/site";
 import { getPricing, listTemplates } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
 /** Storefront home: what it is, templates, packages. */
 export default async function Home() {
-  const [templates, pricing] = await Promise.all([
-    listTemplates(),
-    getPricing(),
-  ]);
-  const site = siteSettings();
+  const [templates, pricing, site] = await Promise.all([listTemplates(), getPricing(), getSiteSettings()]);
   const showcase = templates.find((t) => t.videoUrl);
   const wa = whatsappLink(site.whatsapp, "أهلاً، عايز أستفسر عن الدعوات");
 
   return (
     <main className={styles.page} dir="rtl" lang="ar">
-      <SiteHeader brand={site.brand} whatsappUrl={whatsappLink(site.whatsapp, "أهلاً، عايز أستفسر عن الدعوات") || undefined} />
+      <SiteHeader brand={site.brand} whatsappUrl={wa || undefined} />
       <div className={styles.wrap}>
-
         <section className={styles.hero}>
           <div>
-            <h1>دعوة فرحك على الموبايل، تتفتح بختم وتوصل لكل حد باسمه</h1>
+            <h1>شارك أسعد لحظاتك مع الناس اللي بتفرق معاك</h1>
             <p className={styles.lead}>
-              لينك واحد يتبعت على واتساب: الضيف يدوس على الختم، الدعوة تتفتح
-              بأنيميشن ومزيكا، يأكد حضوره، يبعت تهنئة، ويلاقي اللوكيشن. وأنت
-              تتابع مين فتح ومين أكد من صفحتك.
+              فرحك، خطوبتك، أو كتب كتابك يستاهل دعوة تليق بيه. إحنا بنساعدك توصّل فرحتك لكل حبايبك بدعوة على الموبايل
+              تتفتح بختم وأنيميشن ومزيكا، وتوصل لكل واحد باسمه، ويقدروا يبعتولك تهانيهم من نفس اللينك.
             </p>
             <div className={styles.ctaRow}>
               <Link className={styles.cta} href="/create">
@@ -43,14 +40,7 @@ export default async function Home() {
           </div>
           <div className={styles.heroPhone} aria-hidden>
             {showcase?.videoUrl ? (
-              <video
-                src={showcase.videoUrl}
-                poster={showcase.posterUrl}
-                muted
-                autoPlay
-                loop
-                playsInline
-              />
+              <video src={showcase.videoUrl} poster={showcase.posterUrl} muted autoPlay loop playsInline />
             ) : (
               <span className={styles.heroSeal} />
             )}
@@ -71,16 +61,16 @@ export default async function Home() {
             </li>
             <li>
               <strong>ادفع وابعت</strong>
-              <span>فيزا أو إنستاباي، وبعدها تبعت اللينكات على واتساب</span>
+              <span>
+                ادفع بالطريقة اللي تريحك، واللينك يوصلك على <WhatsApp /> تبعته لحبايبك
+              </span>
             </li>
           </ol>
         </section>
 
         <section className={styles.section} id="templates">
           <h2>التصميمات</h2>
-          <p className={styles.sectionLead}>
-            دوس على أي تصميم تشوفه زي ما الضيف هيشوفه
-          </p>
+          <p className={styles.sectionLead}>دوس على أي تصميم تشوفه زي ما الضيف هيشوفه</p>
           <TemplateGallery templates={templates} />
         </section>
 
@@ -91,11 +81,7 @@ export default async function Home() {
             {pricing.packages
               .filter((p) => p.active)
               .map((p) => (
-                <div
-                  key={p.id}
-                  className={styles.packageBox}
-                  data-featured={p.id === 2}
-                >
+                <div key={p.id} className={styles.packageBox} data-featured={p.id === 2}>
                   <h3>{p.name}</h3>
                   <div className={styles.price}>
                     {p.priceNote && <small>{p.priceNote}</small>}
@@ -111,45 +97,24 @@ export default async function Home() {
                       ابدأ
                     </Link>
                   ) : (
-                    <Link
-                      className={styles.ctaGhost}
-                      href={`/request?p=${p.id}`}
-                    >
+                    <Link className={styles.ctaGhost} href={`/request?p=${p.id}`}>
                       اطلبها
                     </Link>
                   )}
                   <a className={styles.sampleLink} href={sampleLink(p.id)} target="_blank" rel="noopener noreferrer">
-                    شوف مثال ↗
+                    <Icon name="eye" size={16} /> شوف مثال
                   </a>
                 </div>
               ))}
           </div>
-
-          <p className={styles.includedAll}>في كل الباقات: {INCLUDED_IN_ALL.join(" · ")}</p>
         </section>
       </div>
 
-      <footer className={styles.footer}>
-        <div className={styles.wrap}>
-          © {site.brand}
-          {wa && (
-            <>
-              {" · "}
-              <a href={wa}>كلمنا على واتساب</a>
-            </>
-          )}
-        </div>
-      </footer>
+      <SiteFooter site={site} />
 
       {wa && (
-        <a
-          className={styles.whatsappFab}
-          href={wa}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="كلمنا على واتساب"
-        >
-          ✆
+        <a className={styles.whatsappFab} href={wa} target="_blank" rel="noopener noreferrer" aria-label="كلمنا على واتساب">
+          <Icon name="whatsapp" size={26} strokeWidth={1.8} />
         </a>
       )}
     </main>

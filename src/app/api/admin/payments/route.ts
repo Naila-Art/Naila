@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { bad, cleanText, readJson } from "@/lib/api";
-import { requireAdmin } from "@/lib/auth";
+import { financeUnlocked, requireAdmin } from "@/lib/auth";
 import { listPaymentMethods, savePaymentMethods } from "@/lib/store";
 import type { PaymentMethodConfig } from "@/lib/types";
 
 export async function GET(req: Request) {
   const admin = await requireAdmin(req);
   if (admin instanceof NextResponse) return admin;
+  if (!(await financeUnlocked(admin.id))) return bad("finance_locked", 403);
   return NextResponse.json({ methods: await listPaymentMethods() });
 }
 
@@ -14,6 +15,7 @@ export async function GET(req: Request) {
 export async function PUT(req: Request) {
   const admin = await requireAdmin(req);
   if (admin instanceof NextResponse) return admin;
+  if (!(await financeUnlocked(admin.id))) return bad("finance_locked", 403);
   const body = await readJson(req);
   const raw = Array.isArray(body?.methods) ? body.methods : null;
   if (!raw || raw.length > 20) return bad("invalid_methods");

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import styles from "./store.module.css";
+import Icon from "../Icon";
 
 const LINKS = [
   { href: "/#templates", label: "التصميمات" },
@@ -42,7 +43,7 @@ export default function SiteHeader({ brand, whatsappUrl }: { brand: string; what
             </Link>
           )}
           <button type="button" className={styles.menuToggle} aria-label="القايمة" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
-            {open ? "✕" : "☰"}
+            <Icon name={open ? "x" : "menu"} size={20} />
           </button>
         </div>
       </div>

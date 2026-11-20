@@ -49,6 +49,14 @@ interface Db {
   financePasswordHash?: string;
   /** Saved from the dashboard; defaults until then. */
   paymentMethods?: PaymentMethodConfig[];
+  /** Brand, WhatsApp and social links, from the dashboard. */
+  siteSettings?: StoredSiteSettings;
+}
+
+export interface StoredSiteSettings {
+  brand?: string;
+  whatsapp?: string;
+  socials?: { facebook?: string; instagram?: string; tiktok?: string };
 }
 
 const DB_PATH = path.join(process.cwd(), "data", "db.json");
@@ -466,7 +474,10 @@ export function restoreOrder(id: string): Promise<Order | null> {
 }
 
 export type EventDetailsPatch = Partial<
-  Pick<EventData, "partnerA" | "partnerB" | "date" | "venueName" | "venueAddress" | "mapsUrl" | "lang" | "templateId" | "musicTrackId" | "musicUrl">
+  Pick<
+    EventData,
+    "partnerA" | "partnerB" | "date" | "venueName" | "venueAddress" | "mapsUrl" | "lang" | "templateId" | "musicTrackId" | "musicUrl" | "generalText"
+  >
 >;
 
 export function updateEventDetails(eventId: string, patch: EventDetailsPatch): Promise<EventData | null> {
@@ -687,5 +698,20 @@ export function savePaymentMethods(methods: PaymentMethodConfig[]): Promise<Paym
   return mutate((db) => {
     db.paymentMethods = methods;
     return methods;
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Site settings (dashboard)
+// ---------------------------------------------------------------------------
+
+export async function getStoredSiteSettings(): Promise<StoredSiteSettings | null> {
+  return (await read()).siteSettings ?? null;
+}
+
+export function saveSiteSettings(settings: StoredSiteSettings): Promise<StoredSiteSettings> {
+  return mutate((db) => {
+    db.siteSettings = settings;
+    return settings;
   });
 }

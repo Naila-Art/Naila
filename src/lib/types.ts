@@ -107,6 +107,8 @@ export interface Order {
   paymentMethod?: PaymentMethod;
   /** Display name of the method the client used (kept even if the method is later renamed or removed). */
   paymentMethodName?: string;
+  /** Our note on a manual confirmation (transaction number, sender's name…). */
+  paymentNote?: string;
   /** Instapay transfer screenshot. */
   proofUrl?: string;
   rejectReason?: string;

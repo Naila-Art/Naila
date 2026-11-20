@@ -3,6 +3,7 @@
 import { useState } from "react";
 import styles from "./store.module.css";
 import { CATEGORY_LABELS, type Category, type Template } from "@/lib/types";
+import Icon from "../Icon";
 
 interface Props {
   templates: Template[];
@@ -78,7 +79,7 @@ export default function TemplateGallery({ templates, selectedId, onSelect }: Pro
       </ul>
       {onSelect && selectedId && (
         <a className={styles.hint} href={`/t/${selectedId}`} target="_blank" rel="noopener noreferrer">
-          شوف التصميم ده على الموبايل ↗
+          <Icon name="eye" size={16} /> شوف التصميم ده على الموبايل
         </a>
       )}
     </>

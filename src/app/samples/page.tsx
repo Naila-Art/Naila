@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import styles from "@/components/store/store.module.css";
 import SiteHeader from "@/components/store/SiteHeader";
-import { INCLUDED_IN_ALL, formatEgp } from "@/lib/pricing";
+import SiteFooter from "@/components/store/SiteFooter";
+import { formatEgp } from "@/lib/pricing";
 import { SAMPLES, sampleLink } from "@/lib/samples";
-import { siteSettings, whatsappLink } from "@/lib/site";
+import { getSiteSettings, whatsappLink } from "@/lib/site";
 import { getPricing } from "@/lib/store";
 import { CATEGORY_LABELS } from "@/lib/types";
 
@@ -12,7 +13,7 @@ export const dynamic = "force-dynamic";
 
 /** One live sample invitation per package, to show clients and partners. */
 export default async function SamplesPage() {
-  const [pricing, site] = [await getPricing(), siteSettings()];
+  const [pricing, site] = await Promise.all([getPricing(), getSiteSettings()]);
   return (
     <main className={styles.page} dir="rtl" lang="ar">
       <SiteHeader brand={site.brand} whatsappUrl={whatsappLink(site.whatsapp, "أهلاً، عايز أستفسر عن الدعوات") || undefined} />
@@ -45,8 +46,8 @@ export default async function SamplesPage() {
             );
           })}
         </ul>
-        <p className={styles.includedAll}>في كل الباقات: {INCLUDED_IN_ALL.join(" · ")}</p>
       </div>
+      <SiteFooter site={site} />
     </main>
   );
 }

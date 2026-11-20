@@ -4,16 +4,18 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import s from "./shell.module.css";
+import Icon, { type IconName } from "../Icon";
 
-const LINKS = [
-  { href: "/admin", label: "الرئيسية", icon: "⌂" },
-  { href: "/admin/orders", label: "الطلبات", icon: "▤", badge: true },
-  { href: "/admin/finance", label: "الحسابات 🔒", icon: "₤" },
-  { href: "/admin/payments", label: "طرق الدفع", icon: "◈" },
-  { href: "/admin/pricing", label: "الباقات والأسعار", icon: "◇" },
-  { href: "/admin/templates", label: "التيمبليتس", icon: "▣" },
-  { href: "/admin/music", label: "المزيكا", icon: "♪" },
-  { href: "/admin/team", label: "الفريق", icon: "☺" },
+const LINKS: { href: string; label: string; icon: IconName; badge?: boolean; locked?: boolean }[] = [
+  { href: "/admin", label: "الرئيسية", icon: "home" },
+  { href: "/admin/orders", label: "الطلبات", icon: "orders", badge: true },
+  { href: "/admin/finance", label: "الحسابات", icon: "chart", locked: true },
+  { href: "/admin/payments", label: "طرق الدفع", icon: "card", locked: true },
+  { href: "/admin/pricing", label: "الباقات والأسعار", icon: "tag" },
+  { href: "/admin/templates", label: "التيمبليتس", icon: "layout" },
+  { href: "/admin/music", label: "المزيكا", icon: "music" },
+  { href: "/admin/team", label: "الفريق", icon: "users" },
+  { href: "/admin/settings", label: "إعدادات الموقع", icon: "settings" },
 ];
 
 /** Dashboard frame: sidebar on desktop, top bar + drawer on mobile. */
@@ -35,7 +37,7 @@ export default function AdminShell({ name, pending, children }: { name: string; 
     <div className={s.shell} dir="rtl" lang="ar">
       <header className={s.topbar}>
         <button type="button" className={s.menuBtn} aria-label="القايمة" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
-          ☰
+          <Icon name="menu" size={20} />
         </button>
         <span className={s.brand}>داشبورد الإدارة</span>
         {pending > 0 && (
@@ -53,23 +55,20 @@ export default function AdminShell({ name, pending, children }: { name: string; 
         <nav aria-label="داشبورد الإدارة">
           {LINKS.map((l) => (
             <Link key={l.href} href={l.href} className={s.link} aria-current={active(l.href) ? "page" : undefined}>
-              <span className={s.icon} aria-hidden>
-                {l.icon}
-              </span>
+              <Icon name={l.icon} size={19} className={s.icon} />
               <span>{l.label}</span>
+              {l.locked && <Icon name="lock" size={14} className={s.lockMark} label="بباسورد" />}
               {l.badge && pending > 0 && <span className={s.badge}>{pending}</span>}
             </Link>
           ))}
         </nav>
         <div className={s.sideFoot}>
           <a href="/" target="_blank" rel="noopener noreferrer" className={s.link}>
-            <span className={s.icon} aria-hidden>
-              ↗
-            </span>
+            <Icon name="external" size={19} className={s.icon} />
             <span>الموقع</span>
           </a>
           <button type="button" className={s.logout} onClick={logout}>
-            تسجيل خروج
+            <Icon name="logout" /> تسجيل خروج
           </button>
         </div>
       </aside>

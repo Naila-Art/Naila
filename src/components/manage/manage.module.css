@@ -28,7 +28,7 @@
 }
 
 .header h1 {
-  font-family: "Aref Ruqaa", "Amiri", serif;
+  font-family: "El Messiri", "Amiri", serif;
   font-weight: 400;
   font-size: 2rem;
   margin: 4px 0 8px;
@@ -611,7 +611,7 @@
 }
 
 .clientNav strong {
-  font-family: "Aref Ruqaa", "Amiri", serif;
+  font-family: "El Messiri", "Amiri", serif;
   font-weight: 400;
   font-size: 1.4rem;
 }
@@ -664,4 +664,78 @@
     position: sticky;
     top: 72px;
   }
+}
+
+/* ---------- payment status (note 14) ---------- */
+.payStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.payPaid {
+  background: #1f7a45;
+  color: #fff;
+}
+
+.payUnpaid {
+  background: #fde8e6;
+  color: #a1251c;
+  box-shadow: inset 0 0 0 1px #f2b8b2;
+}
+
+.payPending {
+  background: #1f5fae;
+  color: #fff;
+}
+
+.payCancelled {
+  background: #5c5650;
+  color: #fff;
+}
+
+.proofThumb {
+  max-width: 220px;
+  border-radius: 10px;
+  border: 1px solid var(--m-line);
+}
+
+.paidBox {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.paidBox > p {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.linkCard {
+  border: 1px solid var(--m-line);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.linkCard p {
+  margin: 0;
+}
+
+.secondary,
+.primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }

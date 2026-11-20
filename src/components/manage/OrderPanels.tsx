@@ -6,6 +6,8 @@ import styles from "./manage.module.css";
 import store from "../store/store.module.css";
 import OrderOptions from "../store/OrderOptions";
 import DateTimePicker from "../DateTimePicker";
+import Icon from "../Icon";
+import WhatsApp from "../WhatsApp";
 import { DETAIL_ERRORS } from "../store/Builder";
 import { formatEgp, getPackage, type Pricing } from "@/lib/pricing";
 import { UPLOAD_ERRORS, UploadError, contentTypeOf, postJson, putFile } from "@/lib/upload-client";
@@ -30,6 +32,8 @@ export interface EventDetails {
   lang: Lang;
   templateId: string;
   musicTrackId: string;
+  /** The invitation's opening line. */
+  generalText: string;
 }
 
 interface Props {
@@ -47,6 +51,8 @@ interface Props {
   whatsappUrl: string;
   isNew: boolean;
   returnedFromPayment: boolean;
+  /** Absolute base for the links we show after payment, e.g. https://example.com */
+  origin: string;
 }
 
 const ERRORS: Record<string, string> = {
@@ -56,6 +62,7 @@ const ERRORS: Record<string, string> = {
   paymob_unavailable: "الدفع بالفيزا مش متاح دلوقتي، اختار طريقة تانية.",
   paymob_failed: "مقدرناش نفتح صفحة الدفع. جرب تاني أو اختار طريقة تانية.",
   invalid_method: "طريقة الدفع دي مش متاحة دلوقتي، اختار غيرها.",
+  locked: "الطلب اتدفع، والتعديل دلوقتي من عندنا بس. ابعتلنا طلب تعديل.",
   invalid_message: "اكتب التعديل اللي عايزه.",
   not_included: "ده مش في باقتك.",
   reference_wrong_type: "الملف لازم يكون صورة (JPG/PNG) أو فيديو (MP4/MOV).",
@@ -64,24 +71,27 @@ const ERRORS: Record<string, string> = {
 };
 const errorText = (err: unknown) => ERRORS[err instanceof UploadError ? err.code : "failed"] ?? ERRORS.failed;
 
-/** Order status, payment, details, music and change requests on the client's page. */
-export default function OrderPanels(props: Props) {
+/**
+ * The order page (/order/{token}): checkout and payment, separate from the client's page.
+ * Before payment the client can still edit everything; after payment it's read-only (our team edits).
+ */
+export default function OrderCheckout(props: Props) {
   const { order } = props;
   const api = `/api/manage/${encodeURIComponent(props.manageToken)}`;
+  const unpaid = order.payment === "unpaid";
   return (
     <>
-      {props.isNew && order.payment === "unpaid" && (
+      {props.isNew && unpaid && (
         <section className={`${styles.panel} ${styles.notice}`}>
-          <h2>دعوتك جاهزة للمعاينة 🤍</h2>
+          <h2>دعوتك جاهزة للمعاينة</h2>
           <p>
-            دي صفحتك الخاصة. <strong>احفظ اللينك ده عندك</strong> (من غير باسورد، فمتبعتوش لحد). شوف الدعوة، عدّل اللي
-            عايزه، وادفع لما تبقى مبسوط بيها.
+            دي صفحة طلبك. <strong>احفظ اللينك ده عندك</strong>. شوف المعاينة، عدّل اللي عايزه، وادفع لما تبقى مبسوط بيها.
           </p>
         </section>
       )}
       <PaymentPanel {...props} api={api} />
-      {order.payment === "unpaid" && order.kind === "self" && <OrderEditor api={api} order={order} pricing={props.pricing} />}
-      <DetailsEditor {...props} api={api} />
+      {unpaid && order.kind === "self" && <OrderEditor api={api} order={order} pricing={props.pricing} />}
+      {unpaid && <DetailsEditor {...props} api={api} />}
       {order.packageId >= 3 && <ReferencesPanel api={api} order={order} />}
       <ChangeRequests api={api} initial={props.changeRequests} whatsappUrl={props.whatsappUrl} />
     </>
@@ -99,7 +109,7 @@ function PaymentPanel(props: Props & { api: string }) {
   const [proof, setProof] = useState<File | null>(null);
   const [copied, setCopied] = useState(false);
   const method = methods.find((m) => m.id === methodId);
-  const previewUrl = `/c/${encodeURIComponent(props.manageToken)}/preview`;
+  const previewUrl = `/order/${encodeURIComponent(props.manageToken)}/preview`;
 
   async function payWithCard() {
     setError("");
@@ -148,30 +158,31 @@ function PaymentPanel(props: Props & { api: string }) {
     <section className={styles.panel} id="payment">
       <div className={styles.panelHead}>
         <h2>الطلب والدفع</h2>
-        <span
-          className={`${styles.badge} ${
-            order.payment === "paid" ? styles.badgeOk : order.payment === "pending_review" ? styles.badgeInfo : styles.badgeMuted
-          }`}
-        >
-          {order.payment === "paid" ? "مدفوع · الدعوة شغالة" : order.payment === "pending_review" ? "بنراجع التحويل" : "معاينة · مش مدفوع"}
-        </span>
+        <PayStatus payment={order.payment} />
       </div>
 
       <p>
         باقة <strong>{pkg.name}</strong> · {formatEgp(order.total)}
       </p>
 
-      {order.payment === "paid" && <p className={styles.ok}>تم الدفع. اللينكات اتفتحت، ابعتها للضيوف من تحت.</p>}
+      {order.payment === "paid" && <PaidLinks {...props} />}
 
       {order.payment === "pending_review" && (
-        <p className={styles.hint}>
-          استلمنا صورة التحويل ({order.paymentMethodName}) وبنراجعها. أول ما نأكدها الدعوة هتشتغل واللينكات هتتفتح.
-        </p>
+        <>
+          <p className={styles.hint}>
+            استلمنا صورة التحويل ({order.paymentMethodName}) وبنراجعها. أول ما نأكدها هتلاقي لينكاتك هنا، وهتوصلك على{" "}
+            <WhatsApp /> كمان.
+          </p>
+          {order.proofUrl && (
+            // eslint-disable-next-line @next/next/no-img-element -- storage URL
+            <img className={styles.proofThumb} src={order.proofUrl} alt="صورة التحويل" />
+          )}
+        </>
       )}
 
       {order.payment !== "paid" && (
         <a className={styles.secondary} href={previewUrl} target="_blank" rel="noopener noreferrer">
-          شوف المعاينة ↗
+          <Icon name="eye" /> شوف المعاينة
         </a>
       )}
 
@@ -231,7 +242,7 @@ function PaymentPanel(props: Props & { api: string }) {
                   <div className={styles.copyRow}>
                     <code dir="ltr">{method.account}</code>
                     <button type="button" className={styles.secondary} onClick={copyAccount}>
-                      {copied ? "اتنسخ ✓" : "نسخ"}
+                      {copied ? "اتنسخ" : "نسخ"}
                     </button>
                   </div>
                   {method.instructions && <p className={styles.hint}>{method.instructions}</p>}
@@ -298,7 +309,7 @@ function DetailsEditor(props: Props & { api: string }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const set = (patch: Partial<EventDetails>) => setD((x) => ({ ...x, ...patch }));
-  const langLocked = props.order.payment !== "unpaid";
+  const langLocked = false;
 
   async function save(e: FormEvent) {
     e.preventDefault();
@@ -319,6 +330,10 @@ function DetailsEditor(props: Props & { api: string }) {
     <details className={styles.panel}>
       <summary className={styles.summary}>تعديل بيانات الدعوة</summary>
       <form className={styles.detailsForm} onSubmit={save}>
+        <label className={styles.field}>
+          <span>الجملة اللي في أول الدعوة</span>
+          <input className={styles.input} value={d.generalText} maxLength={200} onChange={(e) => set({ generalText: e.target.value })} />
+        </label>
         <div className={styles.twoCols}>
           <label className={styles.field}>
             <span>الاسم الأول</span>
@@ -361,7 +376,7 @@ function DetailsEditor(props: Props & { api: string }) {
             </select>
           </label>
           <label className={styles.field}>
-            <span>اللغة{langLocked ? " (ثابتة بعد الدفع)" : ""}</span>
+            <span>اللغة</span>
             <select className={styles.input} value={d.lang} disabled={langLocked} onChange={(e) => set({ lang: e.target.value as Lang })}>
               <option value="ar">عربي</option>
               <option value="en">English</option>
@@ -390,7 +405,7 @@ function DetailsEditor(props: Props & { api: string }) {
   );
 }
 
-function ChangeRequests({ api, initial, whatsappUrl }: { api: string; initial: ChangeRequest[]; whatsappUrl: string }) {
+export function ChangeRequests({ api, initial, whatsappUrl }: { api: string; initial: ChangeRequest[]; whatsappUrl: string }) {
   const [list, setList] = useState(initial);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -452,7 +467,7 @@ function ChangeRequests({ api, initial, whatsappUrl }: { api: string; initial: C
 }
 
 /** Package 3+: what the client wants, plus their photos / videos / references for our team. */
-function ReferencesPanel({ api, order }: { api: string; order: Order }) {
+export function ReferencesPanel({ api, order }: { api: string; order: Order }) {
   const router = useRouter();
   const [notes, setNotes] = useState(order.brief?.notes ?? "");
   const [savedNotes, setSavedNotes] = useState(order.brief?.notes ?? "");
@@ -540,12 +555,84 @@ function ReferencesPanel({ api, order }: { api: string; order: Order }) {
                 <video src={r.url} muted playsInline preload="metadata" controls />
               )}
               <button type="button" className={styles.iconBtn} onClick={() => remove(r.url)} aria-label={`مسح ${r.name}`}>
-                ✕
+                <Icon name="x" size={16} />
               </button>
             </li>
           ))}
         </ul>
       )}
     </section>
+  );
+}
+
+/** Payment state, large and unmistakable (status colour + icon + words). */
+export function PayStatus({ payment, cancelled }: { payment: Order["payment"]; cancelled?: boolean }) {
+  if (cancelled)
+    return (
+      <span className={`${styles.payStatus} ${styles.payCancelled}`}>
+        <Icon name="xCircle" size={16} /> ملغي
+      </span>
+    );
+  if (payment === "paid")
+    return (
+      <span className={`${styles.payStatus} ${styles.payPaid}`}>
+        <Icon name="checkCircle" size={16} /> مدفوع
+      </span>
+    );
+  if (payment === "pending_review")
+    return (
+      <span className={`${styles.payStatus} ${styles.payPending}`}>
+        <Icon name="clock" size={16} /> مستني تأكيد
+      </span>
+    );
+  return (
+    <span className={`${styles.payStatus} ${styles.payUnpaid}`}>
+      <Icon name="alert" size={16} /> مش مدفوع
+    </span>
+  );
+}
+
+/** After payment: the invitation link (everyone) and the client's page (packages 2+). */
+function PaidLinks(props: Props) {
+  const { order } = props;
+  const invitation = `${props.origin}/i/${props.slug}`;
+  const page = `${props.origin}/c/${props.manageToken}`;
+  const [copied, setCopied] = useState("");
+  async function copyText(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(text);
+      setTimeout(() => setCopied(""), 1800);
+    } catch {}
+  }
+  return (
+    <div className={styles.paidBox}>
+      <p className={styles.ok}>
+        <Icon name="checkCircle" /> تم الدفع{order.paymentMethodName ? ` (${order.paymentMethodName})` : ""}. دعوتك شغالة.
+      </p>
+      <div className={styles.linkCard}>
+        <strong>لينك الدعوة</strong>
+        <p className={styles.hint}>ابعته لأي حد، في أي مكان.</p>
+        <div className={styles.copyRow}>
+          <code dir="ltr">{invitation}</code>
+          <button type="button" className={styles.secondary} onClick={() => copyText(invitation)}>
+            <Icon name={copied === invitation ? "check" : "copy"} /> {copied === invitation ? "اتنسخ" : "نسخ"}
+          </button>
+        </div>
+      </div>
+      {order.packageId >= 2 && (
+        <div className={styles.linkCard}>
+          <strong>صفحتك</strong>
+          <p className={styles.hint}>
+            {order.packageId >= 3
+              ? "منها تضيف ضيوفك بالاسم ورسالة خاصة لكل واحد، وتشوف مين فتح الدعوة والتهاني."
+              : "منها تشوف مين فتح الدعوة والتهاني اللي اتكتبت."}
+          </p>
+          <a className={styles.primary} href={page}>
+            <Icon name="external" /> افتح صفحتك
+          </a>
+        </div>
+      )}
+    </div>
   );
 }

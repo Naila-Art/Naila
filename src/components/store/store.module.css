@@ -35,7 +35,7 @@
 }
 
 .brand {
-  font-family: "Aref Ruqaa", "Amiri", serif;
+  font-family: "El Messiri", "Amiri", serif;
   font-size: 1.6rem;
   color: var(--s-text);
   text-decoration: none;
@@ -61,7 +61,7 @@
 }
 
 .hero h1 {
-  font-family: "Aref Ruqaa", "Amiri", serif;
+  font-family: "El Messiri", "Amiri", serif;
   font-weight: 400;
   font-size: clamp(2rem, 7vw, 3.2rem);
   line-height: 1.3;
@@ -160,7 +160,7 @@
 }
 
 .section h2 {
-  font-family: "Aref Ruqaa", "Amiri", serif;
+  font-family: "El Messiri", "Amiri", serif;
   font-weight: 400;
   font-size: 1.9rem;
   margin: 0 0 6px;
@@ -655,7 +655,7 @@
 }
 
 .pageTitle {
-  font-family: "Aref Ruqaa", "Amiri", serif;
+  font-family: "El Messiri", "Amiri", serif;
   font-weight: 400;
   font-size: 2rem;
   text-align: center;
@@ -1013,4 +1013,126 @@
     display: flex;
     align-items: center;
   }
+}
+
+/* ---------- footer (note 4) ---------- */
+.siteFooter {
+  margin-top: 40px;
+  background: #2b2420;
+  color: #e9e1d6;
+  padding: 32px 16px 20px;
+}
+
+.siteFooterInner {
+  max-width: 1040px;
+  margin: 0 auto;
+  display: grid;
+  gap: 20px;
+  align-items: center;
+}
+
+.footerBrand {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.footerBrand strong {
+  font-family: "El Messiri", "Amiri", serif;
+  font-size: 1.6rem;
+}
+
+.footerBrand span {
+  opacity: 0.75;
+  font-size: 0.9rem;
+}
+
+.footerLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+
+.footerLinks a {
+  color: inherit;
+  text-decoration: none;
+  opacity: 0.9;
+}
+
+.socials {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.social {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.social:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.footerWa {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: #1f9d55;
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.copyright {
+  max-width: 1040px;
+  margin: 20px auto 0;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 0.85rem;
+  opacity: 0.7;
+  text-align: center;
+}
+
+@media (min-width: 760px) {
+  .siteFooterInner {
+    grid-template-columns: 1.2fr 1fr auto;
+  }
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sampleLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.whatsappFab {
+  background: #1f9d55;
+}
+
+.cta,
+.ctaGhost,
+.hint a {
+  gap: 6px;
+}
+
+.hint a {
+  display: inline-flex;
+  align-items: center;
 }

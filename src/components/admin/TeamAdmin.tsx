@@ -96,7 +96,6 @@ export default function TeamAdmin({ initial, meId }: { initial: User[]; meId: st
               </li>
             ))}
           </ul>
-          <p className={m.hint}>كل الحسابات تقدر تدخل الداشبورد. صفحة الحسابات (الفلوس) ليها باسورد خاص.</p>
         </section>
 
         <form className={m.panel} onSubmit={add}>

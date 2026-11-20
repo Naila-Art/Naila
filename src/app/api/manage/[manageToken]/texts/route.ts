@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { bad, cleanText, readJson } from "@/lib/api";
-import { getEventByManageToken, updateEventTexts } from "@/lib/store";
+import { getEventByManageToken, getOrder, updateEventTexts } from "@/lib/store";
 
 const MAX_TEXT = 200;
 
@@ -16,6 +16,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ manageTo
   if (!generalText || !personalText) return bad("invalid_text");
   if (!/\{(name|الاسم)\}/.test(personalText)) return bad("name_placeholder_missing");
 
-  await updateEventTexts(event.id, { generalText, personalText });
+  // The opening line is fixed once paid (our team edits it); the named wording stays editable for packages 3-4.
+  const order = event.orderId ? await getOrder(event.orderId) : null;
+  const keepGeneral = order && order.payment !== "unpaid";
+  await updateEventTexts(event.id, { generalText: keepGeneral ? event.generalText : generalText, personalText });
   return NextResponse.json({ ok: true });
 }

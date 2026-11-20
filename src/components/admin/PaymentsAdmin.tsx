@@ -80,7 +80,7 @@ export default function PaymentsAdmin({ initial, paymobReady }: { initial: Payme
               <p className={m.hint}>
                 الدفع بالفيزا / ميزة / أبل باي عن طريق باي موب.{" "}
                 {paymobReady ? (
-                  <span className={m.ok}>مفاتيح باي موب موجودة ✓</span>
+                  <span className={m.ok}>مفاتيح باي موب موجودة</span>
                 ) : (
                   <span className={m.warn}>مش هتظهر للعميل لحد ما مفاتيح باي موب تتحط في الإعدادات.</span>
                 )}

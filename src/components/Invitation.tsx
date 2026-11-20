@@ -6,6 +6,7 @@ import Countdown from "./Countdown";
 import WishForm from "./WishForm";
 import type { Strings } from "@/lib/i18n";
 import type { Lang, Template } from "@/lib/types";
+import Icon from "./Icon";
 
 export interface InvitationProps {
   slug: string;
@@ -217,7 +218,7 @@ export default function Invitation(props: InvitationProps) {
           <audio ref={audioRef} src={props.musicUrl} loop preload="auto" />
           {stage !== "sealed" && (
             <button type="button" className={styles.mute} onClick={toggleMute} aria-label={muted ? s.unmute : s.mute}>
-              {muted ? "🔇" : "🔊"}
+              <Icon name={muted ? "volumeOff" : "volume"} size={20} />
             </button>
           )}
         </>
