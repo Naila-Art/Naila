@@ -1,0 +1,66 @@
+import type { Lang } from "./types";
+
+const strings = {
+  ar: {
+    tapToOpen: "اضغط لفتح الدعوة",
+    and: "و",
+    countdown: "باقي على الفرح",
+    days: "يوم",
+    hours: "ساعة",
+    minutes: "دقيقة",
+    seconds: "ثانية",
+    eventStarted: "اليوم هو اليوم ✨",
+    rsvpTitle: "هتشرفنا؟",
+    yourName: "اسمك",
+    attending: "هحضر بإذن الله",
+    declined: "أعتذر",
+    rsvpThanksAttending: "منتظرينك! 🤍",
+    rsvpThanksDeclined: "هتوحشنا، شكراً إنك بلغتنا 🤍",
+    change: "تغيير الرد",
+    wishesTitle: "ابعت تهنئة",
+    wishPlaceholder: "اكتب تهنئتك للعروسين…",
+    send: "إرسال",
+    wishThanks: "وصلت تهنئتك 🤍",
+    location: "اللوكيشن",
+    openMaps: "افتح على الخريطة",
+    addToCalendar: "أضف للتقويم",
+    mute: "كتم الصوت",
+    unmute: "تشغيل الصوت",
+    error: "حصلت مشكلة، جرب تاني",
+    nameRequired: "اكتب اسمك الأول",
+  },
+  en: {
+    tapToOpen: "Tap to open",
+    and: "&",
+    countdown: "Counting down",
+    days: "Days",
+    hours: "Hours",
+    minutes: "Minutes",
+    seconds: "Seconds",
+    eventStarted: "Today is the day ✨",
+    rsvpTitle: "Will you join us?",
+    yourName: "Your name",
+    attending: "Joyfully accept",
+    declined: "Regretfully decline",
+    rsvpThanksAttending: "We can't wait to see you! 🤍",
+    rsvpThanksDeclined: "You'll be missed — thank you for letting us know 🤍",
+    change: "Change reply",
+    wishesTitle: "Send your wishes",
+    wishPlaceholder: "Write a message to the couple…",
+    send: "Send",
+    wishThanks: "Your wishes were sent 🤍",
+    location: "Location",
+    openMaps: "Open in Maps",
+    addToCalendar: "Add to calendar",
+    mute: "Mute",
+    unmute: "Unmute",
+    error: "Something went wrong, please try again",
+    nameRequired: "Please enter your name",
+  },
+} as const;
+
+export type Strings = { [K in keyof (typeof strings)["ar"]]: string };
+
+export function t(lang: Lang): Strings {
+  return strings[lang];
+}
