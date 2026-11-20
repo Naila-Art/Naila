@@ -39,7 +39,7 @@ Arabic invitations carry the Arabic add-on automatically. The 300-guest and unli
 | `/c/{manageToken}` | Client page |
 | `/admin/{ADMIN_TOKEN}` | Our dashboard: clients, this month's revenue, last 6 months, by package, to-do |
 | `/admin/{ADMIN_TOKEN}/orders` | Orders: confirm/reject Instapay, mark paid, custom stages, change requests, **cancel / refund**, restore |
-| `/admin/{ADMIN_TOKEN}/pricing` | Packages (name, price, points, shown/hidden), add-on prices, guest-count tiers |
+| `/admin/{ADMIN_TOKEN}/pricing` | Packages (name, price, points, shown/hidden), add-ons on/off and prices, guest-count tiers. Add-ons are off by default: language is a free choice, location is free for everyone, named links come with package 4 only |
 | `/admin/{ADMIN_TOKEN}/templates` · `/music` | Upload Google Flow templates · music library |
 | `POST /api/orders` · `POST /api/requests` | Create a draft · a package 3–4 request |
 | `PUT /api/manage/{t}/order` · `/details` · `/texts` · `/music` | Client edits (package/add-ons only before payment) |

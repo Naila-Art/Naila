@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { bad, cleanText, readJson } from "@/lib/api";
 import { parseEventDetails } from "@/lib/event-context";
 import { normalizePhone } from "@/lib/guests";
-import { getPackage, isSelfServe, namesLimitOf, parseAddons, priceOf } from "@/lib/pricing";
+import { getPackage, isSelfServe, mapsIncluded, namesLimitOf, parseAddons, priceOf, sanitizeAddons } from "@/lib/pricing";
 import { createDraft, findTemplate, getMusic, getPricing } from "@/lib/store";
 import type { PackageId } from "@/lib/types";
 
@@ -38,9 +38,7 @@ export async function POST(req: Request) {
   const clientPhone = normalizePhone(body.clientPhone);
   if (!clientPhone) return bad("client_phone_invalid");
 
-  const addons = parseAddons(body.addons);
-  // An Arabic invitation is the Arabic add-on.
-  addons.arabic = details.value.lang === "ar";
+  const addons = sanitizeAddons(pricing, parseAddons(body.addons), details.value.lang);
 
   let musicTrackId: string | undefined;
   if (packageId >= 2 && typeof body.musicTrackId === "string" && body.musicTrackId) {
@@ -52,7 +50,7 @@ export async function POST(req: Request) {
   const { event } = await createDraft(
     {
       ...details.value,
-      mapsUrl: addons.maps ? details.value.mapsUrl : undefined,
+      mapsUrl: mapsIncluded(pricing, packageId, addons) ? details.value.mapsUrl : undefined,
       templateId: template.id,
       category: template.category,
       musicTrackId,

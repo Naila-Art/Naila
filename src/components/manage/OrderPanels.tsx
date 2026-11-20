@@ -6,7 +6,7 @@ import styles from "./manage.module.css";
 import store from "../store/store.module.css";
 import OrderOptions from "../store/OrderOptions";
 import { DETAIL_ERRORS } from "../store/Builder";
-import { ADDON_LABELS, formatEgp, getPackage, type Pricing } from "@/lib/pricing";
+import { ADDON_LABELS, anyAddonEnabled, formatEgp, getPackage, type Pricing } from "@/lib/pricing";
 import { UPLOAD_ERRORS, UploadError, contentTypeOf, postJson, putFile } from "@/lib/upload-client";
 import type { Addons, ChangeRequest, Lang, MusicTrack, Order, PackageId, Template } from "@/lib/types";
 
@@ -252,7 +252,7 @@ function OrderEditor({ api, order, lang, pricing }: { api: string; order: Order;
 
   return (
     <details className={styles.panel}>
-      <summary className={styles.summary}>تغيير الباقة أو الإضافات</summary>
+      <summary className={styles.summary}>{anyAddonEnabled(pricing) ? "تغيير الباقة أو الإضافات" : "تغيير الباقة"}</summary>
       <div className={store.page} style={{ minHeight: 0, background: "transparent" }}>
         <OrderOptions
           pricing={pricing}

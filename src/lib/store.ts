@@ -3,7 +3,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import { randomBytes, randomUUID } from "crypto";
 import { builtInTemplates } from "./templates";
-import { DEFAULT_PRICING, type Pricing } from "./pricing";
+import { withDefaults, type Pricing } from "./pricing";
 import type {
   ChangeRequest,
   EventData,
@@ -482,7 +482,7 @@ export function purgeExpiredGuestData(now = new Date()): Promise<{ events: numbe
 // ---------------------------------------------------------------------------
 
 export async function getPricing(): Promise<Pricing> {
-  return (await read()).pricing ?? DEFAULT_PRICING;
+  return withDefaults((await read()).pricing);
 }
 
 export function savePricing(pricing: Pricing): Promise<Pricing> {

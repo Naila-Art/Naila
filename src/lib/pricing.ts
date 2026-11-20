@@ -26,9 +26,19 @@ export interface NamesTierInfo {
   limit: number;
 }
 
+export type AddonKey = "arabic" | "maps" | "customMusic" | "names";
+
 export interface Pricing {
   packages: PackageInfo[];
   addons: { arabic: number; maps: number; customMusic: number };
+  /**
+   * Which add-ons are on sale. Off means:
+   *   arabic      → Arabic or English is a free choice
+   *   maps        → the location button is included in every package
+   *   customMusic → clients can't upload their own song
+   *   names       → named links only come with package 4
+   */
+  addonsEnabled: Record<AddonKey, boolean>;
   namesTiers: Record<NamesTier, NamesTierInfo>;
 }
 
@@ -47,6 +57,8 @@ export const DEFAULT_PRICING: Pricing = {
     },
   ],
   addons: { arabic: 50, maps: 25, customMusic: 75 },
+  // Decision (Nov 2026): no add-ons for now. Language and location are free.
+  addonsEnabled: { arabic: false, maps: false, customMusic: false, names: false },
   namesTiers: {
     "100": { label: "لحد 100 معزوم", price: 200, limit: 100 },
     "300": { label: "لحد 300 معزوم", price: 350, limit: 300 },
@@ -72,17 +84,41 @@ export function getPackage(pricing: Pricing, id: number): PackageInfo | undefine
   return pricing.packages.find((p) => p.id === id);
 }
 
+/** Older saved settings have no addonsEnabled; fill it from the defaults. */
+export function withDefaults(p: Partial<Pricing> | undefined): Pricing {
+  if (!p) return DEFAULT_PRICING;
+  return { ...DEFAULT_PRICING, ...p, addonsEnabled: { ...DEFAULT_PRICING.addonsEnabled, ...(p.addonsEnabled ?? {}) } };
+}
+
+export const anyAddonEnabled = (pricing: Pricing) => Object.values(pricing.addonsEnabled).some(Boolean);
+
+/** Drops add-ons that aren't on sale; the Arabic add-on follows the language when it is. */
+export function sanitizeAddons(pricing: Pricing, addons: Addons, lang: "ar" | "en"): Addons {
+  const on = pricing.addonsEnabled;
+  return {
+    arabic: on.arabic && lang === "ar",
+    maps: on.maps && addons.maps,
+    customMusic: on.customMusic && addons.customMusic,
+    names: on.names ? addons.names : null,
+  };
+}
+
 export function priceOf(pricing: Pricing, packageId: PackageId, addons: Addons): number {
   const pkg = getPackage(pricing, packageId);
   if (!pkg) return 0;
+  const on = pricing.addonsEnabled;
   let total = pkg.price;
-  if (addons.arabic) total += pricing.addons.arabic;
-  if (addons.maps) total += pricing.addons.maps;
-  if (addons.customMusic) total += pricing.addons.customMusic;
+  if (on.arabic && addons.arabic) total += pricing.addons.arabic;
+  if (on.maps && addons.maps) total += pricing.addons.maps;
+  if (on.customMusic && addons.customMusic) total += pricing.addons.customMusic;
   // Package 4 already includes named links.
-  if (addons.names && packageId !== 4) total += pricing.namesTiers[addons.names].price;
+  if (on.names && addons.names && packageId !== 4) total += pricing.namesTiers[addons.names].price;
   return total;
 }
+
+/** The location button is free for everyone while the maps add-on is off. */
+export const mapsIncluded = (pricing: Pricing, packageId: PackageId, addons: Addons) =>
+  !pricing.addonsEnabled.maps || packageId >= 3 || addons.maps;
 
 /** Guest cap an order gets; saved on the order so later tier edits don't change what was sold. */
 export function namesLimitOf(pricing: Pricing, packageId: PackageId, addons: Addons): number {
@@ -109,7 +145,7 @@ export function featuresOf(event: EventData, order: Order | null, pricing: Prici
   return {
     wishes: pkg >= 2,
     music: pkg >= 2 || order.addons.customMusic,
-    maps: pkg >= 3 || order.addons.maps,
+    maps: mapsIncluded(pricing, pkg, order.addons),
     namesLimit: order.namesLimit ?? namesLimitOf(pricing, pkg, order.addons),
   };
 }
@@ -144,6 +180,8 @@ export function parsePricing(input: unknown): { ok: true; value: Pricing } | { o
   const a = (o.addons ?? {}) as Record<string, unknown>;
   const addons = { arabic: price(a.arabic), maps: price(a.maps), customMusic: price(a.customMusic) };
   if (addons.arabic === null || addons.maps === null || addons.customMusic === null) return { ok: false, error: "addon_price" };
+  const e = (o.addonsEnabled ?? {}) as Record<string, unknown>;
+  const addonsEnabled = { arabic: e.arabic === true, maps: e.maps === true, customMusic: e.customMusic === true, names: e.names === true };
 
   const t = (o.namesTiers ?? {}) as Record<string, Record<string, unknown>>;
   const namesTiers = {} as Record<NamesTier, NamesTierInfo>;
@@ -161,6 +199,6 @@ export function parsePricing(input: unknown): { ok: true; value: Pricing } | { o
 
   return {
     ok: true,
-    value: { packages, addons: addons as Pricing["addons"], namesTiers },
+    value: { packages, addons: addons as Pricing["addons"], addonsEnabled, namesTiers },
   };
 }

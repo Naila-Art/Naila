@@ -4,7 +4,16 @@ import { useState, type FormEvent } from "react";
 import styles from "./store.module.css";
 import OrderOptions from "./OrderOptions";
 import TemplateGallery from "./TemplateGallery";
-import { NO_ADDONS, formatEgp, isSelfServe, priceOf, type Pricing } from "@/lib/pricing";
+import {
+  NO_ADDONS,
+  anyAddonEnabled,
+  formatEgp,
+  isSelfServe,
+  mapsIncluded,
+  priceOf,
+  sanitizeAddons,
+  type Pricing,
+} from "@/lib/pricing";
 import { UploadError, postJson } from "@/lib/upload-client";
 import type { Addons, Lang, MusicTrack, PackageId, Template } from "@/lib/types";
 
@@ -57,7 +66,9 @@ export default function Builder({ pricing, templates, music, initialTemplateId, 
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const total = priceOf(pricing, packageId, { ...addons, arabic: lang === "ar" });
+  const total = priceOf(pricing, packageId, sanitizeAddons(pricing, addons, lang));
+  // While the maps add-on is off, every invitation gets the location button.
+  const freeMaps = !pricing.addonsEnabled.maps;
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -72,7 +83,7 @@ export default function Builder({ pricing, templates, music, initialTemplateId, 
         date,
         venueName,
         venueAddress,
-        mapsUrl: addons.maps ? mapsUrl : "",
+        mapsUrl: mapsIncluded(pricing, packageId, addons) ? mapsUrl : "",
         packageId,
         addons,
         musicTrackId: packageId >= 2 ? musicTrackId : "",
@@ -138,12 +149,26 @@ export default function Builder({ pricing, templates, music, initialTemplateId, 
             <input value={venueAddress} onChange={(e) => setVenueAddress(e.target.value)} maxLength={120} />
           </label>
         </div>
+        {freeMaps && (
+          <label className={styles.field}>
+            <span>لينك المكان من جوجل ماب (اختياري)</span>
+            <input
+              type="url"
+              dir="ltr"
+              inputMode="url"
+              placeholder="https://maps.app.goo.gl/..."
+              value={mapsUrl}
+              onChange={(e) => setMapsUrl(e.target.value)}
+            />
+          </label>
+        )}
         <p className={styles.hint}>صيغة الدعوة وأسامي المعازيم بتكتبهم من صفحتك بعد الخطوة دي.</p>
       </section>
 
       <section className={styles.card}>
         <h2>
-          <span className={styles.stepNum}>3</span>الباقة والإضافات
+          <span className={styles.stepNum}>3</span>
+          {anyAddonEnabled(pricing) ? "الباقة والإضافات" : "الباقة"}
         </h2>
         <OrderOptions
           pricing={pricing}

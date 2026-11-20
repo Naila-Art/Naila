@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { bad, manageContext, readJson } from "@/lib/api";
-import { getPackage, isSelfServe, namesLimitOf, parseAddons, priceOf } from "@/lib/pricing";
+import { getPackage, isSelfServe, mapsIncluded, namesLimitOf, parseAddons, priceOf, sanitizeAddons } from "@/lib/pricing";
 import { getPricing, updateEventDetails, updateOrder } from "@/lib/store";
 import type { PackageId } from "@/lib/types";
 
@@ -20,11 +20,10 @@ export async function PUT(req: Request, ctx: Ctx) {
   if (!pkg || !isSelfServe(packageId)) return bad("invalid_package");
   // A package taken off sale can be kept by an order that already has it, but not switched to.
   if (!pkg.active && packageId !== order.packageId) return bad("invalid_package");
-  const addons = parseAddons(body?.addons);
-  addons.arabic = event.lang === "ar";
+  const addons = sanitizeAddons(pricing, parseAddons(body?.addons), event.lang);
 
   // Drop what the new choice no longer covers.
-  if (!addons.maps && event.mapsUrl) await updateEventDetails(event.id, { mapsUrl: undefined });
+  if (!mapsIncluded(pricing, packageId, addons) && event.mapsUrl) await updateEventDetails(event.id, { mapsUrl: undefined });
   if (packageId < 2 && event.musicTrackId) await updateEventDetails(event.id, { musicTrackId: undefined });
 
   const updated = await updateOrder(order.id, {

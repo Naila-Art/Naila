@@ -455,3 +455,16 @@
 .saveBar p {
   margin: 0;
 }
+
+.addonBox {
+  border: 1px solid var(--m-line);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.addonBox[data-off="true"] {
+  background: var(--m-bg);
+}

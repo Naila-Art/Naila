@@ -3,7 +3,16 @@
 import { useEffect, useState, type FormEvent } from "react";
 import m from "../manage/manage.module.css";
 import a from "./admin.module.css";
-import { ADDON_LABELS, DEFAULT_PRICING, NAMES_TIER_IDS, formatEgp, isSelfServe, type PackageInfo, type Pricing } from "@/lib/pricing";
+import {
+  ADDON_LABELS,
+  DEFAULT_PRICING,
+  NAMES_TIER_IDS,
+  formatEgp,
+  isSelfServe,
+  type AddonKey,
+  type PackageInfo,
+  type Pricing,
+} from "@/lib/pricing";
 import type { NamesTier } from "@/lib/types";
 import { UploadError, postJson } from "@/lib/upload-client";
 
@@ -20,6 +29,12 @@ function errorText(code: string): string {
   if (code.startsWith("tier_")) return "شريحة المعازيم: الاسم والسعر لازم يتكتبوا، والعدد من 1 لـ 5000.";
   return "ماتحفظش. جرب تاني.";
 }
+
+const OFF_NOTES: Record<"arabic" | "maps" | "customMusic", string> = {
+  arabic: "مقفولة: العميل بيختار عربي أو إنجليزي ببلاش",
+  maps: "مقفولة: اللوكيشن مجاناً في كل الباقات",
+  customMusic: "مقفولة: العميل مش بيرفع أغنيته",
+};
 
 /** Whole numbers only; empty input stays editable while typing. */
 const toNumber = (v: string) => (v.trim() === "" ? NaN : Number(v));
@@ -42,7 +57,8 @@ export default function PricingAdmin({ adminKey, initial }: { adminKey: string; 
 
   const setPkg = (id: number, patch: Partial<PackageInfo>) =>
     setP((x) => ({ ...x, packages: x.packages.map((pk) => (pk.id === id ? { ...pk, ...patch } : pk)) }));
-  const setTier = (id: NamesTier, patch: Partial<Pricing["namesTiers"][NamesTier]>) =>
+  const setEnabled = (k: AddonKey, on: boolean) => setP((x) => ({ ...x, addonsEnabled: { ...x.addonsEnabled, [k]: on } }));
+  const setTier =(id: NamesTier, patch: Partial<Pricing["namesTiers"][NamesTier]>) =>
     setP((x) => ({ ...x, namesTiers: { ...x.namesTiers, [id]: { ...x.namesTiers[id], ...patch } } }));
 
   async function save(e: FormEvent) {
@@ -126,27 +142,49 @@ export default function PricingAdmin({ adminKey, initial }: { adminKey: string; 
 
         <section className={m.panel}>
           <h2>الإضافات</h2>
+          <p className={m.hint}>
+            الإضافة المقفولة مش بتظهر للعميل خالص. اللغة لما تتقفل بتبقى اختيار ببلاش (عربي أو إنجليزي)، واللوكيشن لما
+            يتقفل بيبقى مجاناً في كل الباقات.
+          </p>
           <div className={a.threeCols}>
             {(["arabic", "maps", "customMusic"] as const).map((k) => (
-              <label key={k} className={m.field}>
-                <span>{ADDON_LABELS[k]}</span>
-                <input
-                  className={m.input}
-                  type="number"
-                  min={0}
-                  step={1}
-                  inputMode="numeric"
-                  value={Number.isNaN(p.addons[k]) ? "" : p.addons[k]}
-                  onChange={(e) => setP((x) => ({ ...x, addons: { ...x.addons, [k]: toNumber(e.target.value) } }))}
-                />
-              </label>
+              <div key={k} className={a.addonBox} data-off={!p.addonsEnabled[k]}>
+                <label className={m.checkRow}>
+                  <input type="checkbox" checked={p.addonsEnabled[k]} onChange={(e) => setEnabled(k, e.target.checked)} />
+                  <span>{ADDON_LABELS[k]}</span>
+                </label>
+                <label className={m.field}>
+                  <span>السعر</span>
+                  <input
+                    className={m.input}
+                    type="number"
+                    min={0}
+                    step={1}
+                    inputMode="numeric"
+                    disabled={!p.addonsEnabled[k]}
+                    value={Number.isNaN(p.addons[k]) ? "" : p.addons[k]}
+                    onChange={(e) => setP((x) => ({ ...x, addons: { ...x.addons, [k]: toNumber(e.target.value) } }))}
+                  />
+                </label>
+                <small className={m.hint}>{p.addonsEnabled[k] ? "بتتباع كإضافة" : OFF_NOTES[k]}</small>
+              </div>
             ))}
           </div>
         </section>
 
-        <section className={m.panel}>
-          <h2>{ADDON_LABELS.names}: الشرائح</h2>
-          <p className={m.hint}>العدد هو أقصى عدد معازيم بالاسم. باقة 4 بتاخد الشريحة المفتوحة مجاناً.</p>
+        <section className={m.panel} data-off={!p.addonsEnabled.names}>
+          <div className={m.panelHead}>
+            <h2>{ADDON_LABELS.names}: الشرائح</h2>
+            <label className={m.checkRow}>
+              <input type="checkbox" checked={p.addonsEnabled.names} onChange={(e) => setEnabled("names", e.target.checked)} />
+              <span>{p.addonsEnabled.names ? "بتتباع" : "مقفولة"}</span>
+            </label>
+          </div>
+          <p className={m.hint}>
+            {p.addonsEnabled.names
+              ? "العدد هو أقصى عدد معازيم بالاسم. باقة 4 بتاخد الشريحة المفتوحة مجاناً."
+              : "مقفولة: الدعوة باسم كل معزوم موجودة في باقة 4 بس."}
+          </p>
           {NAMES_TIER_IDS.map((id) => (
             <div key={id} className={a.tierRow}>
               <label className={m.field}>
@@ -206,7 +244,8 @@ export default function PricingAdmin({ adminKey, initial }: { adminKey: string; 
             </button>
           </div>
           <p className={m.hint}>
-            مثال: باقة {p.packages[0]?.name} بالعربي = {formatEgp((p.packages[0]?.price || 0) + (p.addons.arabic || 0))}
+            مثال: باقة {p.packages[0]?.name} بالعربي ={" "}
+            {formatEgp((p.packages[0]?.price || 0) + (p.addonsEnabled.arabic ? p.addons.arabic || 0 : 0))}
           </p>
         </div>
       </form>
