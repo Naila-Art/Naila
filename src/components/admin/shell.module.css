@@ -178,16 +178,18 @@
     display: none;
   }
 
+  /* Fixed (not sticky): pinned to the full screen height however far the page scrolls. */
   .sidebar {
-    position: sticky;
-    top: 0;
-    height: 100svh;
+    position: fixed;
+    inset-block: 0;
+    inset-inline-start: 0;
+    height: auto;
+    overflow-y: auto;
     transform: none;
     transition: none;
   }
 
   .shell {
-    display: grid;
-    grid-template-columns: 260px 1fr;
+    padding-inline-start: 260px;
   }
 }

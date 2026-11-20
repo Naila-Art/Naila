@@ -16,22 +16,27 @@ const ERRORS: Record<string, string> = {
 };
 const text = (err: unknown) => ERRORS[err instanceof UploadError ? err.code : ""] ?? "حصلت مشكلة. جرب تاني.";
 
-/** Asks for the finance password (or sets it the first time with the setup code). */
+/** Asks for the finance password, sets it the first time, or resets it ("forgot") with the setup code. */
 export default function FinanceGate({ mode }: { mode: "unlock" | "setup" }) {
   const router = useRouter();
+  const [forgot, setForgot] = useState(false);
   const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const withCode = mode === "setup" || forgot;
 
   async function submit(e: FormEvent) {
     e.preventDefault();
     setError("");
-    if (mode === "setup" && password !== confirm) return setError("الباسوردين مش زي بعض.");
+    if (withCode && password !== confirm) return setError("الباسوردين مش زي بعض.");
     setBusy(true);
     try {
-      await postJson("/api/admin/finance", mode === "setup" ? { action: "setup", code, password } : { action: "unlock", password });
+      await postJson(
+        "/api/admin/finance",
+        withCode ? { action: mode === "setup" ? "setup" : "reset", code, password } : { action: "unlock", password },
+      );
       router.refresh();
     } catch (err) {
       setError(text(err));
@@ -40,38 +45,47 @@ export default function FinanceGate({ mode }: { mode: "unlock" | "setup" }) {
     }
   }
 
+  function toggleForgot() {
+    setForgot((f) => !f);
+    setError("");
+    setPassword("");
+    setConfirm("");
+  }
+
   return (
     <form className={`${m.panel} ${a.gate}`} onSubmit={submit}>
       <div className={a.gateIcon} aria-hidden>
         <Icon name="lock" size={34} strokeWidth={1.5} />
       </div>
-      <h2>{mode === "setup" ? "حدد باسورد الحسابات" : "الصفحة دي محمية"}</h2>
+      <h2>{mode === "setup" ? "حدد باسورد الحسابات" : forgot ? "باسورد جديد للحسابات" : "الصفحة دي محمية"}</h2>
       <div className={a.gateNote}>نفس الباسورد بيفتح صفحة الحسابات وصفحة طرق الدفع.</div>
       <p className={m.hint}>
         {mode === "setup"
           ? "أول مرة بس: اكتب كود الإعداد (ADMIN_TOKEN من ملف الإعدادات)، واختار باسورد للحسابات منفصل عن باسورد الدخول."
-          : "اكتب باسورد الحسابات. الصفحة هتفضل مفتوحة على الجهاز ده ساعتين."}
+          : forgot
+            ? "اكتب كود الإعداد (ADMIN_TOKEN من ملف الإعدادات) واختار باسورد جديد. القديم هيبطل يشتغل."
+            : "اكتب باسورد الحسابات. الصفحة هتفضل مفتوحة على الجهاز ده ساعتين."}
       </p>
-      {mode === "setup" && (
+      {withCode && (
         <label className={m.field}>
           <span>كود الإعداد</span>
           <input className={m.input} dir="ltr" value={code} onChange={(e) => setCode(e.target.value)} autoComplete="off" required />
         </label>
       )}
       <label className={m.field}>
-        <span>{mode === "setup" ? "باسورد الحسابات الجديد" : "باسورد الحسابات"}</span>
+        <span>{withCode ? "باسورد الحسابات الجديد" : "باسورد الحسابات"}</span>
         <input
           className={m.input}
           type="password"
           dir="ltr"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          autoComplete={mode === "setup" ? "new-password" : "current-password"}
+          autoComplete={withCode ? "new-password" : "current-password"}
           required
           autoFocus
         />
       </label>
-      {mode === "setup" && (
+      {withCode && (
         <label className={m.field}>
           <span>اكتبه تاني</span>
           <input className={m.input} type="password" dir="ltr" value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" required />
@@ -83,8 +97,13 @@ export default function FinanceGate({ mode }: { mode: "unlock" | "setup" }) {
         </p>
       )}
       <button className={m.primary} type="submit" disabled={busy}>
-        {mode === "setup" ? "حفظ وفتح الحسابات" : "افتح"}
+        {mode === "setup" ? "حفظ وفتح الحسابات" : forgot ? "حفظ الباسورد الجديد" : "افتح"}
       </button>
+      {mode === "unlock" && (
+        <button type="button" className={m.linkBtn} onClick={toggleForgot}>
+          {forgot ? "رجوع" : "نسيت الباسورد؟"}
+        </button>
+      )}
     </form>
   );
 }
