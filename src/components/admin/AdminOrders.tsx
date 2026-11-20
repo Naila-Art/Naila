@@ -75,7 +75,7 @@ const ERRORS: Record<string, string> = {
   names_required: "اكتب الاسمين.",
   date_invalid: "اختار التاريخ والساعة.",
   venue_required: "اكتب المكان.",
-  maps_invalid: "لينك الخريطة مش من جوجل ماب.",
+  maps_invalid: "لينك الخريطة لازم يكون من جوجل ماب أو آبل ماب.",
   text_invalid: "اكتب الجملة اللي في أول الدعوة.",
   not_pending: "الطلب مش مستني تأكيد.",
   already_paid: "الطلب مدفوع خلاص.",
@@ -716,7 +716,7 @@ function EventEditor({
         </label>
       </div>
       <label className={m.field}>
-        <span>لينك جوجل ماب</span>
+        <span>لينك جوجل ماب أو آبل ماب</span>
         <input className={m.input} dir="ltr" value={d.mapsUrl} onChange={(ev) => set({ mapsUrl: ev.target.value })} />
       </label>
       <label className={m.field}>

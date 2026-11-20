@@ -26,7 +26,7 @@ export async function eventContext(event: EventData): Promise<EventContext> {
   return { order, features, isDraft: event.status === "draft", musicUrl };
 }
 
-const MAPS_URL = /^https:\/\/(www\.)?(google\.[a-z.]+\/maps|maps\.google\.[a-z.]+|maps\.app\.goo\.gl|goo\.gl\/maps)\b/i;
+const MAPS_URL = /^https:\/\/(www\.)?(google\.[a-z.]+\/maps|maps\.google\.[a-z.]+|maps\.app\.goo\.gl|goo\.gl\/maps|share\.google\/|maps\.apple\.com|maps\.apple\/)\b/i;
 
 /**
  * Validates the editable event details (storefront form and client page).

@@ -360,7 +360,7 @@ function DetailsEditor(props: Props & { api: string }) {
         </div>
         {props.features.maps && (
           <label className={styles.field}>
-            <span>لينك جوجل ماب</span>
+            <span>لينك جوجل ماب أو آبل ماب</span>
             <input className={styles.input} type="url" dir="ltr" value={d.mapsUrl} onChange={(e) => set({ mapsUrl: e.target.value })} />
           </label>
         )}

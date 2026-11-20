@@ -24,7 +24,7 @@ export const DETAIL_ERRORS: Record<string, string> = {
   date_invalid: "اختار اليوم والشهر والسنة والساعة.",
   venue_required: "اكتب اسم المكان.",
   address_invalid: "العنوان طويل أوي.",
-  maps_invalid: "لينك الخريطة لازم يكون من جوجل ماب (افتح المكان على جوجل ماب ← مشاركة ← نسخ اللينك).",
+  maps_invalid: "لينك الخريطة لازم يكون من جوجل ماب أو آبل ماب (افتح المكان ← مشاركة ← نسخ اللينك).",
   text_invalid: "اكتب الجملة اللي في أول الدعوة (لحد 200 حرف).",
   client_name_required: "اكتب اسمك.",
   client_phone_invalid: "رقم الواتساب مش مظبوط.",
@@ -71,7 +71,7 @@ interface Draft {
   clientPhone: string;
 }
 
-const MAPS_URL = /^https:\/\/(www\.)?(google\.[a-z.]+\/maps|maps\.google\.[a-z.]+|maps\.app\.goo\.gl|goo\.gl\/maps)\b/i;
+const MAPS_URL = /^https:\/\/(www\.)?(google\.[a-z.]+\/maps|maps\.google\.[a-z.]+|maps\.app\.goo\.gl|goo\.gl\/maps|share\.google\/|maps\.apple\.com|maps\.apple\/)\b/i;
 
 /**
  * The storefront builder as steps: design → details → package → contact → review.
@@ -265,7 +265,7 @@ export default function Builder({ pricing, templates, music, initialTemplateId, 
             </label>
           </div>
           <label className={styles.field}>
-            <span>لينك المكان من جوجل ماب (اختياري)</span>
+            <span>لينك المكان من جوجل ماب أو آبل ماب (اختياري)</span>
             <input
               type="url"
               dir="ltr"
