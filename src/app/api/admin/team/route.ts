@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { bad, cleanText, readJson } from "@/lib/api";
-import { MIN_PASSWORD, hashPassword, isEmail, requireAdmin, verifyPassword } from "@/lib/auth";
+import { MIN_PASSWORD, clearFailures, hashPassword, isEmail, isLocked, isSetupCode, recordFailure, requireAdmin, verifyPassword } from "@/lib/auth";
 import { addAdminUser, deleteAdminUser, listAdminUsers, updateAdminPassword } from "@/lib/store";
 
 const publicUser = ({ id, name, email, createdAt }: { id: string; name: string; email: string; createdAt: string }) => ({
@@ -16,11 +16,18 @@ export async function GET(req: Request) {
   return NextResponse.json({ users: (await listAdminUsers()).map(publicUser), me: admin.id });
 }
 
-/** Add a team member. Body: { name, email, password } */
+/** Add a team member. Body: { code, name, email, password }. Needs the setup code (ADMIN_TOKEN), like the first account. */
 export async function POST(req: Request) {
   const admin = await requireAdmin(req);
   if (admin instanceof NextResponse) return admin;
   const body = await readJson(req);
+  const throttleKey = `team:${admin.id}`;
+  if (isLocked(throttleKey)) return bad("locked", 429);
+  if (typeof body?.code !== "string" || !isSetupCode(body.code.trim())) {
+    recordFailure(throttleKey);
+    return bad("invalid_code", 401);
+  }
+  clearFailures(throttleKey);
   const name = cleanText(body?.name, 40);
   if (!name) return bad("name_required");
   if (!isEmail(body?.email)) return bad("invalid_email");

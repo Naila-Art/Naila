@@ -20,6 +20,8 @@ const ERRORS: Record<string, string> = {
   wrong_password: "الباسورد الحالي غلط.",
   cannot_remove_self: "مينفعش تمسح حسابك.",
   last_admin: "مينفعش تمسح آخر حساب.",
+  invalid_code: "كود الإعداد غلط.",
+  locked: "محاولات غلط كتير. استنى 10 دقايق وجرب تاني.",
 };
 const text = (err: unknown) => ERRORS[err instanceof UploadError ? err.code : ""] ?? "حصلت مشكلة. جرب تاني.";
 
@@ -29,6 +31,7 @@ export default function TeamAdmin({ initial, meId }: { initial: User[]; meId: st
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
   const [msg, setMsg] = useState<{ ok: boolean; t: string } | null>(null);
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
@@ -38,11 +41,12 @@ export default function TeamAdmin({ initial, meId }: { initial: User[]; meId: st
     e.preventDefault();
     setMsg(null);
     try {
-      const { user } = await postJson<{ user: User }>("/api/admin/team", { name, email, password });
+      const { user } = await postJson<{ user: User }>("/api/admin/team", { code, name, email, password });
       setUsers((u) => [...u, user]);
       setName("");
       setEmail("");
       setPassword("");
+      setCode("");
       setMsg({ ok: true, t: `اتضاف ${user.name}. ابعتله الإيميل والباسورد.` });
     } catch (err) {
       setMsg({ ok: false, t: text(err) });
@@ -112,6 +116,11 @@ export default function TeamAdmin({ initial, meId }: { initial: User[]; meId: st
             <span>باسورد مبدئي (8 حروف أو أكتر)</span>
             <input className={m.input} type="password" dir="ltr" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" minLength={8} required />
           </label>
+          <label className={m.field}>
+            <span>كود الإعداد</span>
+            <input className={m.input} type="password" dir="ltr" value={code} onChange={(e) => setCode(e.target.value)} autoComplete="off" required />
+          </label>
+          <p className={m.hint}>أي حساب جديد محتاج كود الإعداد. موجود في ملف SETUP-CODE.txt عند صاحب المشروع.</p>
           {msg && <p className={msg.ok ? m.ok : m.error}>{msg.t}</p>}
           <button className={m.primary} type="submit">
             إضافة

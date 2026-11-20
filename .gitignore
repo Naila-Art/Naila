@@ -44,3 +44,6 @@ next-env.d.ts
 # local dev data store
 /data
 /.next-prod/
+
+# Setup code, kept on this computer only
+/SETUP-CODE.txt
