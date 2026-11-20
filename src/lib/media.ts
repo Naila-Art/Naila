@@ -3,14 +3,10 @@ import { promises as fs } from "fs";
 import path from "path";
 
 /**
- * Uploaded files (template videos and posters).
- * Stored under data/uploads locally and served by /media/[...path] with Range support (iOS needs it for video).
- * Swapped for Supabase Storage before deploying — the URLs stay /media/... or become storage URLs.
+ * Local-disk storage used in development when R2 isn't configured (see storage.ts).
+ * Files live under data/uploads and are served by /media/[...path] with Range support.
  */
 export const MEDIA_DIR = path.join(process.cwd(), "data", "uploads");
-
-export const MAX_VIDEO_BYTES = 20 * 1024 * 1024;
-export const MAX_POSTER_BYTES = 3 * 1024 * 1024;
 
 /** Resolves a /media path inside MEDIA_DIR, refusing anything that escapes it. */
 export function mediaPath(parts: string[]): string | null {

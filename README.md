@@ -22,8 +22,10 @@ Open http://localhost:3000. The home page lists the demo links.
 | `PUT /api/manage/{manageToken}/texts` | `{ generalText, personalText }`; personalText must contain `{name}` |
 | `/admin/{ADMIN_TOKEN}/templates` | Our admin dashboard: upload Google Flow templates, preview, delete, progress toward 6 per category |
 | `/admin/{ADMIN_TOKEN}/templates/{id}` | Template preview with sample names (replies here aren't saved) |
-| `GET/POST/DELETE /api/admin/{ADMIN_TOKEN}/templates` | List · upload (multipart: name, category, 5 colours, video MP4, poster optional) · delete `?id=` |
-| `/media/...` | Uploaded files, with Range support so iPhone Safari can play the videos |
+| `POST /api/admin/{ADMIN_TOKEN}/templates/uploads` | Upload slot: `{ kind, contentType, size, templateId? }` → signed URL the browser PUTs the file to (R2) |
+| `GET/POST/DELETE /api/admin/{ADMIN_TOKEN}/templates` | List · save after upload `{ templateId, name, category, theme, videoKey, posterKey? }` (files are checked first) · delete `?id=` (removes the files too) |
+| `PUT /api/admin/{ADMIN_TOKEN}/uploads` | Dev only, without R2: local stand-in for the R2 upload |
+| `/media/...` | Dev only: locally stored uploads, with Range support |
 
 Demo client page: `/c/m7q2x9k4t8w3z6p1`.
 
@@ -41,10 +43,23 @@ Open `/admin/{ADMIN_TOKEN}/templates` and upload:
 2. A poster image (optional). If none is given, the browser captures a frame from the start of the video.
 3. Name, category (wedding / engagement / katb kitab) and five colours (background, letter, text, accent, seal) chosen to match the video.
 
-The file contents are checked (real MP4 / JPG / PNG / WebP), not just the extension. Files go to `data/uploads/templates/{id}/`.
+The file contents are checked (real MP4 / JPG / PNG / WebP), not just the extension.
+
+### Storage: Cloudflare R2
+Videos and posters live in R2 under `templates/{id}/opening.mp4` and `templates/{id}/poster.jpg`.
+The browser uploads straight to R2 with a 15-minute signed URL, so files never go through Vercel (which caps request bodies at 4.5 MB).
+Guests load them from the bucket's public domain; R2 serves Range requests, which iPhone needs for video.
+
+Setup:
+1. Create a bucket and connect a custom domain (e.g. `media.<our-domain>`), or turn on the r2.dev public URL for testing.
+2. Create an R2 API token with **Object Read & Write** on that bucket only.
+3. Bucket → Settings → CORS policy: paste `r2-cors.json` with our real domain in it. Without it, browser uploads fail.
+4. Fill the `R2_*` values from `.env.example` in `.env.local` and in Vercel.
+
+Without R2 settings, development stores files in `data/uploads/` and serves them from `/media/...`. In production the R2 settings are required.
 Use "معاينة" to see the template exactly as a guest would.
 
 Without a video, the built-in template falls back to a CSS envelope with a wax seal.
 
 ## Data
-Stage 1 stores data in `data/db.json` and uploads in `data/uploads/` (git-ignored, seeded with demo events on first run). All access goes through `src/lib/store.ts`, which will be swapped for Supabase before deploying; neither persists on Vercel. Uploads move to Supabase Storage (Vercel also caps request bodies at 4.5 MB, so videos will upload straight to storage).
+Stage 1 stores data in `data/db.json` (and, without R2, uploads in `data/uploads/`) (git-ignored, seeded with demo events on first run). All access goes through `src/lib/store.ts`, which will be swapped for Supabase before deploying; neither persists on Vercel.

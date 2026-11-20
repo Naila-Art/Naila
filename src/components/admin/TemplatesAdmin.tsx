@@ -42,9 +42,55 @@ const ERRORS: Record<string, string> = {
   poster_too_large: "الصورة أكبر من 3 ميجا.",
   poster_not_image: "الصورة لازم تكون JPG أو PNG أو WebP.",
   not_found: "اللينك ده مش شغال.",
+  upload_missing: "الملف ماوصلش للتخزين. جرب تاني.",
+  storage_rejected: "التخزين رفض الملف. جرب تاني.",
+  network: "النت فصل أثناء الرفع، أو إعدادات CORS على R2 ناقصة. جرب تاني.",
+  upload_failed: "حصلت مشكلة في الرفع. جرب تاني.",
 };
 
 const mb = (bytes: number) => (bytes / 1024 / 1024).toFixed(1);
+
+const POSTER_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
+class UploadError extends Error {
+  constructor(public code: string) {
+    super(code);
+  }
+}
+
+interface Slot {
+  templateId: string;
+  objectKey: string;
+  uploadUrl: string;
+}
+
+async function requestSlot(
+  adminKey: string,
+  body: { kind: "video" | "poster"; contentType: string; size: number; templateId?: string },
+): Promise<Slot> {
+  const res = await fetch(`/api/admin/${adminKey}/templates/uploads`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new UploadError(data.error ?? "");
+  return data as Slot;
+}
+
+/** PUTs a file to its upload URL (R2 in production). XHR rather than fetch, for progress. */
+function putFile(url: string, file: Blob, contentType: string, onProgress: (loaded: number) => void): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", url);
+    xhr.setRequestHeader("Content-Type", contentType);
+    xhr.upload.onprogress = (ev) => onProgress(ev.loaded);
+    xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new UploadError("storage_rejected")));
+    // A CORS problem on the R2 bucket also lands here.
+    xhr.onerror = () => reject(new UploadError("network"));
+    xhr.send(file);
+  });
+}
 
 /** Grabs a frame near the start of the video as a JPEG, used as the poster when none is uploaded. */
 function captureFrame(video: HTMLVideoElement): Promise<Blob | null> {
@@ -117,44 +163,63 @@ export default function TemplatesAdmin({ adminKey, initialTemplates, initialUsag
     if (!video) return setError(ERRORS.video_required);
 
     void (async () => {
-      const form = new FormData();
-      form.set("name", name.trim());
-      form.set("category", category);
-      for (const { key } of COLOUR_FIELDS) form.set(key, theme[key]);
-      form.set("video", video);
-      if (poster) form.set("poster", poster);
-      else if (previewRef.current) {
-        const frame = await captureFrame(previewRef.current);
-        if (frame) form.set("poster", frame, "poster.jpg");
-      }
+      try {
+        setProgress(0);
+        let posterBlob: Blob | null = poster;
+        if (!posterBlob && previewRef.current) posterBlob = await captureFrame(previewRef.current);
+        if (posterBlob && !POSTER_TYPES.includes(posterBlob.type)) throw new UploadError("poster_not_image");
 
-      // XHR rather than fetch so we can show upload progress for large videos.
-      const xhr = new XMLHttpRequest();
-      xhr.open("POST", `/api/admin/${adminKey}/templates`);
-      xhr.upload.onprogress = (ev) => ev.lengthComputable && setProgress(Math.round((ev.loaded / ev.total) * 100));
-      xhr.onload = () => {
-        setProgress(null);
-        let body: { template?: Template; error?: string } = {};
-        try {
-          body = JSON.parse(xhr.responseText);
-        } catch {}
-        if (xhr.status === 201 && body.template) {
-          setTemplates((list) => [body.template!, ...list]);
-          setToast("التيمبليت اترفع");
-          setName("");
-          setVideo(null);
-          setPoster(null);
-          formRef.current?.reset();
-        } else {
-          setError(ERRORS[body.error ?? ""] ?? "حصلت مشكلة في الرفع. جرب تاني.");
+        // Progress covers both files, weighted by size.
+        const total = video.size + (posterBlob?.size ?? 0);
+        let done = 0;
+        const track = (loaded: number) => setProgress(Math.min(99, Math.round(((done + loaded) / total) * 100)));
+
+        // 1. Video: ask for an upload slot (this also creates the template id), then send it straight to storage.
+        const slot = await requestSlot(adminKey, { kind: "video", contentType: "video/mp4", size: video.size });
+        await putFile(slot.uploadUrl, video, "video/mp4", track);
+        done += video.size;
+
+        // 2. Poster, same template id.
+        let posterKey: string | undefined;
+        if (posterBlob) {
+          const p = await requestSlot(adminKey, {
+            kind: "poster",
+            contentType: posterBlob.type,
+            size: posterBlob.size,
+            templateId: slot.templateId,
+          });
+          await putFile(p.uploadUrl, posterBlob, posterBlob.type, track);
+          posterKey = p.objectKey;
         }
-      };
-      xhr.onerror = () => {
+
+        // 3. Save the template; the server checks the files before accepting it.
+        setProgress(100);
+        const res = await fetch(`/api/admin/${adminKey}/templates`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            templateId: slot.templateId,
+            name: name.trim(),
+            category,
+            theme,
+            videoKey: slot.objectKey,
+            posterKey,
+          }),
+        });
+        const body = (await res.json().catch(() => ({}))) as { template?: Template; error?: string };
+        if (res.status !== 201 || !body.template) throw new UploadError(body.error ?? "");
+
+        setTemplates((list) => [body.template!, ...list]);
+        setToast("التيمبليت اترفع");
+        setName("");
+        setVideo(null);
+        setPoster(null);
+        formRef.current?.reset();
+      } catch (err) {
+        setError(err instanceof UploadError ? (ERRORS[err.code] ?? ERRORS.upload_failed) : ERRORS.upload_failed);
+      } finally {
         setProgress(null);
-        setError("النت فصل أثناء الرفع. جرب تاني.");
-      };
-      setProgress(0);
-      xhr.send(form);
+      }
     })();
   }
 

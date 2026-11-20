@@ -1,9 +1,8 @@
-import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
 import { isAdmin } from "@/lib/admin";
-import { bad, cleanText } from "@/lib/api";
-import { MAX_POSTER_BYTES, MAX_VIDEO_BYTES, deleteMediaDir, saveMedia, sniff } from "@/lib/media";
-import { addTemplate, deleteTemplate, listTemplates, templateUsage } from "@/lib/store";
+import { bad, cleanText, readJson } from "@/lib/api";
+import { TEMPLATE_ID, deleteTemplateFiles, isTemplateObjectKey, publicUrl, verifyUpload } from "@/lib/storage";
+import { addTemplate, deleteTemplate, findTemplate, listTemplates, templateUsage } from "@/lib/store";
 import { CATEGORY_LABELS, type Category, type Template } from "@/lib/types";
 
 type Ctx = { params: Promise<{ key: string }> };
@@ -21,73 +20,73 @@ export async function GET(_req: Request, ctx: Ctx) {
   return NextResponse.json({ templates: await listTemplates(), usage: await templateUsage() });
 }
 
-/** multipart/form-data: name, category, theme colours, video (MP4), poster (image, optional). */
+/**
+ * Step 2 of an upload, after the browser has PUT the files to storage.
+ * Body: { templateId, name, category, theme: {5 colours}, videoKey, posterKey? }
+ */
 export async function POST(req: Request, ctx: Ctx) {
   const denied = await guard(ctx);
   if (denied) return denied;
+  const body = await readJson(req);
+  if (!body) return bad("invalid_body");
 
-  let form: FormData;
-  try {
-    form = await req.formData();
-  } catch {
-    return bad("invalid_form");
-  }
+  const id = body.templateId;
+  if (typeof id !== "string" || !TEMPLATE_ID.test(id)) return bad("invalid_template");
+  if (await findTemplate(id)) return bad("already_exists", 409);
 
-  const name = cleanText(form.get("name"), 60);
+  const name = cleanText(body.name, 60);
   if (!name) return bad("name_required");
-  const category = form.get("category");
+  const category = body.category;
   if (typeof category !== "string" || !(category in CATEGORY_LABELS)) return bad("invalid_category");
 
+  const rawTheme = (body.theme ?? {}) as Record<string, unknown>;
   const theme = {} as Template["theme"];
   for (const k of THEME_KEYS) {
-    const v = form.get(k);
+    const v = rawTheme[k];
     if (typeof v !== "string" || !HEX.test(v)) return bad("invalid_colour");
     theme[k] = v.toLowerCase();
   }
 
-  const video = form.get("video");
-  if (!(video instanceof File) || video.size === 0) return bad("video_required");
-  if (video.size > MAX_VIDEO_BYTES) return bad("video_too_large");
-  const videoData = new Uint8Array(await video.arrayBuffer());
-  if (sniff(videoData) !== "mp4") return bad("video_not_mp4");
-
-  const poster = form.get("poster");
-  let posterData: Uint8Array | null = null;
-  let posterExt: string | null = null;
-  if (poster instanceof File && poster.size > 0) {
-    if (poster.size > MAX_POSTER_BYTES) return bad("poster_too_large");
-    posterData = new Uint8Array(await poster.arrayBuffer());
-    posterExt = sniff(posterData);
-    if (!posterExt || posterExt === "mp4") return bad("poster_not_image");
+  // The keys must belong to this template id — a client can't point at someone else's file.
+  const videoKey = body.videoKey;
+  if (typeof videoKey !== "string" || videoKey !== `templates/${id}/opening.mp4`) return bad("video_required");
+  const posterKey = body.posterKey;
+  if (posterKey !== undefined && (typeof posterKey !== "string" || !isTemplateObjectKey(posterKey) || !posterKey.startsWith(`templates/${id}/poster.`))) {
+    return bad("poster_not_image");
   }
 
-  const id = `tpl_${randomBytes(5).toString("hex")}`;
-  try {
-    const videoUrl = await saveMedia(["templates", id, "opening.mp4"], videoData);
-    const posterUrl = posterData ? await saveMedia(["templates", id, `poster.${posterExt}`], posterData) : undefined;
-    const template = await addTemplate({
-      id,
-      name,
-      category: category as Category,
-      videoUrl,
-      posterUrl,
-      theme,
-      createdAt: new Date().toISOString(),
-    });
-    return NextResponse.json({ template }, { status: 201 });
-  } catch (err) {
-    await deleteMediaDir(["templates", id]);
-    throw err;
+  const videoCheck = await verifyUpload(videoKey, "video");
+  if (videoCheck !== "ok") {
+    await deleteTemplateFiles(id);
+    return bad(videoCheck === "missing" ? "upload_missing" : videoCheck === "too_large" ? "video_too_large" : "video_not_mp4");
   }
+  if (posterKey) {
+    const posterCheck = await verifyUpload(posterKey, "poster");
+    if (posterCheck !== "ok") {
+      await deleteTemplateFiles(id);
+      return bad(posterCheck === "missing" ? "upload_missing" : posterCheck === "too_large" ? "poster_too_large" : "poster_not_image");
+    }
+  }
+
+  const template = await addTemplate({
+    id,
+    name,
+    category: category as Category,
+    videoUrl: publicUrl(videoKey),
+    posterUrl: posterKey ? publicUrl(posterKey) : undefined,
+    theme,
+    createdAt: new Date().toISOString(),
+  });
+  return NextResponse.json({ template }, { status: 201 });
 }
 
 export async function DELETE(req: Request, ctx: Ctx) {
   const denied = await guard(ctx);
   if (denied) return denied;
   const id = new URL(req.url).searchParams.get("id") ?? "";
-  if (!/^tpl_[0-9a-f]{10}$/.test(id)) return bad("not_found", 404);
+  if (!TEMPLATE_ID.test(id)) return bad("not_found", 404);
   const result = await deleteTemplate(id);
   if (!result.deleted) return bad("not_found", 404);
-  await deleteMediaDir(["templates", id]);
+  await deleteTemplateFiles(id);
   return NextResponse.json(result);
 }
