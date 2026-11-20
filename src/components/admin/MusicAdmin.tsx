@@ -2,17 +2,18 @@
 
 import { useState, type FormEvent } from "react";
 import m from "../manage/manage.module.css";
+import a from "./admin.module.css";
 import type { MusicTrack } from "@/lib/types";
 import { UPLOAD_ERRORS, UploadError, contentTypeOf, postJson, putFile } from "@/lib/upload-client";
 
 /** Music library for package 2+: clients pick a track from here in the builder. */
-export default function MusicAdmin({ adminKey, initial }: { adminKey: string; initial: MusicTrack[] }) {
+export default function MusicAdmin({ initial }: { initial: MusicTrack[] }) {
   const [tracks, setTracks] = useState(initial);
   const [name, setName] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState("");
-  const api = `/api/admin/${adminKey}/music`;
+  const api = `/api/admin/music`;
 
   async function upload(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -43,9 +44,8 @@ export default function MusicAdmin({ adminKey, initial }: { adminKey: string; in
   }
 
   return (
-    <main className={m.page} dir="rtl" lang="ar">
-      <header className={m.header}>
-        <div className={m.kicker}>داشبورد الإدارة</div>
+    <main className={`${m.page} ${a.wide}`} dir="rtl" lang="ar">
+      <header className={a.pageHead}>
         <h1>المزيكا</h1>
       </header>
 

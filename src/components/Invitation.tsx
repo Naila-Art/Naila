@@ -3,10 +3,9 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import styles from "./invitation.module.css";
 import Countdown from "./Countdown";
-import RsvpForm from "./RsvpForm";
 import WishForm from "./WishForm";
 import type { Strings } from "@/lib/i18n";
-import type { Lang, RsvpStatus, Template } from "@/lib/types";
+import type { Lang, Template } from "@/lib/types";
 
 export interface InvitationProps {
   slug: string;
@@ -26,7 +25,6 @@ export interface InvitationProps {
   mapsUrl?: string;
   musicUrl?: string;
   calendarUrl: string;
-  initialRsvp: RsvpStatus | null;
   /** Package 2+ only. */
   showWishes?: boolean;
   /** A personal note written for this guest only (packages 3-4). */
@@ -114,7 +112,13 @@ export default function Invitation(props: InvitationProps) {
 
   return (
     <main className={styles.page} style={themeVars} dir={lang === "ar" ? "rtl" : "ltr"} lang={lang}>
-      {props.isPreview && <div className={styles.previewRibbon}>{s.previewRibbon}</div>}
+      {props.isPreview && (
+        <>
+          <div className={styles.previewRibbon}>{s.previewRibbon}</div>
+          {/* Covers the whole screen (video, names, everything) so screenshots and screen recordings can't pass for the real thing. */}
+          <div className={styles.watermark} aria-hidden />
+        </>
+      )}
       <div className={styles.column}>
         {/* ---------- Opening (fades away once the letter takes over) ---------- */}
         <section className={styles.hero} data-stage={stage} aria-hidden={stage === "open"}>
@@ -180,15 +184,6 @@ export default function Invitation(props: InvitationProps) {
               <a className={styles.linkButton} href={props.calendarUrl} target="_blank" rel="noopener noreferrer">
                 {s.addToCalendar}
               </a>
-            </section>
-
-            <section className={`${styles.card} ${styles.reveal}`}>
-              <h2 className={styles.sectionTitle}>{s.rsvpTitle}</h2>
-              {props.isPreview ? (
-                <p className={styles.muted}>{s.previewNoReplies}</p>
-              ) : (
-                <RsvpForm slug={props.slug} token={props.token} strings={s} initial={props.initialRsvp} />
-              )}
             </section>
 
             {props.showWishes !== false && (

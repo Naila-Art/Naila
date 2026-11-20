@@ -7,7 +7,6 @@ import { CATEGORY_LABELS, type Category, type Template } from "@/lib/types";
 import { UPLOAD_ERRORS, UploadError, postJson, putFile } from "@/lib/upload-client";
 
 interface Props {
-  adminKey: string;
   initialTemplates: Template[];
   initialUsage: Record<string, number>;
 }
@@ -59,9 +58,8 @@ interface Slot {
 }
 
 const requestSlot = (
-  adminKey: string,
   body: { kind: "video" | "poster"; contentType: string; size: number; templateId?: string },
-) => postJson<Slot>(`/api/admin/${adminKey}/templates/uploads`, body);
+) => postJson<Slot>(`/api/admin/templates/uploads`, body);
 
 /** Grabs a frame near the start of the video as a JPEG, used as the poster when none is uploaded. */
 function captureFrame(video: HTMLVideoElement): Promise<Blob | null> {
@@ -77,7 +75,7 @@ function captureFrame(video: HTMLVideoElement): Promise<Blob | null> {
   });
 }
 
-export default function TemplatesAdmin({ adminKey, initialTemplates, initialUsage }: Props) {
+export default function TemplatesAdmin({ initialTemplates, initialUsage }: Props) {
   const [templates, setTemplates] = useState(initialTemplates);
   const [usage] = useState(initialUsage);
   const [filter, setFilter] = useState<Category | "all">("all");
@@ -146,14 +144,14 @@ export default function TemplatesAdmin({ adminKey, initialTemplates, initialUsag
         const track = (loaded: number) => setProgress(Math.min(99, Math.round(((done + loaded) / total) * 100)));
 
         // 1. Video: ask for an upload slot (this also creates the template id), then send it straight to storage.
-        const slot = await requestSlot(adminKey, { kind: "video", contentType: "video/mp4", size: video.size });
+        const slot = await requestSlot({ kind: "video", contentType: "video/mp4", size: video.size });
         await putFile(slot.uploadUrl, video, "video/mp4", track);
         done += video.size;
 
         // 2. Poster, same template id.
         let posterKey: string | undefined;
         if (posterBlob) {
-          const p = await requestSlot(adminKey, {
+          const p = await requestSlot({
             kind: "poster",
             contentType: posterBlob.type,
             size: posterBlob.size,
@@ -165,7 +163,7 @@ export default function TemplatesAdmin({ adminKey, initialTemplates, initialUsag
 
         // 3. Save the template; the server checks the files before accepting it.
         setProgress(100);
-        const body = await postJson<{ template: Template }>(`/api/admin/${adminKey}/templates`, {
+        const body = await postJson<{ template: Template }>(`/api/admin/templates`, {
           templateId: slot.templateId,
           name: name.trim(),
           category,
@@ -193,7 +191,7 @@ export default function TemplatesAdmin({ adminKey, initialTemplates, initialUsag
       ? `في ${used} دعوة شغالة بالتيمبليت ده، وهيرجعوا للظرف العادي. تمسحه؟`
       : `تمسح "${t.name}"؟`;
     if (!confirm(warning)) return;
-    const res = await fetch(`/api/admin/${adminKey}/templates?id=${encodeURIComponent(t.id)}`, { method: "DELETE" });
+    const res = await fetch(`/api/admin/templates?id=${encodeURIComponent(t.id)}`, { method: "DELETE" });
     if (res.ok) {
       setTemplates((list) => list.filter((x) => x.id !== t.id));
       setToast("اتمسح");
@@ -201,9 +199,8 @@ export default function TemplatesAdmin({ adminKey, initialTemplates, initialUsag
   }
 
   return (
-    <main className={m.page} dir="rtl" lang="ar">
-      <header className={m.header}>
-        <div className={m.kicker}>داشبورد الإدارة</div>
+    <main className={`${m.page} ${a.wide}`} dir="rtl" lang="ar">
+      <header className={a.pageHead}>
         <h1>التيمبليتس</h1>
         <div className={a.targets}>
           {(Object.keys(CATEGORY_LABELS) as Category[]).map((c) => (
@@ -374,7 +371,7 @@ export default function TemplatesAdmin({ adminKey, initialTemplates, initialUsag
                     ))}
                   </div>
                   <div className={m.inlineActions}>
-                    <a className={m.secondary} href={`/admin/${adminKey}/templates/${t.id}`} target="_blank" rel="noreferrer">
+                    <a className={m.secondary} href={`/admin/templates/${t.id}`} target="_blank" rel="noreferrer">
                       معاينة ↗
                     </a>
                     {t.createdAt && (

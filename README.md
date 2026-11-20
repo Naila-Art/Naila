@@ -14,9 +14,11 @@ All settings live in `.env.local` (git-ignored); `.env.example` lists them. On V
 ## How it works
 1. **Storefront** (`/`): templates by category and packages. Prices are edited in `/admin/{key}/pricing` (defaults: Ziad's PDF). Orders keep the total they were sold with. **No add-ons**: Arabic/English, the location and getting the link on WhatsApp are included in every package.
 2. **Samples** (`/samples`, and "شوف مثال" on each package): one live invitation per package at fixed links (`/i/sample-1` … `/i/sample-4/{guest}`), created on first visit. They always use the newest uploaded design of their category and a date 45 days ahead.
-3. **Packages 1–2** (`/create`): the client builds the invitation and gets a **draft** on their private page `/c/{manageToken}` (no password): preview, edit details, wording, approve and pay.
-4. **Packages 3–4** (`/request`): the client leaves a brief. In `/admin/{key}/orders` we set the agreed price and press **"اعمل صفحة الدعوة"**, then send the client their page link. There they add guests by hand or from Excel; each guest gets their own link with their name, and optionally **a personal message** shown only on their invitation.
-5. **Draft** invitations carry a "preview" ribbon and refuse replies. Payment (Paymob, or Instapay confirmed by us, or marked paid by us) makes them **active**.
+3. **Packages 1–3** (`/create`, in steps with a back button; the draft is kept in the browser): the client builds the invitation and gets a **draft** on their private page `/c/{manageToken}` (no password): preview, edit details, wording, approve and pay. Package 3 also gets a brief + photo/video uploads for our team, and named guests.
+4. **Package 4** (`/request`): the client leaves a brief. In `/admin/orders` we set the agreed price and press **"اعمل صفحة الدعوة"**, then send the client their page link.
+   Packages 3–4: guests are added by hand or from Excel; each guest gets their own link with their name, and optionally **a personal message** shown only on their invitation.
+5. **Before payment nothing can be shared**: the public link and every guest link show "not available yet"; copy-all/export are locked; the client previews from `/c/{token}/preview` (and `?guest=`) under a full-screen "معاينة" watermark. Payment (a method from the dashboard, or Paymob, confirmed by us) makes the invitation **active**.
+   No RSVP (removed); wishes for packages 2+.
 6. **Cancelled** orders (optionally as a refund) close the invitation, every guest link and the client page. "Restore" reopens them.
 
 ### What each package unlocks (`packageFeatures` in `src/lib/pricing.ts`)
@@ -34,10 +36,14 @@ All settings live in `.env.local` (git-ignored); `.env.example` lists them. On V
 | `/create` · `/request?p=3` | Builder (packages 1–2) · request form (packages 3–4) |
 | `/i/{slug}` · `/i/{slug}/{token}` | General invitation · named invitation |
 | `/c/{manageToken}` | Client page |
-| `/admin/{ADMIN_TOKEN}` | Our dashboard: clients, this month's revenue, last 6 months, by package, to-do |
-| `/admin/{ADMIN_TOKEN}/orders` | Orders: confirm/reject Instapay, mark paid, packages 3–4 (stage, agreed price, create the client page), change requests, **cancel / refund**, restore |
-| `/admin/{ADMIN_TOKEN}/pricing` | Packages: name, price, points, shown/hidden |
-| `/admin/{ADMIN_TOKEN}/templates` · `/music` | Upload Google Flow templates · music library |
+| `/admin/login` | Dashboard sign-in (email + password per team member). The first account is created here with the setup code (`ADMIN_TOKEN`) |
+| `/admin` | Dashboard home: to-do, clients, orders |
+| `/admin/finance` | Money (this month, total, 6 months, by package, refunds) behind its **own password**, set first with the setup code; unlocked 2 hours per device |
+| `/admin/payments` | Payment methods the client chooses from (Instapay, wallets, bank, card): name, account, instructions, on/off, order |
+| `/admin/team` | Team accounts; change my password |
+| `/admin/orders` | Orders: confirm/reject Instapay, mark paid, packages 3–4 (stage, agreed price, create the client page), change requests, **cancel / refund**, restore |
+| `/admin/pricing` | Packages: name, price, points, shown/hidden |
+| `/admin/templates` · `/music` | Upload Google Flow templates · music library |
 | `POST /api/orders` · `POST /api/requests` | Create a draft · a package 3–4 request |
 | `PUT /api/manage/{t}/order` · `/details` · `/texts` | Client edits (switch package 1↔2 only before payment) |
 | `POST /api/manage/{t}/uploads` · `/payment` · `/changes` | Upload slot (transfer screenshot) · pay (Paymob / Instapay) · change request |
@@ -58,7 +64,7 @@ All settings live in `.env.local` (git-ignored); `.env.example` lists them. On V
 - **Instapay**: set `INSTAPAY_HANDLE`. The client uploads the transfer screenshot; we confirm it in `/admin/{key}/orders` and the invitation goes live.
 
 ## Adding a Google Flow template
-Open `/admin/{ADMIN_TOKEN}/templates` and upload:
+Open `/admin/templates` and upload:
 1. The video: MP4 with **no text** in it (names and wording are drawn on top), portrait 9:16, ideally 1–2 MB, max 20 MB.
 2. A poster image (optional). If none is given, the browser captures a frame from the start of the video.
 3. Name, category and five colours (background, letter, text, accent, seal) chosen to match the video.

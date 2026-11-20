@@ -225,32 +225,6 @@
   }
 }
 
-/* ---------- admin nav ---------- */
-.nav {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  display: flex;
-  gap: 4px;
-  justify-content: center;
-  flex-wrap: wrap;
-  padding: 8px;
-  background: #2b2420;
-  font-family: "Tajawal", system-ui, sans-serif;
-}
-
-.nav a {
-  color: #e9e1d6;
-  text-decoration: none;
-  padding: 8px 14px;
-  border-radius: 8px;
-  font-size: 0.95rem;
-}
-
-.nav a[aria-current="page"] {
-  background: #8a5a2b;
-  color: #fff;
-}
 
 /* ---------- overview ---------- */
 .kpis {
@@ -467,4 +441,159 @@
 
 .addonBox[data-off="true"] {
   background: var(--m-bg);
+}
+
+/* ---------- wide dashboard layout (note 8) ---------- */
+.wide {
+  max-width: 1280px;
+  width: 100%;
+  padding: 24px clamp(16px, 3vw, 40px) 80px;
+}
+
+.pageHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pageHead h1 {
+  font-family: "Aref Ruqaa", "Amiri", serif;
+  font-weight: 400;
+  font-size: 2rem;
+  margin: 0;
+}
+
+.twoPanels {
+  display: grid;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (min-width: 900px) {
+  .twoPanels {
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  }
+
+  .orders {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+    align-items: start;
+  }
+
+  .pricingForm {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+    align-items: start;
+  }
+
+  .pricingForm > .saveBar {
+    grid-column: 1 / -1;
+  }
+
+  .uploadLayout {
+    display: grid;
+    grid-template-columns: minmax(380px, 1fr) 2fr;
+    gap: 16px;
+    align-items: start;
+  }
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.toolbar input {
+  flex: 1 1 240px;
+}
+
+/* ---------- login / finance gate ---------- */
+.loginPage {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+  background: #f6f3ee;
+  font-family: "Tajawal", system-ui, sans-serif;
+}
+
+.loginCard,
+.gate {
+  width: min(440px, 100%);
+  margin: 0 auto;
+  --m-surface: #fff;
+  --m-line: #e7e0d7;
+  --m-text: #2b2420;
+  --m-muted: #7a6f68;
+  --m-accent: #8a5a2b;
+  --m-bad: #b3261e;
+  --m-ok: #2e7d4f;
+  --m-bg: #f6f3ee;
+}
+
+.loginCard h1 {
+  font-family: "Aref Ruqaa", "Amiri", serif;
+  font-weight: 400;
+  margin: 0;
+}
+
+.gateIcon {
+  font-size: 2rem;
+  text-align: center;
+}
+
+.gate h2 {
+  text-align: center;
+}
+
+.financeTools {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.inlineForm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.inlineForm input {
+  width: 220px;
+}
+
+.refs {
+  background: var(--m-bg);
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 0.9rem;
+}
+
+.refs ul {
+  margin: 6px 0 0;
+  padding-inline-start: 18px;
+}
+
+/* ---------- payment methods ---------- */
+.methods {
+  display: grid;
+  gap: 16px;
+  padding-bottom: 90px;
+}
+
+.methods section[data-off="true"] {
+  opacity: 0.65;
+}
+
+@media (min-width: 900px) {
+  .methods {
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    align-items: start;
+  }
 }

@@ -48,7 +48,7 @@ function matches(row: OrderRow, f: Filter): boolean {
     case "paid":
       return o.payment === "paid";
     case "custom":
-      return o.kind === "custom";
+      return o.packageId >= 3;
     case "changes":
       return row.changes.some((c) => !c.resolvedAt);
     default:
@@ -57,12 +57,10 @@ function matches(row: OrderRow, f: Filter): boolean {
 }
 
 export default function AdminOrders({
-  adminKey,
   rows,
   initialFilter,
   pricing,
 }: {
-  adminKey: string;
   rows: OrderRow[];
   initialFilter?: string;
   pricing: Pricing;
@@ -85,7 +83,7 @@ export default function AdminOrders({
   async function act(order: Order, body: Record<string, unknown>, done: string) {
     setBusyId(order.id);
     try {
-      await postJson(`/api/admin/${adminKey}/orders`, { id: order.id, ...body }, "PATCH");
+      await postJson(`/api/admin/orders`, { id: order.id, ...body }, "PATCH");
       setToast(done);
       router.refresh();
     } catch (err) {
@@ -98,7 +96,7 @@ export default function AdminOrders({
 
   async function resolveChange(id: string) {
     try {
-      await postJson(`/api/admin/${adminKey}/changes`, { id }, "PATCH");
+      await postJson(`/api/admin/changes`, { id }, "PATCH");
       router.refresh();
     } catch {
       setToast("ماتنفذش");
@@ -121,9 +119,8 @@ export default function AdminOrders({
   const countOf = (f: Filter) => rows.filter((r) => matches(r, f)).length;
 
   return (
-    <main className={m.page} dir="rtl" lang="ar">
-      <header className={m.header}>
-        <div className={m.kicker}>داشبورد الإدارة</div>
+    <main className={`${m.page} ${a.wide}`} dir="rtl" lang="ar">
+      <header className={a.pageHead}>
         <h1>الطلبات</h1>
       </header>
 
@@ -168,13 +165,13 @@ export default function AdminOrders({
                   {o.cancelledAt ? (
                     <span className={`${m.badge} ${m.badgeBad}`}>{o.refunded ? "مرتجع" : "ملغي"}</span>
                   ) : o.payment === "paid" ? (
-                    <span className={`${m.badge} ${m.badgeOk}`}>مدفوع{o.paymentMethod ? ` · ${o.paymentMethod}` : ""}</span>
+                    <span className={`${m.badge} ${m.badgeOk}`}>مدفوع{o.paymentMethodName ? ` · ${o.paymentMethodName}` : ""}</span>
                   ) : o.payment === "pending_review" ? (
-                    <span className={`${m.badge} ${m.badgeInfo}`}>إنستاباي مستني تأكيد</span>
+                    <span className={`${m.badge} ${m.badgeInfo}`}>{o.paymentMethodName ?? "تحويل"} مستني تأكيد</span>
                   ) : (
                     <span className={`${m.badge} ${m.badgeMuted}`}>مش مدفوع</span>
                   )}
-                  {o.kind === "custom" && (
+                  {o.packageId >= 3 && (
                     <span className={`${m.badge} ${m.badgeInfo}`}>{STAGES.find((s) => s.id === o.stage)?.label ?? "جديد"}</span>
                   )}
                   <span className={m.hint}>اتعمل {dateFmt(o.createdAt)}</span>
@@ -186,6 +183,21 @@ export default function AdminOrders({
                     <strong>{CATEGORY_LABELS[o.brief.category]}</strong>
                     {o.brief.date && <span> · {o.brief.date}</span>}
                     {o.brief.notes && <p>{o.brief.notes}</p>}
+                  </div>
+                )}
+
+                {o.references && o.references.length > 0 && (
+                  <div className={a.refs}>
+                    <strong>ملفات العميل ({o.references.length})</strong>
+                    <ul>
+                      {o.references.map((r) => (
+                        <li key={r.url}>
+                          <a href={r.url} target="_blank" rel="noopener noreferrer">
+                            {r.type === "video" ? "🎬" : "🖼"} {r.name}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 )}
 
@@ -225,8 +237,13 @@ export default function AdminOrders({
                       <a className={m.secondary} href={`/c/${e.manageToken}`} target="_blank" rel="noopener noreferrer">
                         صفحة العميل ↗
                       </a>
-                      <a className={m.secondary} href={`/i/${e.slug}`} target="_blank" rel="noopener noreferrer">
-                        الدعوة ↗
+                      <a
+                        className={m.secondary}
+                        href={o.payment === "paid" ? `/i/${e.slug}` : `/c/${e.manageToken}/preview`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {o.payment === "paid" ? "الدعوة ↗" : "المعاينة ↗"}
                       </a>
                     </>
                   )}
@@ -256,7 +273,7 @@ export default function AdminOrders({
                       className={m.primary}
                       disabled={busy}
                       onClick={() =>
-                        confirm("تعمل صفحة الدعوة للعميل ده؟ هتاخد لينك تبعتهوله يكمل فيه البيانات ويضيف المعازيم.") &&
+                        confirm("تعمل صفحة الدعوة للعميل ده؟ هتاخد لينك تبعتهوله يكمل فيه البيانات ويضيف الضيوف.") &&
                         act(o, { action: "create_event" }, "اتعملت صفحة الدعوة. افتح صفحة العميل وابعتله اللينك")
                       }
                     >
@@ -276,7 +293,7 @@ export default function AdminOrders({
                       تعديل السعر
                     </button>
                   )}
-                  {!o.cancelledAt && o.kind === "custom" && (
+                  {!o.cancelledAt && o.packageId >= 3 && (
                     <select
                       className={m.input}
                       style={{ width: "auto" }}

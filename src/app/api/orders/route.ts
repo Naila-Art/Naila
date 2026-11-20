@@ -52,10 +52,20 @@ export async function POST(req: Request) {
       templateId: template.id,
       category: template.category,
       musicTrackId,
-      generalText: DEFAULT_TEXT[lang].general,
+      generalText: cleanText(body.generalText, 200) ?? DEFAULT_TEXT[lang].general,
       personalText: DEFAULT_TEXT[lang].personal,
     },
-    { clientName, clientPhone, packageId, total: priceOf(pricing, packageId) },
+    {
+      clientName,
+      clientPhone,
+      packageId,
+      total: priceOf(pricing, packageId),
+      stage: packageId >= 3 ? "new" : undefined,
+      brief:
+        packageId >= 3
+          ? { category: template.category, notes: typeof body.brief === "string" ? body.brief.trim().slice(0, 2000) : "" }
+          : undefined,
+    },
   );
   return NextResponse.json({ manageToken: event.manageToken }, { status: 201 });
 }

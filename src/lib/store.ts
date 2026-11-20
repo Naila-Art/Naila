@@ -6,6 +6,7 @@ import { builtInTemplates } from "./templates";
 import { withDefaults, type Pricing } from "./pricing";
 import { SAMPLES, isSampleSlug } from "./samples";
 import type {
+  AdminUser,
   ChangeRequest,
   EventData,
   Guest,
@@ -14,6 +15,7 @@ import type {
   GuestWithStatus,
   MusicTrack,
   Order,
+  PaymentMethodConfig,
   Rsvp,
   RsvpStatus,
   Template,
@@ -42,6 +44,11 @@ interface Db {
   music?: MusicTrack[];
   /** Saved from the admin dashboard; DEFAULT_PRICING until then. */
   pricing?: Pricing;
+  admins?: AdminUser[];
+  /** scrypt hash of the finance page password (separate from the login). */
+  financePasswordHash?: string;
+  /** Saved from the dashboard; defaults until then. */
+  paymentMethods?: PaymentMethodConfig[];
 }
 
 const DB_PATH = path.join(process.cwd(), "data", "db.json");
@@ -561,5 +568,124 @@ export function savePricing(pricing: Pricing): Promise<Pricing> {
   return mutate((db) => {
     db.pricing = pricing;
     return pricing;
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Dashboard accounts
+// ---------------------------------------------------------------------------
+
+export async function listAdminUsers(): Promise<AdminUser[]> {
+  return (await read()).admins ?? [];
+}
+
+export async function getAdminUser(id: string): Promise<AdminUser | null> {
+  return (await read()).admins?.find((a) => a.id === id) ?? null;
+}
+
+export async function findAdminByEmail(email: string): Promise<AdminUser | null> {
+  const e = email.trim().toLowerCase();
+  return (await read()).admins?.find((a) => a.email === e) ?? null;
+}
+
+/** Adds an account; returns null if the email is taken. */
+export function addAdminUser(user: Omit<AdminUser, "id" | "createdAt">): Promise<AdminUser | null> {
+  return mutate((db) => {
+    const email = user.email.trim().toLowerCase();
+    if ((db.admins ?? []).some((a) => a.email === email)) return null;
+    const created: AdminUser = { ...user, email, id: newId("adm"), createdAt: new Date().toISOString() };
+    (db.admins ??= []).push(created);
+    return created;
+  });
+}
+
+export function updateAdminPassword(id: string, passwordHash: string): Promise<boolean> {
+  return mutate((db) => {
+    const a = db.admins?.find((x) => x.id === id);
+    if (!a) return false;
+    a.passwordHash = passwordHash;
+    return true;
+  });
+}
+
+/** Removes an account, but never the last one. */
+export function deleteAdminUser(id: string): Promise<"ok" | "not_found" | "last"> {
+  return mutate((db) => {
+    const list = db.admins ?? [];
+    if (!list.some((a) => a.id === id)) return "not_found";
+    if (list.length <= 1) return "last";
+    db.admins = list.filter((a) => a.id !== id);
+    return "ok";
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Finance page password
+// ---------------------------------------------------------------------------
+
+export async function getFinancePasswordHash(): Promise<string | null> {
+  return (await read()).financePasswordHash ?? null;
+}
+
+export function setFinancePasswordHash(hash: string): Promise<void> {
+  return mutate((db) => {
+    db.financePasswordHash = hash;
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Package 3+: client references and brief
+// ---------------------------------------------------------------------------
+
+export function addOrderReference(orderId: string, ref: NonNullable<Order["references"]>[number]): Promise<Order | null> {
+  return mutate((db) => {
+    const order = db.orders?.find((o) => o.id === orderId);
+    if (!order) return null;
+    (order.references ??= []).push(ref);
+    return order;
+  });
+}
+
+export function removeOrderReference(orderId: string, url: string): Promise<boolean> {
+  return mutate((db) => {
+    const order = db.orders?.find((o) => o.id === orderId);
+    if (!order?.references) return false;
+    const before = order.references.length;
+    order.references = order.references.filter((r) => r.url !== url);
+    return order.references.length < before;
+  });
+}
+
+export function updateOrderBrief(orderId: string, notes: string): Promise<boolean> {
+  return mutate((db) => {
+    const order = db.orders?.find((o) => o.id === orderId);
+    if (!order) return false;
+    order.brief = { category: order.brief?.category ?? "wedding", date: order.brief?.date, notes };
+    return true;
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Payment methods (dashboard)
+// ---------------------------------------------------------------------------
+
+/** Starting set: Instapay (from INSTAPAY_HANDLE if set), wallets off, card on (shown only once Paymob keys exist). */
+function defaultPaymentMethods(): PaymentMethodConfig[] {
+  const instapay = process.env.INSTAPAY_HANDLE?.trim() ?? "";
+  return [
+    { id: "instapay", name: "إنستاباي", kind: "transfer", account: instapay, active: Boolean(instapay) },
+    { id: "vodafone_cash", name: "فودافون كاش", kind: "transfer", account: "", active: false },
+    { id: "card", name: "فيزا / ميزة / أبل باي", kind: "card", account: "", active: true },
+  ];
+}
+
+export async function listPaymentMethods(): Promise<PaymentMethodConfig[]> {
+  return (await read()).paymentMethods ?? defaultPaymentMethods();
+}
+
+export function savePaymentMethods(methods: PaymentMethodConfig[]): Promise<PaymentMethodConfig[]> {
+  return mutate((db) => {
+    db.paymentMethods = methods;
+    return methods;
   });
 }

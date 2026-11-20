@@ -12,6 +12,7 @@ import {
   getPricing,
   listChangeRequests,
   listMusic,
+  listPaymentMethods,
   listTemplates,
 } from "@/lib/store";
 import { isoToCairoLocal } from "@/lib/time";
@@ -42,11 +43,12 @@ export default async function Page({ params, searchParams }: Props) {
 
   let panels = null;
   if (ctx.order) {
-    const [templates, music, changeRequests, pricing] = await Promise.all([
+    const [templates, music, changeRequests, pricing, methods] = await Promise.all([
       listTemplates(),
       listMusic(),
       listChangeRequests(event.id),
       getPricing(),
+      listPaymentMethods(),
     ]);
     panels = (
       <OrderPanels
@@ -69,8 +71,9 @@ export default async function Page({ params, searchParams }: Props) {
         templates={templates.map(({ id, name }) => ({ id, name }))}
         music={music}
         changeRequests={changeRequests}
-        paymobEnabled={paymobEnabled()}
-        instapay={site.instapay}
+        methods={methods
+          .filter((m) => m.active && (m.kind === "card" ? paymobEnabled() : Boolean(m.account)))
+          .map(({ id, name, kind, account, instructions }) => ({ id, name, kind, account, instructions }))}
         whatsappUrl={whatsappLink(site.whatsapp, `أهلاً، بخصوص دعوة ${couple}`)}
         isNew={query.new === "1"}
         returnedFromPayment={query.paid === "1"}
@@ -87,6 +90,7 @@ export default async function Page({ params, searchParams }: Props) {
       initial={dashboard}
       namesLimit={ctx.features.namesLimit}
       showWishes={ctx.features.wishes}
+      locked={event.status === "draft"}
     >
       {panels}
     </ManageEvent>

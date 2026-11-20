@@ -27,13 +27,13 @@ export interface Pricing {
 export const DEFAULT_PRICING: Pricing = {
   packages: [
     { id: 1, name: "البسيطة", price: 300, active: true, points: ["فتح الختم بالأنيميشن", "أسامي العروسين والتاريخ", "تأكيد الحضور والعد التنازلي"] },
-    { id: 2, name: "المميزة", price: 600, active: true, points: ["كل اللي في البسيطة", "مزيكا من مكتبتنا", "المعازيم يبعتوا تهاني"] },
+    { id: 2, name: "المميزة", price: 600, active: true, points: ["كل اللي في البسيطة", "مزيكا من مكتبتنا", "الضيوف يبعتوا تهاني"] },
     {
       id: 3,
       name: "على ذوقك",
       price: 1000,
       active: true,
-      points: ["صورك وفيديوهاتك", "ابعتلنا ريفرنسات وإحنا ننفذ", "دعوة باسم كل معزوم", "رسالة خاصة لأي معزوم لو حابب"],
+      points: ["صورك وفيديوهاتك", "ابعتلنا ريفرنسات وإحنا ننفذ", "دعوة باسم كل ضيف", "رسالة خاصة لأي ضيف لو حابب"],
     },
     {
       id: 4,
@@ -41,7 +41,7 @@ export const DEFAULT_PRICING: Pricing = {
       price: 2000,
       active: true,
       priceNote: "تبدأ من",
-      points: ["تصميم خاص مع المصمم", "تعديلات لحد ما توصل للي في دماغك", "دعوة باسم كل معزوم ورسالة خاصة", "خصم 50% لأول حد ترشحه"],
+      points: ["تصميم خاص مع المصمم", "تعديلات لحد ما توصل للي في دماغك", "دعوة باسم كل ضيف ورسالة خاصة", "خصم 50% لأول حد ترشحه"],
     },
   ],
 };
@@ -49,8 +49,11 @@ export const DEFAULT_PRICING: Pricing = {
 /** What every package includes, shown once on the storefront instead of repeating it per package. */
 export const INCLUDED_IN_ALL = ["عربي أو إنجليزي", "اللوكيشن على جوجل ماب", "اللينك يوصلك على واتساب"];
 
-/** Packages 1-2 are built by the client in the storefront; 3-4 are made by our team. */
-export const isSelfServe = (id: PackageId) => id <= 2;
+/**
+ * Packages 1-3 are ordered and paid on the site (3 also gets our team's custom work, from the client's
+ * brief and uploads). Package 4 is a request: we talk to the client first.
+ */
+export const isSelfServe = (id: PackageId) => id <= 3;
 
 /** Named links per guest (with an optional personal message) come with packages 3-4. */
 export const NAMES_LIMIT = 5000;
@@ -64,9 +67,16 @@ export function priceOf(pricing: Pricing, packageId: PackageId): number {
   return getPackage(pricing, packageId)?.price ?? 0;
 }
 
+/** "معزوم" became "ضيف" across the product (Nov 2026); older saved text is updated on read. */
+const toGuestWording = (s: string) =>
+  s.replace(/المعازيم/g, "الضيوف").replace(/معازيم/g, "ضيوف").replace(/المعزوم/g, "الضيف").replace(/معزوم/g, "ضيف");
+
 /** Older saved settings may carry add-on fields; keep only the packages. */
 export function withDefaults(p: Partial<Pricing> | undefined): Pricing {
-  return p?.packages?.length === 4 ? { packages: p.packages } : DEFAULT_PRICING;
+  if (p?.packages?.length !== 4) return DEFAULT_PRICING;
+  return {
+    packages: p.packages.map((pk) => ({ ...pk, name: toGuestWording(pk.name), points: pk.points.map(toGuestWording) })),
+  };
 }
 
 /** What a package unlocks. */

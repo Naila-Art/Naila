@@ -1,5 +1,6 @@
 import Link from "next/link";
 import styles from "@/components/store/store.module.css";
+import SiteHeader from "@/components/store/SiteHeader";
 import TemplateGallery from "@/components/store/TemplateGallery";
 import { INCLUDED_IN_ALL, formatEgp, isSelfServe } from "@/lib/pricing";
 import { sampleLink } from "@/lib/samples";
@@ -20,23 +21,14 @@ export default async function Home() {
 
   return (
     <main className={styles.page} dir="rtl" lang="ar">
+      <SiteHeader brand={site.brand} whatsappUrl={whatsappLink(site.whatsapp, "أهلاً، عايز أستفسر عن الدعوات") || undefined} />
       <div className={styles.wrap}>
-        <nav className={styles.nav}>
-          <Link href="/" className={styles.brand}>
-            {site.brand}
-          </Link>
-          <div className={styles.navLinks}>
-            <a href="#templates">التصميمات</a>
-            <a href="#packages">الأسعار</a>
-            <a href="/samples">أمثلة</a>
-          </div>
-        </nav>
 
         <section className={styles.hero}>
           <div>
             <h1>دعوة فرحك على الموبايل، تتفتح بختم وتوصل لكل حد باسمه</h1>
             <p className={styles.lead}>
-              لينك واحد يتبعت على واتساب: المعزوم يدوس على الختم، الدعوة تتفتح
+              لينك واحد يتبعت على واتساب: الضيف يدوس على الختم، الدعوة تتفتح
               بأنيميشن ومزيكا، يأكد حضوره، يبعت تهنئة، ويلاقي اللوكيشن. وأنت
               تتابع مين فتح ومين أكد من صفحتك.
             </p>
@@ -87,7 +79,7 @@ export default async function Home() {
         <section className={styles.section} id="templates">
           <h2>التصميمات</h2>
           <p className={styles.sectionLead}>
-            دوس على أي تصميم تشوفه زي ما المعزوم هيشوفه
+            دوس على أي تصميم تشوفه زي ما الضيف هيشوفه
           </p>
           <TemplateGallery templates={templates} />
         </section>

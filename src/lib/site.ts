@@ -8,8 +8,6 @@ export function siteSettings() {
     brand: process.env.BRAND_NAME?.trim() || "دعوة",
     /** Our WhatsApp, international digits only, e.g. 201001234567. */
     whatsapp: (process.env.WHATSAPP_NUMBER ?? "").replace(/\D/g, ""),
-    /** Instapay address shown to clients, e.g. name@instapay. */
-    instapay: process.env.INSTAPAY_HANDLE?.trim() || "",
   };
 }
 

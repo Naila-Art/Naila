@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true });
   }
   if (order.payment !== "paid") {
-    await updateOrder(order.id, { payment: "paid", paymentMethod: "paymob", paymobTransactionId: tx.id });
+    await updateOrder(order.id, { payment: "paid", paymentMethod: "paymob", paymentMethodName: "فيزا (باي موب)", paymobTransactionId: tx.id });
   }
   return NextResponse.json({ ok: true });
 }

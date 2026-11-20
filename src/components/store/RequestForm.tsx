@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import styles from "./store.module.css";
 import { DETAIL_ERRORS } from "./Builder";
+import DateTimePicker from "../DateTimePicker";
 import { formatEgp, type PackageInfo } from "@/lib/pricing";
 import { CATEGORY_LABELS, type Category, type PackageId } from "@/lib/types";
 import { UploadError, postJson } from "@/lib/upload-client";
@@ -80,10 +81,10 @@ export default function RequestForm({ pkg, whatsappUrl }: { pkg: PackageInfo; wh
               ))}
             </select>
           </label>
-          <label className={styles.field}>
+          <div className={styles.field}>
             <span>التاريخ (لو محدد)</span>
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-          </label>
+            <DateTimePicker dateOnly value={date} onChange={setDate} />
+          </div>
         </div>
         <label className={styles.field}>
           <span>احكيلنا عايز إيه</span>

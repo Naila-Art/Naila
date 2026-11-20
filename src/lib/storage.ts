@@ -16,7 +16,7 @@ import { deleteMediaDir, mediaPath, sniff } from "./media";
  * endpoint that writes to data/uploads, served by /media/[...path].
  */
 
-export type UploadKind = "video" | "poster" | "music" | "proof";
+export type UploadKind = "video" | "poster" | "music" | "proof" | "reference";
 
 const IMAGE_TYPES = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
 
@@ -26,7 +26,12 @@ export const UPLOAD_RULES: Record<UploadKind, { types: Record<string, string>; m
   music: { types: { "audio/mpeg": "mp3", "audio/mp4": "m4a", "audio/x-m4a": "m4a" }, maxBytes: 12 * 1024 * 1024 },
   /** Instapay transfer screenshot. */
   proof: { types: IMAGE_TYPES, maxBytes: 6 * 1024 * 1024 },
+  /** Package 3+: the client's photos, videos and reference images. iPhone videos are .mov. */
+  reference: { types: { ...IMAGE_TYPES, "video/mp4": "mp4", "video/quicktime": "mov" }, maxBytes: 50 * 1024 * 1024 },
 };
+
+/** Most files a client can attach to one order (package 3+ references). */
+export const MAX_REFERENCES = 30;
 
 /** Signed upload URLs stay valid this long. */
 const UPLOAD_URL_TTL_SECONDS = 15 * 60;
@@ -48,7 +53,8 @@ function r2Config(): R2Config | null {
     publicUrl: (process.env.R2_PUBLIC_URL?.trim() ?? "").replace(/\/+$/, ""),
   };
   if (Object.values(c).every(Boolean)) return c;
-  if (process.env.NODE_ENV === "production") {
+  // ALLOW_LOCAL_STORAGE=1 lets a production build on this computer (e.g. a demo through a tunnel) store files locally.
+  if (process.env.NODE_ENV === "production" && process.env.ALLOW_LOCAL_STORAGE !== "1") {
     throw new Error("R2 is not configured: set R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET, R2_PUBLIC_URL");
   }
   return null; // development: store on local disk
@@ -83,6 +89,7 @@ const OBJECT_KEYS: Record<UploadKind, RegExp> = {
   poster: /^templates\/tpl_[0-9a-f]{10}\/poster\.(jpg|png|webp)$/,
   music: /^(music\/trk_[0-9a-f]{10}|events\/evt_[0-9a-z_]{1,40}\/music)-[0-9a-f]{8}\.(mp3|m4a)$/,
   proof: /^payments\/ord_[0-9a-f]{10}\/proof-[0-9a-f]{8}\.(jpg|png|webp)$/,
+  reference: /^orders\/ord_[0-9a-f]{10}\/ref-[0-9a-f]{8}\.(jpg|png|webp|mp4|mov)$/,
 };
 
 export function kindOfKey(key: string): UploadKind | null {
@@ -107,6 +114,8 @@ export function objectKeyFor(owner: string, kind: UploadKind, contentType: strin
       return owner.startsWith("music/") ? `${owner}-${rand}.${ext}` : `${owner}/music-${rand}.${ext}`;
     case "proof":
       return `${owner}/proof-${rand}.${ext}`;
+    case "reference":
+      return `${owner}/ref-${rand}.${ext}`;
   }
 }
 
@@ -195,7 +204,13 @@ export async function verifyUpload(objectKey: string, kind: UploadKind): Promise
   if (size > UPLOAD_RULES[kind].maxBytes) return "too_large";
   const type = sniff(head);
   const ok =
-    kind === "video" ? type === "mp4" : kind === "music" ? type === "mp3" || type === "mp4" : type === "jpg" || type === "png" || type === "webp";
+    kind === "video"
+      ? type === "mp4"
+      : kind === "music"
+        ? type === "mp3" || type === "mp4"
+        : kind === "reference"
+          ? type === "mp4" || type === "jpg" || type === "png" || type === "webp"
+          : type === "jpg" || type === "png" || type === "webp";
   return ok ? "ok" : "wrong_type";
 }
 

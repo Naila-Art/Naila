@@ -27,7 +27,6 @@ export default function TemplatePreview({ template }: { template: Template }) {
       venueAddress="القاهرة الجديدة"
       mapsUrl="https://maps.google.com/?q=30.0074,31.4913"
       calendarUrl="#"
-      initialRsvp={null}
       isPreview
     />
   );

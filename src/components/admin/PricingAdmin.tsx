@@ -26,11 +26,11 @@ const toNumber = (v: string) => (v.trim() === "" ? NaN : Number(v));
 
 function describe(id: PackageInfo["id"]): string {
   const who = isSelfServe(id) ? "العميل بيعملها من الموقع" : "فريقنا بيعملها (طلب)";
-  return hasNamedGuests(id) ? `${who} · فيها دعوة باسم كل معزوم` : who;
+  return hasNamedGuests(id) ? `${who} · فيها دعوة باسم كل ضيف` : who;
 }
 
 /** Packages and prices. Saved prices apply to new orders only. */
-export default function PricingAdmin({ adminKey, initial }: { adminKey: string; initial: Pricing }) {
+export default function PricingAdmin({ initial }: { initial: Pricing }) {
   const [p, setP] = useState<Pricing>(initial);
   const [saved, setSaved] = useState<Pricing>(initial);
   const [busy, setBusy] = useState(false);
@@ -53,7 +53,7 @@ export default function PricingAdmin({ adminKey, initial }: { adminKey: string; 
     setBusy(true);
     setMsg(null);
     try {
-      const { pricing } = await postJson<{ pricing: Pricing }>(`/api/admin/${adminKey}/pricing`, { pricing: p }, "PUT");
+      const { pricing } = await postJson<{ pricing: Pricing }>(`/api/admin/pricing`, { pricing: p }, "PUT");
       setP(pricing);
       setSaved(pricing);
       setMsg({ ok: true, text: "اتحفظ. الأسعار الجديدة ظاهرة على الموقع دلوقتي." });
@@ -65,9 +65,8 @@ export default function PricingAdmin({ adminKey, initial }: { adminKey: string; 
   }
 
   return (
-    <main className={m.page} dir="rtl" lang="ar">
-      <header className={m.header}>
-        <div className={m.kicker}>داشبورد الإدارة</div>
+    <main className={`${m.page} ${a.wide}`} dir="rtl" lang="ar">
+      <header className={a.pageHead}>
         <h1>الباقات والأسعار</h1>
         <p className={m.hint}>
           التغيير بيطبق على الطلبات الجديدة بس. الطلبات القديمة بتفضل بسعرها. في كل الباقات ببلاش: {INCLUDED_IN_ALL.join(" · ")}.

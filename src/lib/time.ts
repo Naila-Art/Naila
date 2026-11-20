@@ -25,7 +25,7 @@ function cairoOffsetMinutes(at: Date): number {
   return Math.round((asUtc - at.getTime()) / 60000);
 }
 
-/** "2027-02-14T19:00" (Cairo wall-clock time, from <input type="datetime-local">) → ISO with the right offset. */
+/** "2027-02-14T19:00" (Cairo wall-clock time, from DateTimePicker) → ISO with the right offset. */
 export function cairoLocalToIso(local: string): string | null {
   const m = local.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
   if (!m) return null;
@@ -40,7 +40,7 @@ export function cairoLocalToIso(local: string): string | null {
   return `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:00${sign}${hh}:${mm}`;
 }
 
-/** ISO → "2027-02-14T19:00" in Cairo time, for filling a datetime-local input. */
+/** ISO → "2027-02-14T19:00" in Cairo time, for filling DateTimePicker. */
 export function isoToCairoLocal(iso: string): string {
   const p = cairoParts(new Date(iso));
   return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`;

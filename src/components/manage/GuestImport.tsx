@@ -35,7 +35,7 @@ export default function GuestImport({ existingKeys, onSave }: Props) {
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
     const a = document.createElement("a");
     a.href = url;
-    a.download = "نموذج-المعازيم.csv";
+    a.download = "نموذج-الضيوف.csv";
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -146,7 +146,7 @@ export default function GuestImport({ existingKeys, onSave }: Props) {
 
           <div className={styles.actions}>
             <button type="button" className={styles.primary} disabled={busy || good.length === 0} onClick={save}>
-              حفظ {good.length} معزوم
+              حفظ {good.length} ضيف
             </button>
             <button type="button" className={styles.secondary} onClick={reset}>
               إلغاء

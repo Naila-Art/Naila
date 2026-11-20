@@ -73,7 +73,22 @@ export interface EventData {
 export type PackageId = 1 | 2 | 3 | 4;
 
 export type PaymentState = "unpaid" | "pending_review" | "paid";
-export type PaymentMethod = "paymob" | "instapay" | "manual";
+/** "paymob", "manual" (marked paid by us), or the id of a payment method from the dashboard. */
+export type PaymentMethod = string;
+
+/** A way to pay, managed from the dashboard (Instapay, wallets, bank transfer, card). */
+export interface PaymentMethodConfig {
+  id: string;
+  /** Shown to the client, e.g. "إنستاباي", "فودافون كاش". */
+  name: string;
+  /** "transfer" = the client transfers and uploads a screenshot; "card" = Paymob checkout. */
+  kind: "transfer" | "card";
+  /** Where to transfer: an Instapay address, a wallet number, an IBAN… (transfer only). */
+  account: string;
+  /** Optional short instructions shown under the account. */
+  instructions?: string;
+  active: boolean;
+}
 /** Packages 3–4 are made by our team, so those orders move through stages. */
 export type CustomStage = "new" | "contacted" | "in_design" | "delivered";
 
@@ -90,6 +105,8 @@ export interface Order {
   total: number;
   payment: PaymentState;
   paymentMethod?: PaymentMethod;
+  /** Display name of the method the client used (kept even if the method is later renamed or removed). */
+  paymentMethodName?: string;
   /** Instapay transfer screenshot. */
   proofUrl?: string;
   rejectReason?: string;
@@ -102,6 +119,18 @@ export interface Order {
   /** Money returned to the client (a refund), as opposed to a cancellation before payment. */
   refunded?: boolean;
   brief?: { category: Category; date?: string; notes: string };
+  /** Package 3+: the client's photos, videos and references for our team. */
+  references?: { url: string; name: string; type: "image" | "video"; addedAt: string }[];
+  createdAt: string;
+}
+
+/** A team member who can sign in to the dashboard. */
+export interface AdminUser {
+  id: string;
+  email: string;
+  name: string;
+  /** scrypt$salt$hash */
+  passwordHash: string;
   createdAt: string;
 }
 

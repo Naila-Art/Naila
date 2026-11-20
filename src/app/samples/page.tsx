@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import styles from "@/components/store/store.module.css";
+import SiteHeader from "@/components/store/SiteHeader";
 import { INCLUDED_IN_ALL, formatEgp } from "@/lib/pricing";
 import { SAMPLES, sampleLink } from "@/lib/samples";
-import { siteSettings } from "@/lib/site";
+import { siteSettings, whatsappLink } from "@/lib/site";
 import { getPricing } from "@/lib/store";
 import { CATEGORY_LABELS } from "@/lib/types";
 
@@ -15,14 +15,10 @@ export default async function SamplesPage() {
   const [pricing, site] = [await getPricing(), siteSettings()];
   return (
     <main className={styles.page} dir="rtl" lang="ar">
+      <SiteHeader brand={site.brand} whatsappUrl={whatsappLink(site.whatsapp, "أهلاً، عايز أستفسر عن الدعوات") || undefined} />
       <div className={styles.narrow}>
-        <nav className={styles.nav}>
-          <Link href="/" className={styles.brand}>
-            {site.brand}
-          </Link>
-        </nav>
         <h1 className={styles.pageTitle}>شوف كل باقة شكلها إيه</h1>
-        <p className={styles.sectionLead}>افتح أي دعوة على الموبايل ودوس على الختم، زي ما المعزوم هيشوفها بالظبط</p>
+        <p className={styles.sectionLead}>افتح أي دعوة على الموبايل ودوس على الختم، زي ما الضيف هيشوفها بالظبط</p>
 
         <ul className={styles.sampleGrid}>
           {SAMPLES.map((s) => {
