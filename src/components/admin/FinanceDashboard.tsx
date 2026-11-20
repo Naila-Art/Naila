@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import f from "./finance.module.css";
 import Icon from "../Icon";
+import Pager, { usePaged } from "./Pager";
 import DateTimePicker from "../DateTimePicker";
 import { toCsv } from "@/lib/guests";
 
@@ -334,6 +335,8 @@ export default function FinanceDashboard({
     [rows, range, from, to, status, pkg, method],
   );
 
+  const newestFirst = useMemo(() => [...filtered].sort((x, y) => dateOf(y).getTime() - dateOf(x).getTime()), [filtered]);
+  const paged = usePaged(newestFirst);
   const paid = filtered.filter(kept);
   const revenue = paid.reduce((s, r) => s + r.total, 0);
   const pending = filtered.filter((r) => statusOf(r) === "pending");
@@ -483,42 +486,43 @@ export default function FinanceDashboard({
         {filtered.length === 0 ? (
           <p className={f.empty}>مافيش معاملات بالفلاتر دي.</p>
         ) : (
-          <div className={f.tableWrap}>
-            <table className={f.table}>
-              <thead>
-                <tr>
-                  <th>التاريخ</th>
-                  <th>العميل</th>
-                  <th>الباقة</th>
-                  <th>الحالة</th>
-                  <th>طريقة الدفع</th>
-                  <th className={f.num}>المبلغ</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[...filtered]
-                  .sort((x, y) => dateOf(y).getTime() - dateOf(x).getTime())
-                  .map((r) => (
-                    <tr key={r.id}>
-                      <td>{dateFmt(r.paidAt ?? r.createdAt)}</td>
-                      <td>
-                        {r.couple || r.client}
-                        {r.couple && <small> · {r.client}</small>}
-                      </td>
-                      <td>{packages.find((p) => p.id === r.packageId)?.name}</td>
-                      <td>
-                        <span className={f.status} data-s={statusOf(r)}>
-                          {STATUSES.find((s) => s.id === statusOf(r))!.label}
-                          {r.refunded ? " · مرتجع" : ""}
-                        </span>
-                      </td>
-                      <td>{r.methodName || "—"}</td>
-                      <td className={f.num}>{egp(r.total)}</td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          </div>
+          <>
+            <div className={f.tableWrap}>
+              <table className={f.table}>
+                <thead>
+                  <tr>
+                    <th>التاريخ</th>
+                    <th>العميل</th>
+                    <th>الباقة</th>
+                    <th>الحالة</th>
+                    <th>طريقة الدفع</th>
+                    <th className={f.num}>المبلغ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paged.items.map((r) => (
+                      <tr key={r.id}>
+                        <td>{dateFmt(r.paidAt ?? r.createdAt)}</td>
+                        <td>
+                          {r.couple || r.client}
+                          {r.couple && <small> · {r.client}</small>}
+                        </td>
+                        <td>{packages.find((p) => p.id === r.packageId)?.name}</td>
+                        <td>
+                          <span className={f.status} data-s={statusOf(r)}>
+                            {STATUSES.find((s) => s.id === statusOf(r))!.label}
+                            {r.refunded ? " · مرتجع" : ""}
+                          </span>
+                        </td>
+                        <td>{r.methodName || "—"}</td>
+                        <td className={f.num}>{egp(r.total)}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+            <Pager {...paged} label="المعاملات" />
+          </>
         )}
       </section>
     </div>

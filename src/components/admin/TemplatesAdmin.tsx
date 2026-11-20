@@ -12,8 +12,6 @@ interface Props {
   initialUsage: Record<string, number>;
 }
 
-/** Launch target agreed with Ziad: 6 templates per category, 18 in total. */
-const TARGET_PER_CATEGORY = 6;
 const MAX_VIDEO_MB = 20;
 const IDEAL_VIDEO_MB = 4;
 
@@ -103,12 +101,6 @@ export default function TemplatesAdmin({ initialTemplates, initialUsage }: Props
     return () => clearTimeout(id);
   }, [toast]);
 
-  const uploaded = templates.filter((t) => t.createdAt);
-  const counts = useMemo(() => {
-    const c: Record<Category, number> = { wedding: 0, engagement: 0, katb_kitab: 0 };
-    for (const t of uploaded) c[t.category]++;
-    return c;
-  }, [uploaded]);
   const shown = filter === "all" ? templates : templates.filter((t) => t.category === filter);
 
   function pickVideo(file: File | undefined) {
@@ -203,16 +195,6 @@ export default function TemplatesAdmin({ initialTemplates, initialUsage }: Props
     <main className={`${m.page} ${a.wide}`} dir="rtl" lang="ar">
       <header className={a.pageHead}>
         <h1>التيمبليتس</h1>
-        <div className={a.targets}>
-          {(Object.keys(CATEGORY_LABELS) as Category[]).map((c) => (
-            <div key={c} className={a.target} data-done={counts[c] >= TARGET_PER_CATEGORY}>
-              <span>{CATEGORY_LABELS[c]}</span>
-              <strong>
-                {counts[c]} / {TARGET_PER_CATEGORY}
-              </strong>
-            </div>
-          ))}
-        </div>
       </header>
 
       <section className={m.panel}>
@@ -279,7 +261,7 @@ export default function TemplatesAdmin({ initialTemplates, initialUsage }: Props
               <input className={m.input} value={name} maxLength={60} onChange={(e) => setName(e.target.value)} />
             </label>
             <label className={m.field}>
-              <span>النوع</span>
+              <span>النوع (للبحث بس، العميل يقدر يختار أي تيمبليت)</span>
               <select className={m.input} value={category} onChange={(e) => setCategory(e.target.value as Category)}>
                 {(Object.keys(CATEGORY_LABELS) as Category[]).map((c) => (
                   <option key={c} value={c}>

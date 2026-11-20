@@ -6,6 +6,7 @@ import m from "../manage/manage.module.css";
 import a from "./admin.module.css";
 import o from "./orders.module.css";
 import Icon from "../Icon";
+import Pager, { usePaged } from "./Pager";
 import DateTimePicker from "../DateTimePicker";
 import { PayStatus } from "../manage/OrderPanels";
 import { formatEgp, getPackage, type Pricing } from "@/lib/pricing";
@@ -154,6 +155,7 @@ export default function AdminOrders({ rows, initialFilter, pricing, origin, meth
     else if (sort === "event") sorted.sort((x, y) => (x.event?.date ?? "9").localeCompare(y.event?.date ?? "9"));
     return sorted;
   }, [base, status, sort]);
+  const paged = usePaged(shown);
 
   const selected = rows.find((r) => r.order.id === selectedId) ?? null;
   const filtersOn = onlyPackages34 || onlyChanges || stage !== "all" || pkg !== 0 || method !== "all" || range !== "all" || query.trim() !== "";
@@ -247,54 +249,57 @@ export default function AdminOrders({ rows, initialFilter, pricing, origin, meth
       {shown.length === 0 ? (
         <p className={m.empty}>مافيش طلبات بالفلاتر دي.</p>
       ) : (
-        <div className={o.tableWrap}>
-          <table className={o.table}>
-            <thead>
-              <tr>
-                <th>الحالة</th>
-                <th>العميل</th>
-                <th>الباقة</th>
-                <th>المبلغ</th>
-                <th>المرحلة</th>
-                <th>اتعمل</th>
-                <th>المناسبة</th>
-              </tr>
-            </thead>
-            <tbody>
-              {shown.map((r) => {
-                const ord = r.order;
-                const open = r.changes.some((c) => !c.resolvedAt);
-                return (
-                  <tr
-                    key={ord.id}
-                    onClick={() => setSelectedId(ord.id)}
-                    aria-selected={selectedId === ord.id}
-                    tabIndex={0}
-                    onKeyDown={(e) => e.key === "Enter" && setSelectedId(ord.id)}
-                  >
-                    <td data-label="الحالة">
-                      <PayStatus payment={ord.payment} cancelled={Boolean(ord.cancelledAt)} />
-                    </td>
-                    <td data-label="العميل">
-                      <strong>{r.event?.couple ?? ord.clientName}</strong>
-                      <small>
-                        {ord.clientName} · <bdi dir="ltr">{ord.clientPhone}</bdi>
-                        {open && <span className={o.flag}>طلب تعديل</span>}
-                      </small>
-                    </td>
-                    <td data-label="الباقة">{getPackage(pricing, ord.packageId)?.name ?? ord.packageId}</td>
-                    <td data-label="المبلغ" className={o.amount}>
-                      {formatEgp(ord.total)}
-                    </td>
-                    <td data-label="المرحلة">{ord.packageId >= 3 ? STAGES.find((s) => s.id === (ord.stage ?? "new"))?.label : "—"}</td>
-                    <td data-label="اتعمل">{dateFmt(ord.createdAt)}</td>
-                    <td data-label="المناسبة">{r.event ? dateFmt(r.event.date) : (ord.brief?.date ?? "—")}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <>
+          <div className={o.tableWrap}>
+            <table className={o.table}>
+              <thead>
+                <tr>
+                  <th>الحالة</th>
+                  <th>العميل</th>
+                  <th>الباقة</th>
+                  <th>المبلغ</th>
+                  <th>المرحلة</th>
+                  <th>اتعمل</th>
+                  <th>المناسبة</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paged.items.map((r) => {
+                  const ord = r.order;
+                  const open = r.changes.some((c) => !c.resolvedAt);
+                  return (
+                    <tr
+                      key={ord.id}
+                      onClick={() => setSelectedId(ord.id)}
+                      aria-selected={selectedId === ord.id}
+                      tabIndex={0}
+                      onKeyDown={(e) => e.key === "Enter" && setSelectedId(ord.id)}
+                    >
+                      <td data-label="الحالة">
+                        <PayStatus payment={ord.payment} cancelled={Boolean(ord.cancelledAt)} />
+                      </td>
+                      <td data-label="العميل">
+                        <strong>{r.event?.couple ?? ord.clientName}</strong>
+                        <small>
+                          {ord.clientName} · <bdi dir="ltr">{ord.clientPhone}</bdi>
+                          {open && <span className={o.flag}>طلب تعديل</span>}
+                        </small>
+                      </td>
+                      <td data-label="الباقة">{getPackage(pricing, ord.packageId)?.name ?? ord.packageId}</td>
+                      <td data-label="المبلغ" className={o.amount}>
+                        {formatEgp(ord.total)}
+                      </td>
+                      <td data-label="المرحلة">{ord.packageId >= 3 ? STAGES.find((s) => s.id === (ord.stage ?? "new"))?.label : "—"}</td>
+                      <td data-label="اتعمل">{dateFmt(ord.createdAt)}</td>
+                      <td data-label="المناسبة">{r.event ? dateFmt(r.event.date) : (ord.brief?.date ?? "—")}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <Pager {...paged} label="الطلبات" />
+        </>
       )}
 
       {selected && (
