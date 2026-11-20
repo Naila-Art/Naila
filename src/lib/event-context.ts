@@ -1,6 +1,6 @@
 import "server-only";
 import { featuresOf } from "./pricing";
-import { getMusic, getOrder, type EventDetailsPatch } from "./store";
+import { getMusic, getOrder, getPricing, type EventDetailsPatch } from "./store";
 import { cleanText } from "./api";
 import { cairoLocalToIso } from "./time";
 import type { EventData, Features, Lang, Order } from "./types";
@@ -15,7 +15,7 @@ export interface EventContext {
 
 export async function eventContext(event: EventData): Promise<EventContext> {
   const order = event.orderId ? await getOrder(event.orderId) : null;
-  const features = featuresOf(event, order);
+  const features = featuresOf(event, order, await getPricing());
   let musicUrl: string | undefined;
   if (features.music) {
     const ownSongAllowed = !order || order.addons.customMusic;

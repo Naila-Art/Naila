@@ -1,5 +1,5 @@
 import AdminOrders, { type OrderRow } from "@/components/admin/AdminOrders";
-import { listChangeRequests, listEvents, listOrders } from "@/lib/store";
+import { getPricing, listChangeRequests, listEvents, listOrders } from "@/lib/store";
 
 type Props = { params: Promise<{ key: string }>; searchParams: Promise<{ f?: string }> };
 
@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export default async function OrdersPage({ params, searchParams }: Props) {
   const { key } = await params;
   const { f } = await searchParams;
-  const [orders, events, changes] = await Promise.all([listOrders(), listEvents(), listChangeRequests()]);
+  const [orders, events, changes, pricing] = await Promise.all([listOrders(), listEvents(), listChangeRequests(), getPricing()]);
   const eventById = new Map(events.map((e) => [e.id, e]));
 
   const rows: OrderRow[] = orders.map((o) => {
@@ -20,5 +20,5 @@ export default async function OrdersPage({ params, searchParams }: Props) {
     };
   });
 
-  return <AdminOrders adminKey={key} rows={rows} initialFilter={f} />;
+  return <AdminOrders adminKey={key} rows={rows} initialFilter={f} pricing={pricing} />;
 }

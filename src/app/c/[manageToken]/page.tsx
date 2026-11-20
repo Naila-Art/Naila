@@ -6,7 +6,14 @@ import OrderPanels from "@/components/manage/OrderPanels";
 import { eventContext } from "@/lib/event-context";
 import { paymobEnabled } from "@/lib/paymob";
 import { siteSettings, whatsappLink } from "@/lib/site";
-import { getEventByManageToken, getEventDashboard, listChangeRequests, listMusic, listTemplates } from "@/lib/store";
+import {
+  getEventByManageToken,
+  getEventDashboard,
+  getPricing,
+  listChangeRequests,
+  listMusic,
+  listTemplates,
+} from "@/lib/store";
 import { isoToCairoLocal } from "@/lib/time";
 
 type Props = {
@@ -35,9 +42,15 @@ export default async function Page({ params, searchParams }: Props) {
 
   let panels = null;
   if (ctx.order) {
-    const [templates, music, changeRequests] = await Promise.all([listTemplates(), listMusic(), listChangeRequests(event.id)]);
+    const [templates, music, changeRequests, pricing] = await Promise.all([
+      listTemplates(),
+      listMusic(),
+      listChangeRequests(event.id),
+      getPricing(),
+    ]);
     panels = (
       <OrderPanels
+        pricing={pricing}
         manageToken={manageToken}
         slug={event.slug}
         order={ctx.order}

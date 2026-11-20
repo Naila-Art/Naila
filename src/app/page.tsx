@@ -1,15 +1,15 @@
 import Link from "next/link";
 import styles from "@/components/store/store.module.css";
 import TemplateGallery from "@/components/store/TemplateGallery";
-import { ADDON_LABELS, ADDON_PRICES, NAMES_TIERS, PACKAGES, formatEgp } from "@/lib/pricing";
+import { ADDON_LABELS, NAMES_TIER_IDS, formatEgp, isSelfServe } from "@/lib/pricing";
 import { siteSettings, whatsappLink } from "@/lib/site";
-import { listTemplates } from "@/lib/store";
+import { getPricing, listTemplates } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
 /** Storefront home: what it is, templates, packages. */
 export default async function Home() {
-  const templates = await listTemplates();
+  const [templates, pricing] = await Promise.all([listTemplates(), getPricing()]);
   const site = siteSettings();
   const showcase = templates.find((t) => t.videoUrl);
   const wa = whatsappLink(site.whatsapp, "أهلاً، عايز أستفسر عن الدعوات");
@@ -81,7 +81,7 @@ export default async function Home() {
           <h2>الباقات</h2>
           <p className={styles.sectionLead}>سعر واحد، من غير اشتراك</p>
           <div className={styles.packageGrid}>
-            {PACKAGES.map((p) => (
+            {pricing.packages.filter((p) => p.active).map((p) => (
               <div key={p.id} className={styles.packageBox} data-featured={p.id === 2}>
                 <h3>{p.name}</h3>
                 <div className={styles.price}>
@@ -93,7 +93,7 @@ export default async function Home() {
                     <li key={pt}>{pt}</li>
                   ))}
                 </ul>
-                {p.selfServe ? (
+                {isSelfServe(p.id) ? (
                   <Link className={styles.cta} href={`/create?p=${p.id}`}>
                     ابدأ
                   </Link>
@@ -111,17 +111,17 @@ export default async function Home() {
             <ul>
               <li>
                 <span>{ADDON_LABELS.arabic}</span>
-                <span>+{ADDON_PRICES.arabic}</span>
+                <span>+{pricing.addons.arabic}</span>
               </li>
               <li>
                 <span>{ADDON_LABELS.maps}</span>
-                <span>+{ADDON_PRICES.maps}</span>
+                <span>+{pricing.addons.maps}</span>
               </li>
               <li>
                 <span>{ADDON_LABELS.customMusic}</span>
-                <span>+{ADDON_PRICES.customMusic}</span>
+                <span>+{pricing.addons.customMusic}</span>
               </li>
-              {Object.values(NAMES_TIERS).map((tier) => (
+              {NAMES_TIER_IDS.map((id) => pricing.namesTiers[id]).map((tier) => (
                 <li key={tier.label}>
                   <span>
                     {ADDON_LABELS.names} ({tier.label})

@@ -1,10 +1,11 @@
 "use client";
 
 import styles from "./store.module.css";
-import { ADDON_LABELS, ADDON_PRICES, NAMES_TIERS, PACKAGES, formatEgp, priceOf } from "@/lib/pricing";
-import type { Addons, Lang, MusicTrack, NamesTier, PackageId } from "@/lib/types";
+import { ADDON_LABELS, NAMES_TIER_IDS, formatEgp, isSelfServe, priceOf, type Pricing } from "@/lib/pricing";
+import type { Addons, Lang, MusicTrack, PackageId } from "@/lib/types";
 
 interface Props {
+  pricing: Pricing;
   packageId: PackageId;
   addons: Addons;
   lang: Lang;
@@ -19,16 +20,17 @@ interface Props {
 
 /** Package (1 or 2) and add-ons, with the running total. Used by the builder and the client page. */
 export default function OrderOptions(props: Props) {
-  const { packageId, lang } = props;
+  const { packageId, lang, pricing } = props;
+  const tiers = pricing.namesTiers;
   // The Arabic add-on follows the language.
   const addons: Addons = { ...props.addons, arabic: lang === "ar" };
   const set = (patch: Partial<Addons>) => props.onChange({ packageId, addons: { ...addons, ...patch } });
-  const total = priceOf(packageId, addons);
+  const total = priceOf(pricing, packageId, addons);
 
   return (
     <div className={styles.options}>
       <div className={styles.packages} role="radiogroup" aria-label="الباقة">
-        {PACKAGES.filter((p) => p.selfServe).map((p) => (
+        {pricing.packages.filter((p) => isSelfServe(p.id) && (p.active || p.id === packageId)).map((p) => (
           <button
             key={p.id}
             type="button"
@@ -85,13 +87,13 @@ export default function OrderOptions(props: Props) {
             {ADDON_LABELS.arabic}
             <small>{lang === "ar" ? "مضافة لأن الدعوة عربي" : "الدعوة إنجليزي"}</small>
           </span>
-          <em>+{ADDON_PRICES.arabic}</em>
+          <em>+{pricing.addons.arabic}</em>
         </label>
 
         <label className={styles.addon}>
           <input type="checkbox" checked={addons.maps} onChange={(e) => set({ maps: e.target.checked })} />
           <span>{ADDON_LABELS.maps}</span>
-          <em>+{ADDON_PRICES.maps}</em>
+          <em>+{pricing.addons.maps}</em>
         </label>
         {addons.maps && props.onMapsUrlChange && (
           <label className={styles.field}>
@@ -113,7 +115,7 @@ export default function OrderOptions(props: Props) {
             {ADDON_LABELS.customMusic}
             <small>ترفعها من صفحتك بعد ما تعمل الدعوة</small>
           </span>
-          <em>+{ADDON_PRICES.customMusic}</em>
+          <em>+{pricing.addons.customMusic}</em>
         </label>
 
         <label className={styles.addon}>
@@ -126,11 +128,11 @@ export default function OrderOptions(props: Props) {
             {ADDON_LABELS.names}
             <small>كل معزوم يفتح دعوة باسمه، وتعرف مين فتح ومين أكد</small>
           </span>
-          <em>{addons.names ? `+${NAMES_TIERS[addons.names].price}` : `من +${NAMES_TIERS["100"].price}`}</em>
+          <em>{addons.names ? `+${tiers[addons.names].price}` : `من +${tiers["100"].price}`}</em>
         </label>
         {addons.names && (
           <div className={styles.tiers} role="radiogroup" aria-label="عدد المعازيم">
-            {(Object.keys(NAMES_TIERS) as NamesTier[]).map((tier) => (
+            {NAMES_TIER_IDS.map((tier) => (
               <button
                 key={tier}
                 type="button"
@@ -139,8 +141,8 @@ export default function OrderOptions(props: Props) {
                 className={styles.tier}
                 onClick={() => set({ names: tier })}
               >
-                {NAMES_TIERS[tier].label}
-                <em>+{NAMES_TIERS[tier].price}</em>
+                {tiers[tier].label}
+                <em>+{tiers[tier].price}</em>
               </button>
             ))}
           </div>

@@ -3,6 +3,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import { randomBytes, randomUUID } from "crypto";
 import { builtInTemplates } from "./templates";
+import { DEFAULT_PRICING, type Pricing } from "./pricing";
 import type {
   ChangeRequest,
   EventData,
@@ -38,6 +39,8 @@ interface Db {
   orders?: Order[];
   changeRequests?: ChangeRequest[];
   music?: MusicTrack[];
+  /** Saved from the admin dashboard; DEFAULT_PRICING until then. */
+  pricing?: Pricing;
 }
 
 const DB_PATH = path.join(process.cwd(), "data", "db.json");
@@ -471,5 +474,20 @@ export function purgeExpiredGuestData(now = new Date()): Promise<{ events: numbe
     db.wishes = db.wishes.filter((w) => !expired.has(w.eventId));
     db.views = db.views.filter((v) => !expired.has(v.eventId));
     return { events: expired.size, guests: guestsBefore - db.guests.length };
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Pricing (admin dashboard)
+// ---------------------------------------------------------------------------
+
+export async function getPricing(): Promise<Pricing> {
+  return (await read()).pricing ?? DEFAULT_PRICING;
+}
+
+export function savePricing(pricing: Pricing): Promise<Pricing> {
+  return mutate((db) => {
+    db.pricing = pricing;
+    return pricing;
   });
 }

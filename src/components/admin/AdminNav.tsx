@@ -10,6 +10,7 @@ export default function AdminNav({ adminKey }: { adminKey: string }) {
   const links = [
     { href: base, label: "الرئيسية" },
     { href: `${base}/orders`, label: "الطلبات" },
+    { href: `${base}/pricing`, label: "الأسعار" },
     { href: `${base}/templates`, label: "التيمبليتس" },
     { href: `${base}/music`, label: "المزيكا" },
   ];

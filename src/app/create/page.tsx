@@ -3,7 +3,7 @@ import Link from "next/link";
 import Builder from "@/components/store/Builder";
 import styles from "@/components/store/store.module.css";
 import { siteSettings } from "@/lib/site";
-import { listMusic, listTemplates } from "@/lib/store";
+import { getPricing, listMusic, listTemplates } from "@/lib/store";
 import type { PackageId } from "@/lib/types";
 
 export const metadata: Metadata = { title: "اعمل دعوتك" };
@@ -13,7 +13,7 @@ type Props = { searchParams: Promise<{ t?: string; p?: string }> };
 
 export default async function CreatePage({ searchParams }: Props) {
   const { t, p } = await searchParams;
-  const [templates, music] = await Promise.all([listTemplates(), listMusic()]);
+  const [templates, music, pricing] = await Promise.all([listTemplates(), listMusic(), getPricing()]);
   const site = siteSettings();
   return (
     <main className={styles.page} dir="rtl" lang="ar">
@@ -25,7 +25,7 @@ export default async function CreatePage({ searchParams }: Props) {
         </nav>
         <h1 className={styles.pageTitle}>اعمل دعوتك</h1>
         <p className={styles.sectionLead}>هتشوف الدعوة كاملة قبل ما تدفع</p>
-        <Builder templates={templates} music={music} initialTemplateId={t} initialPackageId={Number(p) as PackageId} />
+        <Builder pricing={pricing} templates={templates} music={music} initialTemplateId={t} initialPackageId={Number(p) as PackageId} />
       </div>
     </main>
   );

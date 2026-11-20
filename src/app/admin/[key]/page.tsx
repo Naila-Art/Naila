@@ -2,7 +2,8 @@ import Link from "next/link";
 import m from "@/components/manage/manage.module.css";
 import a from "@/components/admin/admin.module.css";
 import { adminOverview } from "@/lib/admin-stats";
-import { PACKAGES, formatEgp } from "@/lib/pricing";
+import { formatEgp } from "@/lib/pricing";
+import { getPricing } from "@/lib/store";
 
 type Props = { params: Promise<{ key: string }> };
 
@@ -14,7 +15,7 @@ const monthLabel = (key: string) => `${MONTHS_AR[Number(key.slice(5, 7)) - 1]} $
 /** Admin home: clients, this month's revenue, what needs action. */
 export default async function AdminHome({ params }: Props) {
   const { key } = await params;
-  const s = await adminOverview();
+  const [s, pricing] = await Promise.all([adminOverview(), getPricing()]);
   const maxRevenue = Math.max(1, ...s.months.map((x) => x.revenue));
   const base = `/admin/${key}`;
 
@@ -83,7 +84,7 @@ export default async function AdminHome({ params }: Props) {
       <section className={m.panel}>
         <h2>الشهر ده حسب الباقة</h2>
         <ul className={m.simpleList}>
-          {PACKAGES.map((p) => (
+          {pricing.packages.map((p) => (
             <li key={p.id}>
               <span>
                 {p.id}. {p.name}

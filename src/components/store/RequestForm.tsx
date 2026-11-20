@@ -3,13 +3,13 @@
 import { useState, type FormEvent } from "react";
 import styles from "./store.module.css";
 import { DETAIL_ERRORS } from "./Builder";
-import { getPackage, formatEgp } from "@/lib/pricing";
+import { formatEgp, type PackageInfo } from "@/lib/pricing";
 import { CATEGORY_LABELS, type Category, type PackageId } from "@/lib/types";
 import { UploadError, postJson } from "@/lib/upload-client";
 
 /** Packages 3-4: the client leaves a brief and we follow up on WhatsApp. */
-export default function RequestForm({ packageId, whatsappUrl }: { packageId: PackageId; whatsappUrl: string }) {
-  const pkg = getPackage(packageId)!;
+export default function RequestForm({ pkg, whatsappUrl }: { pkg: PackageInfo; whatsappUrl: string }) {
+  const packageId: PackageId = pkg.id;
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
   const [category, setCategory] = useState<Category>("wedding");

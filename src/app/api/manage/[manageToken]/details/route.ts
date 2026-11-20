@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { bad, manageContext, readJson } from "@/lib/api";
 import { eventContext, parseEventDetails } from "@/lib/event-context";
 import { priceOf } from "@/lib/pricing";
-import { findTemplate, getMusic, updateEventDetails, updateOrder } from "@/lib/store";
+import { findTemplate, getMusic, getPricing, updateEventDetails, updateOrder } from "@/lib/store";
 
 type Ctx = { params: Promise<{ manageToken: string }> };
 
@@ -45,7 +45,7 @@ export async function PUT(req: Request, ctx: Ctx) {
   // Switching language before paying changes the Arabic add-on and the price.
   if (order && order.payment === "unpaid" && details.value.lang !== event.lang) {
     const addons = { ...order.addons, arabic: details.value.lang === "ar" };
-    await updateOrder(order.id, { addons, total: priceOf(order.packageId, addons) });
+    await updateOrder(order.id, { addons, total: priceOf(await getPricing(), order.packageId, addons) });
   }
   return NextResponse.json({ event: updated });
 }

@@ -4,11 +4,12 @@ import { useState, type FormEvent } from "react";
 import styles from "./store.module.css";
 import OrderOptions from "./OrderOptions";
 import TemplateGallery from "./TemplateGallery";
-import { NO_ADDONS, formatEgp, priceOf } from "@/lib/pricing";
+import { NO_ADDONS, formatEgp, isSelfServe, priceOf, type Pricing } from "@/lib/pricing";
 import { UploadError, postJson } from "@/lib/upload-client";
 import type { Addons, Lang, MusicTrack, PackageId, Template } from "@/lib/types";
 
 interface Props {
+  pricing: Pricing;
   templates: Template[];
   music: MusicTrack[];
   initialTemplateId?: string;
@@ -34,7 +35,8 @@ export const DETAIL_ERRORS: Record<string, string> = {
  * The storefront builder: template → details → package & add-ons → contact.
  * Creates a draft the client previews before paying (names can be added right after, on their page).
  */
-export default function Builder({ templates, music, initialTemplateId, initialPackageId }: Props) {
+export default function Builder({ pricing, templates, music, initialTemplateId, initialPackageId }: Props) {
+  const onSale = pricing.packages.filter((p) => p.active && isSelfServe(p.id)).map((p) => p.id);
   const [templateId, setTemplateId] = useState(
     templates.some((t) => t.id === initialTemplateId) ? initialTemplateId! : (templates[0]?.id ?? ""),
   );
@@ -45,7 +47,9 @@ export default function Builder({ templates, music, initialTemplateId, initialPa
   const [venueName, setVenueName] = useState("");
   const [venueAddress, setVenueAddress] = useState("");
   const [mapsUrl, setMapsUrl] = useState("");
-  const [packageId, setPackageId] = useState<PackageId>(initialPackageId === 2 ? 2 : 1);
+  const [packageId, setPackageId] = useState<PackageId>(
+    initialPackageId && onSale.includes(initialPackageId) ? initialPackageId : (onSale[0] ?? 1),
+  );
   const [addons, setAddons] = useState<Addons>(NO_ADDONS);
   const [musicTrackId, setMusicTrackId] = useState("");
   const [clientName, setClientName] = useState("");
@@ -53,7 +57,7 @@ export default function Builder({ templates, music, initialTemplateId, initialPa
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const total = priceOf(packageId, { ...addons, arabic: lang === "ar" });
+  const total = priceOf(pricing, packageId, { ...addons, arabic: lang === "ar" });
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -142,6 +146,7 @@ export default function Builder({ templates, music, initialTemplateId, initialPa
           <span className={styles.stepNum}>3</span>الباقة والإضافات
         </h2>
         <OrderOptions
+          pricing={pricing}
           packageId={packageId}
           addons={addons}
           lang={lang}

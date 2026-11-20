@@ -12,14 +12,14 @@ Open http://localhost:3000 (the storefront). Demo links are at http://localhost:
 All settings live in `.env.local` (git-ignored); `.env.example` lists them. On Vercel they go in Project → Settings → Environment Variables.
 
 ## How it works
-1. **Storefront** (`/`): templates by category, packages and add-ons from `src/lib/pricing.ts` (Ziad's PDF).
+1. **Storefront** (`/`): templates by category, packages and add-ons. Prices are edited in `/admin/{key}/pricing` (defaults: Ziad's PDF, `DEFAULT_PRICING` in `src/lib/pricing.ts`). Orders keep the total and guest cap they were sold with.
 2. **Builder** (`/create`): template → details → package 1/2 + add-ons → name + WhatsApp. Creates a **draft** and sends the client to their private page.
    Packages 3–4 go to `/request` instead (a brief; we follow up on WhatsApp).
 3. **Client page** (`/c/{manageToken}`, no password): preview, change package/add-ons, edit details, own song upload, wording, guests (named-link add-on, capped by tier), approve and pay, ask us for a change.
 4. **Draft** invitations carry a "preview" ribbon and refuse replies. Payment (Paymob, or Instapay confirmed by us) makes them **active**.
 5. **Cancelled** orders (from our dashboard, optionally marked as refunded) close the invitation, every guest link and the client page. "Restore" reopens them.
 
-### What each package unlocks (`featuresOf` in `src/lib/pricing.ts`)
+### What each package unlocks (`featuresOf` in `src/lib/pricing.ts`, fixed in code; names, prices, points and on/off are edited in the dashboard)
 | | Package 1 | Package 2 | 3–4 |
 |---|---|---|---|
 | Seal animation, names, RSVP, countdown | ✓ | ✓ | ✓ |
@@ -28,7 +28,7 @@ All settings live in `.env.local` (git-ignored); `.env.example` lists them. On V
 | Google Maps button | add-on | add-on | ✓ |
 | Named link per guest | add-on, by tier | add-on, by tier | 4 includes it |
 
-Arabic invitations carry the Arabic add-on automatically. The 300-guest and unlimited tier prices are placeholders until Ziad confirms them.
+Arabic invitations carry the Arabic add-on automatically. The 300-guest and unlimited tier prices are placeholders until Ziad confirms them (edit them in the dashboard).
 
 ## Routes
 | Route | What it is |
@@ -39,6 +39,7 @@ Arabic invitations carry the Arabic add-on automatically. The 300-guest and unli
 | `/c/{manageToken}` | Client page |
 | `/admin/{ADMIN_TOKEN}` | Our dashboard: clients, this month's revenue, last 6 months, by package, to-do |
 | `/admin/{ADMIN_TOKEN}/orders` | Orders: confirm/reject Instapay, mark paid, custom stages, change requests, **cancel / refund**, restore |
+| `/admin/{ADMIN_TOKEN}/pricing` | Packages (name, price, points, shown/hidden), add-on prices, guest-count tiers |
 | `/admin/{ADMIN_TOKEN}/templates` · `/music` | Upload Google Flow templates · music library |
 | `POST /api/orders` · `POST /api/requests` | Create a draft · a package 3–4 request |
 | `PUT /api/manage/{t}/order` · `/details` · `/texts` · `/music` | Client edits (package/add-ons only before payment) |

@@ -92,8 +92,10 @@ export interface Order {
   clientPhone: string;
   packageId: PackageId;
   addons: Addons;
-  /** EGP */
+  /** EGP, fixed when the order is made or changed; later price edits don't touch it. */
   total: number;
+  /** Named-guest cap sold with this order (snapshot of the tier at the time). */
+  namesLimit?: number;
   payment: PaymentState;
   paymentMethod?: PaymentMethod;
   /** Instapay transfer screenshot. */

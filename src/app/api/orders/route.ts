@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { bad, cleanText, readJson } from "@/lib/api";
 import { parseEventDetails } from "@/lib/event-context";
 import { normalizePhone } from "@/lib/guests";
-import { getPackage, parseAddons, priceOf } from "@/lib/pricing";
-import { createDraft, findTemplate, getMusic } from "@/lib/store";
+import { getPackage, isSelfServe, namesLimitOf, parseAddons, priceOf } from "@/lib/pricing";
+import { createDraft, findTemplate, getMusic, getPricing } from "@/lib/store";
 import type { PackageId } from "@/lib/types";
 
 const DEFAULT_TEXT = {
@@ -23,8 +23,9 @@ export async function POST(req: Request) {
   if (!body) return bad("invalid_body");
 
   const packageId = Number(body.packageId) as PackageId;
-  const pkg = getPackage(packageId);
-  if (!pkg || !pkg.selfServe) return bad("invalid_package");
+  const pricing = await getPricing();
+  const pkg = getPackage(pricing, packageId);
+  if (!pkg || !pkg.active || !isSelfServe(packageId)) return bad("invalid_package");
 
   const template = typeof body.templateId === "string" ? await findTemplate(body.templateId) : null;
   if (!template) return bad("invalid_template");
@@ -58,7 +59,14 @@ export async function POST(req: Request) {
       generalText: DEFAULT_TEXT[lang].general,
       personalText: DEFAULT_TEXT[lang].personal,
     },
-    { clientName, clientPhone, packageId, addons, total: priceOf(packageId, addons) },
+    {
+      clientName,
+      clientPhone,
+      packageId,
+      addons,
+      total: priceOf(pricing, packageId, addons),
+      namesLimit: namesLimitOf(pricing, packageId, addons),
+    },
   );
   return NextResponse.json({ manageToken: event.manageToken }, { status: 201 });
 }

@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import m from "../manage/manage.module.css";
 import a from "./admin.module.css";
-import { ADDON_LABELS, NAMES_TIERS, formatEgp, getPackage } from "@/lib/pricing";
+import { ADDON_LABELS, formatEgp, getPackage, type Pricing } from "@/lib/pricing";
 import { CATEGORY_LABELS, type ChangeRequest, type CustomStage, type Order } from "@/lib/types";
 import { UploadError, postJson } from "@/lib/upload-client";
 
@@ -56,7 +56,17 @@ function matches(row: OrderRow, f: Filter): boolean {
   }
 }
 
-export default function AdminOrders({ adminKey, rows, initialFilter }: { adminKey: string; rows: OrderRow[]; initialFilter?: string }) {
+export default function AdminOrders({
+  adminKey,
+  rows,
+  initialFilter,
+  pricing,
+}: {
+  adminKey: string;
+  rows: OrderRow[];
+  initialFilter?: string;
+  pricing: Pricing;
+}) {
   const router = useRouter();
   const [filter, setFilter] = useState<Filter>(FILTERS.some((f) => f.id === initialFilter) ? (initialFilter as Filter) : "all");
   const [query, setQuery] = useState("");
@@ -131,7 +141,7 @@ export default function AdminOrders({ adminKey, rows, initialFilter }: { adminKe
       ) : (
         <ul className={a.orders}>
           {shown.map(({ order: o, event: e, changes }) => {
-            const pkg = getPackage(o.packageId)!;
+            const pkg = getPackage(pricing, o.packageId)!;
             const busy = busyId === o.id;
             const wa = `https://wa.me/${o.clientPhone.replace(/\D/g, "")}`;
             return (
@@ -176,7 +186,7 @@ export default function AdminOrders({ adminKey, rows, initialFilter }: { adminKe
                     o.addons.arabic && ADDON_LABELS.arabic,
                     o.addons.maps && ADDON_LABELS.maps,
                     o.addons.customMusic && ADDON_LABELS.customMusic,
-                    o.addons.names && `${ADDON_LABELS.names} (${NAMES_TIERS[o.addons.names].label})`,
+                    o.addons.names && `${ADDON_LABELS.names} (${pricing.namesTiers[o.addons.names].label})`,
                   ]
                     .filter(Boolean)
                     .join(" · ") || "من غير إضافات"}

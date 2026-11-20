@@ -6,7 +6,7 @@ import styles from "./manage.module.css";
 import store from "../store/store.module.css";
 import OrderOptions from "../store/OrderOptions";
 import { DETAIL_ERRORS } from "../store/Builder";
-import { ADDON_LABELS, NAMES_TIERS, formatEgp, getPackage } from "@/lib/pricing";
+import { ADDON_LABELS, formatEgp, getPackage, type Pricing } from "@/lib/pricing";
 import { UPLOAD_ERRORS, UploadError, contentTypeOf, postJson, putFile } from "@/lib/upload-client";
 import type { Addons, ChangeRequest, Lang, MusicTrack, Order, PackageId, Template } from "@/lib/types";
 
@@ -25,6 +25,7 @@ export interface EventDetails {
 }
 
 interface Props {
+  pricing: Pricing;
   manageToken: string;
   slug: string;
   order: Order;
@@ -51,13 +52,13 @@ const ERRORS: Record<string, string> = {
 };
 const errorText = (err: unknown) => ERRORS[err instanceof UploadError ? err.code : "failed"] ?? ERRORS.failed;
 
-function addonSummary(order: Order): string[] {
+function addonSummary(order: Order, pricing: Pricing): string[] {
   const out: string[] = [];
   if (order.addons.arabic) out.push(ADDON_LABELS.arabic);
   if (order.addons.maps) out.push(ADDON_LABELS.maps);
   if (order.addons.customMusic) out.push(ADDON_LABELS.customMusic);
   if (order.packageId === 4) out.push(`${ADDON_LABELS.names} (مشمولة)`);
-  else if (order.addons.names) out.push(`${ADDON_LABELS.names}: ${NAMES_TIERS[order.addons.names].label}`);
+  else if (order.addons.names) out.push(`${ADDON_LABELS.names}: ${pricing.namesTiers[order.addons.names].label}`);
   return out;
 }
 
@@ -77,7 +78,7 @@ export default function OrderPanels(props: Props) {
         </section>
       )}
       <PaymentPanel {...props} api={api} />
-      {order.payment === "unpaid" && <OrderEditor api={api} order={order} lang={props.details.lang} />}
+      {order.payment === "unpaid" && <OrderEditor api={api} order={order} lang={props.details.lang} pricing={props.pricing} />}
       <DetailsEditor {...props} api={api} />
       {order.addons.customMusic && props.features.music && <CustomMusic api={api} current={props.details.musicUrl} />}
       <ChangeRequests api={api} initial={props.changeRequests} whatsappUrl={props.whatsappUrl} />
@@ -88,7 +89,7 @@ export default function OrderPanels(props: Props) {
 function PaymentPanel(props: Props & { api: string }) {
   const { order } = props;
   const router = useRouter();
-  const pkg = getPackage(order.packageId)!;
+  const pkg = getPackage(props.pricing, order.packageId)!;
   const [approved, setApproved] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -144,7 +145,9 @@ function PaymentPanel(props: Props & { api: string }) {
       <p>
         باقة <strong>{pkg.name}</strong> · {formatEgp(order.total)}
       </p>
-      {addonSummary(order).length > 0 && <p className={styles.hint}>{addonSummary(order).join(" · ")}</p>}
+      {addonSummary(order, props.pricing).length > 0 && (
+        <p className={styles.hint}>{addonSummary(order, props.pricing).join(" · ")}</p>
+      )}
 
       {order.payment === "paid" && <p className={styles.ok}>تم الدفع. ابعت اللينكات للمعازيم من تحت.</p>}
 
@@ -226,7 +229,7 @@ function PaymentPanel(props: Props & { api: string }) {
   );
 }
 
-function OrderEditor({ api, order, lang }: { api: string; order: Order; lang: Lang }) {
+function OrderEditor({ api, order, lang, pricing }: { api: string; order: Order; lang: Lang; pricing: Pricing }) {
   const router = useRouter();
   const [packageId, setPackageId] = useState<PackageId>(order.packageId);
   const [addons, setAddons] = useState<Addons>(order.addons);
@@ -252,6 +255,7 @@ function OrderEditor({ api, order, lang }: { api: string; order: Order; lang: La
       <summary className={styles.summary}>تغيير الباقة أو الإضافات</summary>
       <div className={store.page} style={{ minHeight: 0, background: "transparent" }}>
         <OrderOptions
+          pricing={pricing}
           packageId={packageId}
           addons={addons}
           lang={lang}
