@@ -538,6 +538,42 @@
   background: rgba(255, 255, 255, 0.9);
 }
 
+/* Songs take a full row with a player. */
+.refGrid li[data-type="audio"] {
+  grid-column: 1 / -1;
+  aspect-ratio: auto;
+}
+
+.refAudio {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 12px;
+  padding-inline-end: 44px;
+}
+
+.refAudio span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.refAudio audio {
+  width: 100%;
+  height: 36px;
+}
+
+.briefText {
+  white-space: pre-wrap;
+  line-height: 1.7;
+}
+
+.briefLink {
+  overflow-wrap: anywhere;
+  color: var(--m-info);
+}
+
 /* ---------- payment methods ---------- */
 .methods {
   border: 1px solid var(--m-line);

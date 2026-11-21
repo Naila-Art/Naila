@@ -1,6 +1,6 @@
 export type Category = "wedding" | "engagement" | "katb_kitab";
 export type Lang = "ar" | "en";
-export type RsvpStatus = "attending" | "declined";
+export type RsvpStatus = "attending" | "maybe" | "declined";
 
 /**
  * A visual template. Each one wraps a Google Flow video (made by Ziad).
@@ -79,6 +79,8 @@ export interface EventData {
   category?: Category;
   /** A track from our music library (package 2+). */
   musicTrackId?: string;
+  /** The client wants guests to confirm attendance (package 2+). */
+  rsvp?: boolean;
   createdAt?: string;
   /**
    * Set on the storefront's sample invitations (one per package). They show that package's
@@ -137,9 +139,10 @@ export interface Order {
   cancelReason?: string;
   /** Money returned to the client (a refund), as opposed to a cancellation before payment. */
   refunded?: boolean;
-  brief?: { category: Category; date?: string; notes: string };
+  /** Package 3+: what the client wants, and a link to their files (e.g. Google Drive). */
+  brief?: { category: Category; date?: string; notes: string; link?: string };
   /** Package 3+: the client's photos, videos and references for our team. */
-  references?: { url: string; name: string; type: "image" | "video"; addedAt: string }[];
+  references?: { url: string; name: string; type: "image" | "video" | "audio"; addedAt: string }[];
   createdAt: string;
 }
 
@@ -173,6 +176,8 @@ export interface Features {
   wishes: boolean;
   music: boolean;
   maps: boolean;
+  /** Guests can confirm attendance, if the client turned it on. */
+  rsvp: boolean;
   /** Max named guests; 0 = general link only. */
   namesLimit: number;
 }
@@ -195,6 +200,10 @@ export interface Rsvp {
   /** For general links the guest types their own name. */
   name: string;
   status: RsvpStatus;
+  /** How many people are coming, the guest included (attending / maybe only). */
+  count?: number;
+  /** Optional note to the hosts. */
+  note?: string;
   createdAt: string;
 }
 
@@ -211,6 +220,7 @@ export interface Wish {
 export interface GuestWithStatus extends Guest {
   openedAt?: string;
   rsvp?: RsvpStatus;
+  rsvpCount?: number;
 }
 
 export interface GuestInput {

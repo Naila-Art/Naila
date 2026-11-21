@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import styles from "./store.module.css";
-import { BADGE_LABELS, CATEGORY_LABELS, type Category, type Template, type TemplateBadge } from "@/lib/types";
+import { BADGE_LABELS, CATEGORY_LABELS, type Category, type Lang, type Template, type TemplateBadge } from "@/lib/types";
 import Icon from "../Icon";
 
 interface Props {
@@ -10,14 +10,40 @@ interface Props {
   /** Builder mode: cards are selectable instead of links. */
   selectedId?: string;
   onSelect?: (id: string) => void;
+  /** The client's names, written over every design so they choose the one that looks like theirs. */
+  names?: CoupleNames;
+  lang?: Lang;
+}
+
+export interface CoupleNames {
+  a: string;
+  b: string;
 }
 
 const BADGE_ORDER = Object.keys(BADGE_LABELS) as TemplateBadge[];
 const badgeRank = (t: Template) => (t.badge ? BADGE_ORDER.indexOf(t.badge) : BADGE_ORDER.length);
 
-export function TemplateThumb({ template, showBadge = true }: { template: Template; showBadge?: boolean }) {
+export function TemplateThumb({
+  template,
+  showBadge = true,
+  names,
+  lang = "ar",
+}: {
+  template: Template;
+  showBadge?: boolean;
+  names?: CoupleNames;
+  lang?: Lang;
+}) {
   return (
     <div className={styles.templateThumb} style={{ background: template.theme.background }}>
+      {/* Same place and style as the names over the opening on the real invitation. */}
+      {names && (
+        <div className={styles.thumbNames} data-lang={lang} style={{ color: template.theme.text }} aria-hidden>
+          <span>{names.a}</span>
+          <span style={{ color: template.theme.accent }}>{lang === "ar" ? "و" : "&"}</span>
+          <span>{names.b}</span>
+        </div>
+      )}
       {showBadge && template.badge && (
         <span className={styles.templateBadge} data-badge={template.badge}>
           {BADGE_LABELS[template.badge]}
@@ -34,7 +60,7 @@ export function TemplateThumb({ template, showBadge = true }: { template: Templa
 }
 
 /** Templates filtered by category (wedding / engagement / katb kitab). */
-export default function TemplateGallery({ templates, selectedId, onSelect }: Props) {
+export default function TemplateGallery({ templates, selectedId, onSelect, names, lang }: Props) {
   const categories = (Object.keys(CATEGORY_LABELS) as Category[]).filter((c) => templates.some((t) => t.category === c));
   const [filter, setFilter] = useState<Category | "all">("all");
   // Badged ones first (مميز, then الأكثر طلباً, then جديد); otherwise the order stays as it was. Array sort is stable.
@@ -62,7 +88,7 @@ export default function TemplateGallery({ templates, selectedId, onSelect }: Pro
                 className={styles.templateCard}
                 onClick={() => onSelect(t.id)}
               >
-                <TemplateThumb template={t} />
+                <TemplateThumb template={t} names={names} lang={lang} />
                 <span className={styles.templateInfo}>
                   <strong>{t.name}</strong>
                   <small>{CATEGORY_LABELS[t.category]}</small>

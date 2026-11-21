@@ -40,6 +40,7 @@ export async function PUT(req: Request, ctx: Ctx) {
     ...details.value,
     ...(generalText ? { generalText } : {}),
     mapsUrl: features.maps ? details.value.mapsUrl : undefined,
+    ...(details.value.rsvp !== undefined ? { rsvp: features.rsvp && details.value.rsvp } : {}),
     templateId,
     musicTrackId,
   });

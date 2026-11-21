@@ -28,10 +28,12 @@ export function normalizePhone(raw: unknown): string | null {
   const plus = s.startsWith("+") || s.startsWith("00");
   s = s.replace(/\D/g, "");
   if (s.startsWith("00")) s = s.slice(2);
-  if (!plus) {
-    if (/^01\d{9}$/.test(s)) s = `20${s.slice(1)}`; // 01xxxxxxxxx → 201xxxxxxxxx
-    else if (/^1\d{9}$/.test(s)) s = `20${s}`; // leading 0 lost in Excel
-  }
+  if (/^01\d{9}$/.test(s)) s = `20${s.slice(1)}`; // 01xxxxxxxxx (or +01xxxxxxxxx) → 201xxxxxxxxx
+  else if (!plus && /^1\d{9}$/.test(s)) s = `20${s}`; // leading 0 lost in Excel
+  // No country code starts with 0, and an Egyptian mobile is always 20 + 1x + 8 digits;
+  // anything else opens WhatsApp without a chat.
+  if (s.startsWith("0")) return null;
+  if (s.startsWith("20") && !/^201[0125]\d{8}$/.test(s)) return null;
   return /^\d{8,15}$/.test(s) ? `+${s}` : null;
 }
 

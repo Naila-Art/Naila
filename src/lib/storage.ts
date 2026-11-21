@@ -28,8 +28,11 @@ export const UPLOAD_RULES: Record<UploadKind, { types: Record<string, string>; m
   music: { types: { "audio/mpeg": "mp3", "audio/mp4": "m4a", "audio/x-m4a": "m4a" }, maxBytes: 12 * 1024 * 1024 },
   /** Instapay transfer screenshot. */
   proof: { types: IMAGE_TYPES, maxBytes: 6 * 1024 * 1024 },
-  /** Package 3+: the client's photos, videos and reference images. iPhone videos are .mov. */
-  reference: { types: { ...IMAGE_TYPES, "video/mp4": "mp4", "video/quicktime": "mov" }, maxBytes: 50 * 1024 * 1024 },
+  /** Package 3+: the client's photos, videos, songs and reference images. iPhone videos are .mov. */
+  reference: {
+    types: { ...IMAGE_TYPES, "video/mp4": "mp4", "video/quicktime": "mov", "audio/mpeg": "mp3", "audio/mp4": "m4a", "audio/x-m4a": "m4a" },
+    maxBytes: 50 * 1024 * 1024,
+  },
 };
 
 /** Most files a client can attach to one order (package 3+ references). */
@@ -92,7 +95,7 @@ const OBJECT_KEYS: Record<UploadKind, RegExp> = {
   art: /^templates\/tpl_[0-9a-f]{10}\/art-(top|corner|bottom)-[0-9a-f]{8}\.(jpg|png|webp)$/,
   music: /^(music\/trk_[0-9a-f]{10}|events\/evt_[0-9a-z_]{1,40}\/music)-[0-9a-f]{8}\.(mp3|m4a)$/,
   proof: /^payments\/ord_[0-9a-f]{10}\/proof-[0-9a-f]{8}\.(jpg|png|webp)$/,
-  reference: /^orders\/ord_[0-9a-f]{10}\/ref-[0-9a-f]{8}\.(jpg|png|webp|mp4|mov)$/,
+  reference: /^orders\/ord_[0-9a-f]{10}\/ref-[0-9a-f]{8}\.(jpg|png|webp|mp4|mov|mp3|m4a)$/,
 };
 
 export function kindOfKey(key: string): UploadKind | null {
@@ -220,7 +223,7 @@ export async function verifyUpload(objectKey: string, kind: UploadKind): Promise
       : kind === "music"
         ? type === "mp3" || type === "mp4"
         : kind === "reference"
-          ? type === "mp4" || type === "jpg" || type === "png" || type === "webp"
+          ? type === "mp4" || type === "mp3" || type === "jpg" || type === "png" || type === "webp"
           : type === "jpg" || type === "png" || type === "webp";
   return ok ? "ok" : "wrong_type";
 }

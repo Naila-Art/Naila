@@ -79,8 +79,9 @@ export default async function OrderPage({ params, searchParams }: Props) {
             templateId: event.templateId,
             musicTrackId: event.musicTrackId ?? "",
             generalText: event.generalText,
+            rsvp: event.rsvp === true,
           }}
-          features={{ music: ctx.features.music, maps: ctx.features.maps }}
+          features={{ music: ctx.features.music, maps: ctx.features.maps, rsvp: ctx.features.rsvp }}
           templates={templates.map(({ id, name }) => ({ id, name }))}
           music={music}
           changeRequests={changeRequests}

@@ -114,6 +114,7 @@ export async function InvitationView({ event, guest, preview }: { event: EventDa
       mapsUrl={ctx.features.maps ? event.mapsUrl : undefined}
       musicUrl={ctx.musicUrl}
       showWishes={ctx.features.wishes}
+      showRsvp={ctx.showRsvp}
       personalMessage={guest && ctx.features.namesLimit > 0 ? guest.message : undefined}
       isPreview={preview || ctx.isDraft}
       calendarUrl={calendarUrl(event)}

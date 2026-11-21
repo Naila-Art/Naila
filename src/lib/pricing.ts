@@ -85,6 +85,7 @@ export function packageFeatures(pkg: PackageId): Features {
     wishes: pkg >= 2,
     music: pkg >= 2,
     maps: true,
+    rsvp: pkg >= 2,
     namesLimit: hasNamedGuests(pkg) ? NAMES_LIMIT : 0,
   };
 }

@@ -34,6 +34,8 @@ export interface EventDetails {
   musicTrackId: string;
   /** The invitation's opening line. */
   generalText: string;
+  /** Guests confirm attendance (package 2+). */
+  rsvp: boolean;
 }
 
 interface Props {
@@ -42,7 +44,7 @@ interface Props {
   slug: string;
   order: Order;
   details: EventDetails;
-  features: { music: boolean; maps: boolean };
+  features: { music: boolean; maps: boolean; rsvp: boolean };
   templates: Pick<Template, "id" | "name">[];
   music: MusicTrack[];
   changeRequests: ChangeRequest[];
@@ -62,10 +64,11 @@ const ERRORS: Record<string, string> = {
   paymob_unavailable: "الدفع بالفيزا مش متاح دلوقتي، اختار طريقة تانية.",
   paymob_failed: "مقدرناش نفتح صفحة الدفع. جرب تاني أو اختار طريقة تانية.",
   invalid_method: "طريقة الدفع دي مش متاحة دلوقتي، اختار غيرها.",
-  locked: "الطلب اتدفع، والتعديل دلوقتي من عندنا بس. ابعتلنا طلب تعديل.",
+  locked: "الطلب اتدفع، والتعديل دلوقتي من عندنا بس. كلمنا على واتساب.",
+  link_invalid: "اللينك لازم يبدأ بـ https://",
   invalid_message: "اكتب التعديل اللي عايزه.",
   not_included: "ده مش في باقتك.",
-  reference_wrong_type: "الملف لازم يكون صورة (JPG/PNG) أو فيديو (MP4/MOV).",
+  reference_wrong_type: "الملف لازم يكون صورة (JPG/PNG) أو فيديو (MP4/MOV) أو أغنية (MP3/M4A).",
   reference_too_large: "الملف أكبر من 50 ميجا.",
   too_many_files: "وصلت لأقصى عدد ملفات (30).",
 };
@@ -92,8 +95,8 @@ export default function OrderCheckout(props: Props) {
       <PaymentPanel {...props} api={api} />
       {unpaid && order.kind === "self" && <OrderEditor api={api} order={order} pricing={props.pricing} />}
       {unpaid && <DetailsEditor {...props} api={api} />}
-      {order.packageId >= 3 && <ReferencesPanel api={api} order={order} />}
-      <ChangeRequests api={api} initial={props.changeRequests} whatsappUrl={props.whatsappUrl} />
+      {order.packageId >= 3 && <ReferencesPanel api={api} order={order} locked={!unpaid} />}
+      {unpaid && <ChangeRequests api={api} initial={props.changeRequests} whatsappUrl={props.whatsappUrl} />}
     </>
   );
 }
@@ -396,6 +399,12 @@ function DetailsEditor(props: Props & { api: string }) {
             </select>
           </label>
         )}
+        {props.features.rsvp && (
+          <label className={styles.checkRow}>
+            <input type="checkbox" checked={d.rsvp} onChange={(e) => set({ rsvp: e.target.checked })} />
+            <span>الضيوف يأكدوا حضورهم ويقولوا جايين كام فرد</span>
+          </label>
+        )}
         {msg && <p className={msg.ok ? styles.ok : styles.error}>{msg.text}</p>}
         <button type="submit" className={styles.primary} disabled={busy}>
           حفظ
@@ -466,19 +475,24 @@ export function ChangeRequests({ api, initial, whatsappUrl }: { api: string; ini
   );
 }
 
-/** Package 3+: what the client wants, plus their photos / videos / references for our team. */
-export function ReferencesPanel({ api, order }: { api: string; order: Order }) {
+/**
+ * Package 3+: what the client wants, plus their photos / videos / songs for our team.
+ * Editable before payment only; after that it's what the client sent, read-only.
+ */
+export function ReferencesPanel({ api, order, locked = false }: { api: string; order: Order; locked?: boolean }) {
   const router = useRouter();
   const [notes, setNotes] = useState(order.brief?.notes ?? "");
-  const [savedNotes, setSavedNotes] = useState(order.brief?.notes ?? "");
+  const [link, setLink] = useState(order.brief?.link ?? "");
+  const [saved, setSaved] = useState({ notes: order.brief?.notes ?? "", link: order.brief?.link ?? "" });
+  const dirty = notes !== saved.notes || link !== saved.link;
   const [progress, setProgress] = useState<string | null>(null);
   const [error, setError] = useState("");
 
   async function saveNotes() {
     setError("");
     try {
-      await postJson(`${api}/references`, { notes }, "PUT");
-      setSavedNotes(notes);
+      await postJson(`${api}/references`, { notes, link }, "PUT");
+      setSaved({ notes, link });
     } catch (err) {
       setError(errorText(err));
     }
@@ -514,11 +528,33 @@ export function ReferencesPanel({ api, order }: { api: string; order: Order }) {
     router.refresh();
   }
 
+  const files = order.references ?? [];
+
+  if (locked) {
+    return (
+      <section className={styles.panel}>
+        <h2>اللي بعتهولنا</h2>
+        <p className={styles.hint}>فريقنا شغال عليه. لو محتاج تضيف حاجة كلمنا على واتساب.</p>
+        {order.brief?.notes && <p className={styles.briefText}>{order.brief.notes}</p>}
+        {order.brief?.link && (
+          <a href={order.brief.link} target="_blank" rel="noopener noreferrer" dir="ltr" className={styles.briefLink}>
+            {order.brief.link}
+          </a>
+        )}
+        {files.length > 0 ? (
+          <ReferenceList files={files} />
+        ) : (
+          !order.brief?.notes && !order.brief?.link && <p className={styles.empty}>مابعتش ملفات.</p>
+        )}
+      </section>
+    );
+  }
+
   return (
     <section className={styles.panel}>
       <h2>صورك وفيديوهاتك وطلباتك</h2>
       <p className={styles.hint}>
-        اكتب الستايل اللي عايزه وارفع صورك وفيديوهاتك وأي ريفرنسات (من بنترست أو إنستجرام). فريقنا هيشتغل عليها ويكلمك.
+        اكتب الستايل اللي عايزه وارفع صورك وفيديوهاتك والأغاني وأي ريفرنسات، أو حط لينك درايف. تقدر تعدّل لحد ما تدفع.
       </p>
       <textarea
         className={styles.input}
@@ -528,42 +564,67 @@ export function ReferencesPanel({ api, order }: { api: string; order: Order }) {
         onChange={(e) => setNotes(e.target.value)}
         placeholder="الألوان، الستايل، لينكات ريفرنسات..."
       />
+      <input
+        className={styles.input}
+        type="url"
+        dir="ltr"
+        inputMode="url"
+        value={link}
+        onChange={(e) => setLink(e.target.value)}
+        placeholder="لينك درايف أو أي لينك فيه ملفاتك (اختياري)"
+      />
       <div className={styles.inlineActions}>
-        <button type="button" className={styles.secondary} disabled={notes === savedNotes} onClick={saveNotes}>
-          {notes === savedNotes && savedNotes ? "اتحفظ" : "حفظ الكلام"}
+        <button type="button" className={styles.secondary} disabled={!dirty} onClick={saveNotes}>
+          {!dirty && (saved.notes || saved.link) ? "اتحفظ" : "حفظ"}
         </button>
       </div>
       <label className={styles.dropzone}>
         <input
           type="file"
           multiple
-          accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime"
+          accept={REFERENCE_ACCEPT}
           disabled={progress !== null}
           onChange={(e) => upload(e.target.files)}
         />
-        <span>{progress ?? "ارفع صور أو فيديوهات (لحد 50 ميجا للملف)"}</span>
+        <span>{progress ?? "ارفع صور أو فيديوهات أو أغاني (لحد 50 ميجا للملف)"}</span>
       </label>
       {error && <p className={styles.error}>{error}</p>}
-      {order.references && order.references.length > 0 && (
-        <ul className={styles.refGrid}>
-          {order.references.map((r) => (
-            <li key={r.url}>
-              {r.type === "image" ? (
-                // eslint-disable-next-line @next/next/no-img-element -- storage URLs
-                <img src={r.url} alt={r.name} loading="lazy" />
-              ) : (
-                <video src={r.url} muted playsInline preload="metadata" controls />
-              )}
-              <button type="button" className={styles.iconBtn} onClick={() => remove(r.url)} aria-label={`مسح ${r.name}`}>
-                <Icon name="x" size={16} />
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+      {files.length > 0 && <ReferenceList files={files} onRemove={remove} />}
     </section>
   );
 }
+
+/** Photos and videos as thumbnails, songs as players. */
+function ReferenceList({ files, onRemove }: { files: NonNullable<Order["references"]>; onRemove?: (url: string) => void }) {
+  return (
+    <ul className={styles.refGrid}>
+      {files.map((r) => (
+        <li key={r.url} data-type={r.type}>
+          {r.type === "image" ? (
+            // eslint-disable-next-line @next/next/no-img-element -- storage URLs
+            <img src={r.url} alt={r.name} loading="lazy" />
+          ) : r.type === "audio" ? (
+            <div className={styles.refAudio}>
+              <Icon name="music" size={18} />
+              <span>{r.name}</span>
+              <audio src={r.url} controls preload="none" />
+            </div>
+          ) : (
+            <video src={r.url} muted playsInline preload="metadata" controls />
+          )}
+          {onRemove && (
+            <button type="button" className={styles.iconBtn} onClick={() => onRemove(r.url)} aria-label={`مسح ${r.name}`}>
+              <Icon name="x" size={16} />
+            </button>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** What the reference picker accepts (same list as the server). */
+export const REFERENCE_ACCEPT = "image/jpeg,image/png,image/webp,video/mp4,video/quicktime,audio/mpeg,audio/mp4,audio/x-m4a,.mp3,.m4a,.mov";
 
 /** Payment state, large and unmistakable (status colour + icon + words). */
 export function PayStatus({ payment, cancelled }: { payment: Order["payment"]; cancelled?: boolean }) {

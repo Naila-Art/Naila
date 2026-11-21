@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties } from "re
 import styles from "./invitation.module.css";
 import Countdown from "./Countdown";
 import WishForm from "./WishForm";
+import RsvpForm from "./RsvpForm";
 import type { Strings } from "@/lib/i18n";
 import type { Lang, Template } from "@/lib/types";
 import Icon from "./Icon";
@@ -29,6 +30,8 @@ export interface InvitationProps {
   calendarUrl: string;
   /** Package 2+ only. */
   showWishes?: boolean;
+  /** Attendance replies (package 2+, when the client turned them on). */
+  showRsvp?: boolean;
   /** A personal note written for this guest only (packages 3-4). */
   personalMessage?: string;
   /** Draft (not paid yet): ribbon on top, replies off. */
@@ -198,6 +201,18 @@ export default function Invitation(props: InvitationProps) {
                 {s.addToCalendar}
               </a>
             </section>
+
+            {props.showRsvp && (
+              <section className={`${styles.card} ${styles.reveal}`} data-art={art.corner ? "corner" : undefined}>
+                {corners}
+                <h2 className={styles.sectionTitle}>{s.rsvpTitle}</h2>
+                {props.isPreview ? (
+                  <p className={styles.muted}>{s.previewNoReplies}</p>
+                ) : (
+                  <RsvpForm slug={props.slug} token={props.token} strings={s} />
+                )}
+              </section>
+            )}
 
             {props.showWishes !== false && (
               <section className={`${styles.card} ${styles.reveal}`} data-art={art.corner ? "corner" : undefined}>

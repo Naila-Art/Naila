@@ -33,7 +33,7 @@ export function contentTypeOf(file: File): string {
   if (file.type) return file.type === "audio/mp3" ? "audio/mpeg" : file.type;
   const ext = file.name.split(".").pop()?.toLowerCase();
   return (
-    { mp4: "video/mp4", mp3: "audio/mpeg", m4a: "audio/mp4", jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp" }[
+    { mp4: "video/mp4", mov: "video/quicktime", mp3: "audio/mpeg", m4a: "audio/mp4", jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp" }[
       ext ?? ""
     ] ?? ""
   );

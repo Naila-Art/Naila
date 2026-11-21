@@ -145,6 +145,7 @@ function mutate<T>(fn: (db: Db) => T): Promise<T> {
 
 export async function getEventBySlug(slug: string): Promise<EventData | null> {
   const db = await read();
+  slug = slug.toLowerCase();
   const found = db.events.find((e) => e.slug === slug);
   if (found || !isSampleSlug(slug)) return found ?? null;
   // Sample invitations are created the first time someone opens one.
@@ -198,7 +199,14 @@ export function recordView(view: Omit<GuestView, "openedAt">): Promise<void> {
 }
 
 /** One reply per named guest (updates on change). General-link replies are appended. */
-export function upsertRsvp(input: { eventId: string; guestId?: string; name: string; status: RsvpStatus }): Promise<Rsvp> {
+export function upsertRsvp(input: {
+  eventId: string;
+  guestId?: string;
+  name: string;
+  status: RsvpStatus;
+  count?: number;
+  note?: string;
+}): Promise<Rsvp> {
   return mutate((db) => {
     const rsvp: Rsvp = { ...input, createdAt: new Date().toISOString() };
     const i = input.guestId
@@ -208,6 +216,12 @@ export function upsertRsvp(input: { eventId: string; guestId?: string; name: str
     else db.rsvps.push(rsvp);
     return rsvp;
   });
+}
+
+/** Whether a link the client picked is still free (shape is checked separately). */
+export async function isSlugFree(slug: string): Promise<boolean> {
+  const db = await read();
+  return !isSampleSlug(slug) && !db.events.some((e) => e.slug === slug);
 }
 
 // ---------------------------------------------------------------------------
@@ -238,16 +252,19 @@ export async function getEventDashboard(eventId: string) {
   for (const v of views) {
     if (v.guestId && !firstOpen.has(v.guestId)) firstOpen.set(v.guestId, v.openedAt);
   }
-  const rsvpByGuest = new Map(rsvps.filter((r) => r.guestId).map((r) => [r.guestId!, r.status]));
+  const rsvpByGuest = new Map(rsvps.filter((r) => r.guestId).map((r) => [r.guestId!, r]));
 
   const guests: GuestWithStatus[] = db.guests
     .filter((g) => g.eventId === eventId)
-    .map((g) => ({ ...g, openedAt: firstOpen.get(g.id), rsvp: rsvpByGuest.get(g.id) }));
+    .map((g) => {
+      const r = rsvpByGuest.get(g.id);
+      return { ...g, openedAt: firstOpen.get(g.id), rsvp: r?.status, rsvpCount: r?.count };
+    });
 
   return {
     guests,
-    /** Replies that came through the general link (guest typed their own name). */
-    generalRsvps: rsvps.filter((r) => !r.guestId),
+    /** Every attendance reply (named guests and the general link), newest first. */
+    rsvps: [...rsvps].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
     /** Opens of the general link (not tied to a guest). */
     generalOpens: views.filter((v) => !v.guestId).length,
     wishes: db.wishes.filter((w) => w.eventId === eventId).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
@@ -393,11 +410,14 @@ export const newId = (prefix: string) => `${prefix}_${randomBytes(5).toString("h
 export function createDraft(
   event: Omit<EventData, "id" | "slug" | "manageToken" | "orderId" | "status" | "createdAt">,
   order: Omit<Order, "id" | "eventId" | "kind" | "payment" | "createdAt">,
-): Promise<{ event: EventData; order: Order }> {
+  /** The link the client picked (already validated); taken = null result. */
+  wantedSlug?: string,
+): Promise<{ event: EventData; order: Order } | null> {
   return mutate((db) => {
     const slugs = new Set(db.events.map((e) => e.slug));
-    let slug = randomToken(8);
-    while (slugs.has(slug)) slug = randomToken(8);
+    if (wantedSlug && (slugs.has(wantedSlug) || isSampleSlug(wantedSlug))) return null;
+    let slug = wantedSlug || randomToken(8);
+    while (!wantedSlug && slugs.has(slug)) slug = randomToken(8);
     const now = new Date().toISOString();
     const eventId = newId("evt");
     const orderId = newId("ord");
@@ -508,7 +528,7 @@ export function restoreOrder(id: string): Promise<Order | null> {
 export type EventDetailsPatch = Partial<
   Pick<
     EventData,
-    "partnerA" | "partnerB" | "date" | "venueName" | "venueAddress" | "mapsUrl" | "lang" | "templateId" | "musicTrackId" | "musicUrl" | "generalText"
+    "partnerA" | "partnerB" | "date" | "venueName" | "venueAddress" | "mapsUrl" | "lang" | "templateId" | "musicTrackId" | "musicUrl" | "generalText" | "rsvp"
   >
 >;
 
@@ -699,11 +719,11 @@ export function removeOrderReference(orderId: string, url: string): Promise<bool
   });
 }
 
-export function updateOrderBrief(orderId: string, notes: string): Promise<boolean> {
+export function updateOrderBrief(orderId: string, notes: string, link?: string): Promise<boolean> {
   return mutate((db) => {
     const order = db.orders?.find((o) => o.id === orderId);
     if (!order) return false;
-    order.brief = { category: order.brief?.category ?? "wedding", date: order.brief?.date, notes };
+    order.brief = { category: order.brief?.category ?? "wedding", date: order.brief?.date, notes, link: link || undefined };
     return true;
   });
 }

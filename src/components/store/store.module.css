@@ -261,6 +261,7 @@
 .templateCard {
   display: flex;
   flex-direction: column;
+  width: 100%;
   border-radius: 16px;
   overflow: hidden;
   border: 1px solid var(--s-line);
@@ -1160,4 +1161,318 @@
 
 .templateBadge[data-badge="new"] {
   background: #1f7a45;
+}
+
+/* ---------- builder: one question at a time (round 4) ---------- */
+.qProgress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: var(--s-muted);
+}
+
+.qBar {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--s-line);
+  overflow: hidden;
+}
+
+.qBar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--s-accent);
+  transition: width 0.3s ease;
+}
+
+.chatHistory {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chatHistory li {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.chatQ {
+  font-size: 0.85rem;
+  color: var(--s-muted);
+}
+
+/* The client's own answer, as a chat bubble on the other side. */
+.chatA {
+  align-self: flex-end;
+  max-width: 85%;
+  font: inherit;
+  text-align: start;
+  padding: 8px 14px;
+  border-radius: 16px 16px 4px 16px;
+  border: 0;
+  background: color-mix(in srgb, var(--s-accent) 14%, #fff);
+  color: var(--s-text);
+  cursor: pointer;
+}
+
+.chatA:hover {
+  background: color-mix(in srgb, var(--s-accent) 22%, #fff);
+}
+
+.qCard {
+  animation: qIn 0.25s ease both;
+}
+
+@keyframes qIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qCard {
+    animation: none;
+  }
+}
+
+.choiceRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.choice {
+  min-height: 64px;
+  border-radius: 14px;
+  border: 1px solid var(--s-line);
+  background: #fff;
+  color: var(--s-text);
+  font: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  cursor: pointer;
+}
+
+.choice small {
+  color: var(--s-muted);
+  font-size: 0.8rem;
+}
+
+.choice[aria-checked="true"] {
+  border-color: var(--s-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--s-accent) 30%, transparent);
+}
+
+.choice:focus-visible,
+.chatA:focus-visible,
+.editBtn:focus-visible {
+  outline: 2px solid var(--s-accent);
+  outline-offset: 2px;
+}
+
+.slugInput {
+  display: flex;
+  align-items: center;
+  min-height: 46px;
+  border: 1px solid var(--s-line);
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.slugInput span {
+  padding: 0 4px 0 12px;
+  color: var(--s-muted);
+  white-space: nowrap;
+  font-size: 0.9rem;
+  max-width: 55%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.field .slugInput input {
+  border: 0;
+  border-radius: 0;
+  min-height: 44px;
+  padding-inline-start: 0;
+  min-width: 0;
+}
+
+.slugInput:focus-within {
+  outline: 2px solid var(--s-accent);
+  outline-offset: 1px;
+}
+
+.field .slugInput input:focus-visible {
+  outline: none;
+}
+
+.slugStatus {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--s-muted);
+  overflow-wrap: anywhere;
+}
+
+.slugStatus[data-state="ok"] {
+  color: var(--s-ok);
+}
+
+.slugStatus[data-state="bad"] {
+  color: var(--s-bad);
+}
+
+.reviewRows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.reviewRows li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--s-line);
+}
+
+.reviewRows li:last-child {
+  border-bottom: 0;
+}
+
+.reviewRows li > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.reviewRows small {
+  color: var(--s-muted);
+  font-size: 0.8rem;
+}
+
+.editBtn {
+  flex: none;
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--s-line);
+  background: var(--s-surface);
+  color: var(--s-accent-dark);
+  cursor: pointer;
+}
+
+/* The client's names over each design, where the real invitation writes them. */
+.thumbNames {
+  position: absolute;
+  top: 9%;
+  inset-inline: 8px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  font-family: var(--font-arabic-display);
+  font-size: clamp(1rem, 4.6vw, 1.5rem);
+  line-height: 1.15;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+  overflow-wrap: anywhere;
+}
+
+.thumbNames[data-lang="en"] {
+  font-family: var(--font-display);
+}
+
+.thumbNames span:nth-child(2) {
+  font-size: 0.6em;
+}
+
+/* Package 3+: the client's files in the builder. */
+.dropzone {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 22px 16px;
+  border: 2px dashed var(--s-line);
+  border-radius: 14px;
+  text-align: center;
+  color: var(--s-muted);
+  cursor: pointer;
+}
+
+.dropzone:hover,
+.dropzone:focus-within {
+  border-color: var(--s-accent);
+  color: var(--s-text);
+}
+
+.dropzone input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.fileList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fileList li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--s-line);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.fileList span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fileList small {
+  color: var(--s-muted);
+  flex: none;
+}
+
+.fileList button {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--s-bg);
+  color: var(--s-text);
+  cursor: pointer;
 }

@@ -16,21 +16,21 @@ import {
   validateGuest,
   type ParsedGuest,
 } from "@/lib/guests";
-import { displayName, fillPersonalText } from "@/lib/text";
-import type { GuestWithStatus, Wish } from "@/lib/types";
+import { displayName } from "@/lib/text";
+import type { GuestWithStatus, Rsvp, RsvpStatus, Wish } from "@/lib/types";
 import Icon from "../Icon";
 
 export interface Dashboard {
   guests: GuestWithStatus[];
   generalOpens: number;
   wishes: Wish[];
+  rsvps: Rsvp[];
 }
 
 interface Props {
   manageToken: string;
   slug: string;
   couple: string;
-  initialTexts: { generalText: string; personalText: string };
   initial: Dashboard;
   /** Max named guests from the client's package; 0 = general link only. */
   namesLimit: number;
@@ -39,6 +39,8 @@ interface Props {
   /** The client's order page (receipt, payment, change requests to us). */
   orderUrl?: string;
   showWishes: boolean;
+  /** Attendance replies are on for this invitation. */
+  showRsvp?: boolean;
   /** Order, payment, details, music and change-request panels, rendered under the header. */
   children?: ReactNode;
 }
@@ -56,7 +58,12 @@ const TITLES = [
 
 type Filter = "all" | "opened" | "notOpened";
 
+const RSVP_LABELS: Record<RsvpStatus, string> = { attending: "جاي", maybe: "يمكن", declined: "مش جاي" };
+
 function statusOf(g: GuestWithStatus): { label: string; cls: string } {
+  if (g.rsvp === "attending") return { label: `جاي${(g.rsvpCount ?? 1) > 1 ? ` (${g.rsvpCount})` : ""}`, cls: styles.badgeOk };
+  if (g.rsvp === "maybe") return { label: "يمكن ييجي", cls: styles.badgeInfo };
+  if (g.rsvp === "declined") return { label: "مش جاي", cls: styles.badgeBad };
   if (g.openedAt) return { label: "فتح الدعوة", cls: styles.badgeInfo };
   return { label: "لسه مفتحش", cls: styles.badgeMuted };
 }
@@ -74,10 +81,10 @@ export default function ManageEvent({
   manageToken,
   slug,
   couple,
-  initialTexts,
   initial,
   namesLimit,
   showWishes,
+  showRsvp = false,
   locked,
   orderUrl,
   children,
@@ -118,6 +125,11 @@ export default function ManageEvent({
       total: g.length,
       opened: g.filter((x) => x.openedAt).length,
       wishes: data.wishes.length,
+      // People expected = everyone the "coming" replies said they're bringing, themselves included.
+      people: (data.rsvps ?? []).filter((r) => r.status === "attending").reduce((n, r) => n + (r.count ?? 1), 0),
+      attending: (data.rsvps ?? []).filter((r) => r.status === "attending").length,
+      maybe: (data.rsvps ?? []).filter((r) => r.status === "maybe").length,
+      declined: (data.rsvps ?? []).filter((r) => r.status === "declined").length,
     };
   }, [data]);
 
@@ -214,28 +226,21 @@ export default function ManageEvent({
           </a>
           {orderUrl && <a href={orderUrl}>طلبي</a>}
           {namesLimit > 0 && <a href="#guests">الضيوف</a>}
+          {showRsvp && <a href="#rsvps">الحضور</a>}
           {showWishes && <a href="#wishes">التهاني</a>}
-          {namesLimit > 0 && <a href="#texts">الصيغة</a>}
         </div>
       </nav>
 
       <div className={styles.layout}>
         <aside className={styles.sideCol}>
           {children}
-          {namesLimit > 0 && (
-            <TextsEditor
-              api={api}
-              initial={initialTexts}
-              withNames
-              onSaved={() => setToast("اتحفظ")}
-            />
-          )}
         </aside>
 
         <div className={styles.mainCol}>
           <section className={styles.stats}>
-            <Stat label="ضيف بالاسم" value={stats.total} />
-            <Stat label="فتحوا الدعوة" value={stats.opened} />
+            {showRsvp && <Stat label="فرد جايين" value={stats.people} />}
+            {namesLimit > 0 && <Stat label="ضيف بالاسم" value={stats.total} />}
+            {namesLimit > 0 && <Stat label="فتحوا الدعوة" value={stats.opened} />}
             {showWishes && <Stat label="تهاني" value={stats.wishes} />}
           </section>
 
@@ -411,6 +416,33 @@ export default function ManageEvent({
             </>
         ) : null}
 
+          {showRsvp && (
+            <section className={styles.panel} id="rsvps">
+              <h2>الحضور ({data.rsvps?.length ?? 0} رد)</h2>
+              <p className={styles.hint}>
+                {stats.people} فرد جايين من {stats.attending} رد · {stats.maybe} يمكن · {stats.declined} مش جايين
+              </p>
+              {(data.rsvps ?? []).length === 0 ? (
+                <p className={styles.empty}>لسه محدش رد.</p>
+              ) : (
+                <ul className={styles.wishes}>
+                  {data.rsvps.map((r) => (
+                    <li key={`${r.guestId ?? r.name}-${r.createdAt}`}>
+                      <strong>{r.name}</strong>{" "}
+                      <span
+                        className={`${styles.badge} ${r.status === "attending" ? styles.badgeOk : r.status === "maybe" ? styles.badgeInfo : styles.badgeBad}`}
+                      >
+                        {RSVP_LABELS[r.status]}
+                        {r.status !== "declined" && (r.count ?? 1) > 1 ? ` · ${r.count} أفراد` : ""}
+                      </span>
+                      {r.note && <p>{r.note}</p>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          )}
+
           {showWishes && (
             <section className={styles.panel} id="wishes">
               <h2>التهاني ({data.wishes.length})</h2>
@@ -446,106 +478,6 @@ function Stat({ label, value }: { label: string; value: number }) {
       <span className={styles.statValue}>{value}</span>
       <span className={styles.statLabel}>{label}</span>
     </div>
-  );
-}
-
-function TextsEditor({
-  api,
-  initial,
-  withNames,
-  onSaved,
-}: {
-  api: string;
-  initial: Props["initialTexts"];
-  /** Packages 3-4: also edit the named-invitation wording. */
-  withNames: boolean;
-  onSaved: () => void;
-}) {
-  const generalText = initial.generalText;
-  const [personalText, setPersonalText] = useState(initial.personalText);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const insert = (token: string) =>
-    setPersonalText((t) => `${t.trimEnd()} ${token}`);
-
-  const save = async (e: FormEvent) => {
-    e.preventDefault();
-    setBusy(true);
-    setError(null);
-    const res = await fetch(`${api}/texts`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ generalText, personalText }),
-    });
-    setBusy(false);
-    if (res.ok) onSaved();
-    else {
-      const body = (await res.json().catch(() => ({}))) as { error?: string };
-      setError(
-        body.error === "name_placeholder_missing"
-          ? "لازم الصيغة يكون فيها {name}"
-          : "الكلام فاضي أو طويل أوي",
-      );
-    }
-  };
-
-  return (
-    <form className={styles.panel} onSubmit={save} id="texts">
-      <h2>صيغة الدعوة</h2>
-      <label className={styles.field}>
-        <span>الجملة اللي في أول الدعوة (بتتعدل من عندنا بس)</span>
-        <input className={styles.input} value={generalText} readOnly aria-readonly />
-      </label>
-      {withNames && (
-        <>
-          <label className={styles.field}>
-            <span>الدعوة بالاسم</span>
-            <input
-              className={styles.input}
-              value={personalText}
-              maxLength={200}
-              onChange={(e) => setPersonalText(e.target.value)}
-            />
-          </label>
-          <div className={styles.inlineActions}>
-            <button
-              type="button"
-              className={styles.chip}
-              onClick={() => insert("{title}")}
-            >
-              + اللقب
-            </button>
-            <button
-              type="button"
-              className={styles.chip}
-              onClick={() => insert("{name}")}
-            >
-              + الاسم
-            </button>
-            <button
-              type="button"
-              className={styles.chip}
-              onClick={() =>
-                setPersonalText(
-                  "تشرفنا بحضورك أنت والأسرة الكريمة يا {title} {name}",
-                )
-              }
-            >
-              صيغة &quot;أنت والأسرة الكريمة&quot;
-            </button>
-          </div>
-          <p className={styles.preview}>
-            <span>معاينة:</span>{" "}
-            {fillPersonalText(personalText, { title: "أستاذ", name: "أحمد" })}
-          </p>
-        </>
-      )}
-      {error && <p className={styles.error}>{error}</p>}
-      <button type="submit" className={styles.primary} disabled={busy}>
-        حفظ الصيغة
-      </button>
-    </form>
   );
 }
 
@@ -601,7 +533,8 @@ function AddGuestForm({
         <input
           className={styles.input}
           list="titles"
-          placeholder="اللقب"
+          placeholder="اللقب (اختياري)"
+          autoComplete="off"
           value={title}
           maxLength={30}
           onChange={(e) => setTitle(e.target.value)}

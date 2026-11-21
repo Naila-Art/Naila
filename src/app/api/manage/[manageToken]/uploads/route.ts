@@ -14,6 +14,7 @@ export async function POST(req: Request, ctx: Ctx) {
   if (kind !== "proof" && kind !== "reference") return bad("invalid_kind");
   if (kind === "proof" && order.payment === "paid") return bad("already_paid", 409);
   if (kind === "reference" && order.packageId < 3) return bad("not_included", 403);
+  if (kind === "reference" && order.payment !== "unpaid") return bad("locked", 409);
   if (kind === "reference" && (order.references?.length ?? 0) >= MAX_REFERENCES) return bad("too_many_files", 409);
 
   const rules = UPLOAD_RULES[kind];

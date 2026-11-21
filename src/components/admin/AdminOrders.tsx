@@ -1,5 +1,6 @@
 "use client";
 
+import { normalizePhone } from "@/lib/guests";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import m from "../manage/manage.module.css";
@@ -110,7 +111,11 @@ function inRange(iso: string, range: Range): boolean {
   }
 }
 
-const waLink = (phone: string, text: string) => `https://wa.me/${phone.replace(/\D/g, "")}?text=${encodeURIComponent(text)}`;
+/** wa.me needs the full international number (201xxxxxxxxx), or WhatsApp opens without a chat. */
+const waLink = (phone: string, text: string) => {
+  const number = (normalizePhone(phone) ?? phone).replace(/\D/g, "");
+  return `https://wa.me/${number}${text ? `?text=${encodeURIComponent(text)}` : ""}`;
+};
 
 /** Orders: one organised table (cards on mobile), filters in one row, and a detail panel with every action. */
 export default function AdminOrders({ rows, initialFilter, pricing, origin, methods }: Props) {
@@ -580,6 +585,13 @@ function OrderDetail({
                   <strong>{CATEGORY_LABELS[ord.brief.category]}</strong>
                   {ord.brief.date && <span> · {ord.brief.date}</span>}
                   {ord.brief.notes && <p>{ord.brief.notes}</p>}
+                  {ord.brief.link && (
+                    <p>
+                      <a href={ord.brief.link} target="_blank" rel="noopener noreferrer" dir="ltr">
+                        {ord.brief.link}
+                      </a>
+                    </p>
+                  )}
                 </div>
               )}
               {ord.references && ord.references.length > 0 && (
@@ -587,7 +599,7 @@ function OrderDetail({
                   {ord.references.map((r) => (
                     <li key={r.url}>
                       <a href={r.url} target="_blank" rel="noopener noreferrer">
-                        <Icon name={r.type === "video" ? "video" : "image"} /> {r.name}
+                        <Icon name={r.type === "video" ? "video" : r.type === "audio" ? "music" : "image"} /> {r.name}
                       </a>
                     </li>
                   ))}
