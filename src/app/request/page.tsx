@@ -6,32 +6,47 @@ import { siteSettings, whatsappLink } from "@/lib/site";
 import { getPackage } from "@/lib/pricing";
 import { getPricing } from "@/lib/store";
 
-export const metadata: Metadata = { title: "اطلب دعوة خاصة" };
+export const metadata: Metadata = {
+  title: "Commission a Bespoke Suite | Naila",
+};
+export const dynamic = "force-dynamic";
 
 type Props = { searchParams: Promise<{ p?: string }> };
 
 export default async function RequestPage({ searchParams }: Props) {
   const pricing = await getPricing();
   const wanted = (await searchParams).p === "4" ? 4 : 3;
-  // If the asked-for package is off sale, fall back to the other custom one.
-  const pkg = [wanted, wanted === 4 ? 3 : 4].map((id) => getPackage(pricing, id)).find((p) => p?.active);
+  const pkg = [wanted, wanted === 4 ? 3 : 4]
+    .map((id) => getPackage(pricing, id))
+    .find((p) => p?.active);
   const site = siteSettings();
+  const wa = whatsappLink(
+    site.whatsapp,
+    "Hello! I'd like to commission a bespoke digital invitation suite."
+  );
+
   return (
-    <main className={styles.page} dir="rtl" lang="ar">
-      <div className={styles.narrow}>
-        <nav className={styles.nav}>
-          <Link href="/" className={styles.brand}>
-            {site.brand}
-          </Link>
-        </nav>
-        <h1 className={styles.pageTitle}>دعوة متصممة مخصوص ليك</h1>
-        <p className={styles.sectionLead}>سيب بياناتك وفريقنا هيكلمك على واتساب</p>
-        {pkg ? (
-          <RequestForm pkg={pkg} whatsappUrl={whatsappLink(site.whatsapp, "أهلاً، عايز دعوة متصممة مخصوص")} />
-        ) : (
-          <p className={styles.sectionLead}>الباقات دي مش متاحة دلوقتي. كلمنا على واتساب.</p>
-        )}
-      </div>
+    <main className={styles.studioViewport}>
+      <div className={styles.studioBgPhoto} aria-hidden="true" />
+      <div className={styles.studioBgOverlay} aria-hidden="true" />
+      {pkg ? (
+        <RequestForm pkg={pkg} whatsappUrl={wa} />
+      ) : (
+        <div className={styles.studioCard} style={{ maxWidth: "36rem" }}>
+          <h1 className={styles.studioTitle}>Bespoke suites unavailable</h1>
+          <p className={styles.studioSubtitle}>
+            Custom tiers are currently paused. Reach out on WhatsApp or start with one of our ready editorial suites.
+          </p>
+          <div className={styles.studioFooterRow}>
+            <Link href="/" className={styles.ctaGhost}>
+              Return home
+            </Link>
+            <Link href="/create" className={styles.cta}>
+              Create invitation
+            </Link>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

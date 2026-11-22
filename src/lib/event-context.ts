@@ -26,7 +26,45 @@ export async function eventContext(event: EventData): Promise<EventContext> {
   return { order, features, isDraft: event.status === "draft", musicUrl };
 }
 
-const MAPS_URL = /^https:\/\/(www\.)?(google\.[a-z.]+\/maps|maps\.google\.[a-z.]+|maps\.app\.goo\.gl|goo\.gl\/maps)\b/i;
+const ALLOWED_MAP_HOSTS =
+  /^(www\.)?(google\.[a-z.]+|maps\.google\.[a-z.]+|maps\.app\.goo\.gl|goo\.gl|g\.co|share\.google|maps\.apple\.com|waze\.com|ul\.waze\.com)$/i;
+
+/**
+ * Extracts & normalizes an optional map share URL (e.g. Google Maps mobile share text,
+ * scheme-less links, Apple Maps, or Waze) while blocking unsafe protocols.
+ */
+function normalizeOptionalMapsUrl(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return "";
+
+  // Extract URL if user pasted full share text like "Four Seasons Cairo https://maps.app.goo.gl/abc"
+  const embedded = trimmed.match(/https?:\/\/\S+/i);
+  let candidate = embedded ? embedded[0] : trimmed;
+
+  // Strip trailing punctuation often included when copying from chat apps
+  candidate = candidate.replace(/[),.;]+$/, "");
+
+  if (!/^https?:\/\//i.test(candidate)) {
+    candidate = `https://${candidate}`;
+  } else if (/^http:\/\//i.test(candidate)) {
+    candidate = candidate.replace(/^http:\/\//i, "https://");
+  }
+
+  if (candidate.length > 500) return null;
+
+  try {
+    const parsed = new URL(candidate);
+    if (parsed.protocol !== "https:") return null;
+    if (!ALLOWED_MAP_HOSTS.test(parsed.hostname)) return null;
+    // For bare google.<tld> domains, require a /maps path
+    if (/^(www\.)?google\.[a-z.]+$/i.test(parsed.hostname) && !parsed.pathname.toLowerCase().startsWith("/maps")) {
+      return null;
+    }
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Validates the editable event details (storefront form and client page).
@@ -48,8 +86,9 @@ export function parseEventDetails(
   if (body.venueAddress && !venueAddress) return { ok: false, error: "address_invalid" };
   let mapsUrl: string | undefined;
   if (typeof body.mapsUrl === "string" && body.mapsUrl.trim()) {
-    mapsUrl = body.mapsUrl.trim();
-    if (mapsUrl.length > 500 || !MAPS_URL.test(mapsUrl)) return { ok: false, error: "maps_invalid" };
+    const normalized = normalizeOptionalMapsUrl(body.mapsUrl);
+    if (normalized === null) return { ok: false, error: "maps_invalid" };
+    if (normalized) mapsUrl = normalized;
   }
   return { ok: true, value: { partnerA, partnerB, date, venueName, lang, venueAddress: venueAddress ?? undefined, mapsUrl } };
 }

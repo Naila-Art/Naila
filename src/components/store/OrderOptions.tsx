@@ -1,39 +1,70 @@
 "use client";
 
+import { Music } from "lucide-react";
 import styles from "./store.module.css";
-import { INCLUDED_IN_ALL, formatEgp, isSelfServe, priceOf, type Pricing } from "@/lib/pricing";
+import { EditorialSelect } from "./EditorialControls";
+import {
+  INCLUDED_IN_ALL_COPY,
+  STORE_COPY,
+  formatStorePrice,
+  packageDisplayName,
+  packageDisplayPoints,
+} from "./storeCopy";
+import { useSiteLang } from "@/lib/site-lang";
+import { isSelfServe, priceOf, type Pricing } from "@/lib/pricing";
 import type { MusicTrack, PackageId } from "@/lib/types";
 
 interface Props {
   pricing: Pricing;
   packageId: PackageId;
-  onChange: (packageId: PackageId) => void;
-  /** Library tracks for package 2. Omit to hide the picker. */
+  onChange?: (id: PackageId) => void;
+  onPackageChange?: (id: PackageId) => void;
   music?: MusicTrack[];
   musicTrackId?: string;
   onMusicChange?: (id: string) => void;
 }
 
-/** Package 1 or 2 (built by the client), the music pick for package 2, and the total. */
-export default function OrderOptions({ pricing, packageId, onChange, music, musicTrackId, onMusicChange }: Props) {
+/** Package selector (self-serve tiers 1-2) and optional soundtrack selector. */
+export default function OrderOptions({
+  pricing,
+  packageId,
+  onChange,
+  onPackageChange,
+  music,
+  musicTrackId,
+  onMusicChange,
+}: Props) {
+  const { lang } = useSiteLang();
+  const copy = STORE_COPY[lang].options;
+
+  const selectPackage = (id: PackageId) => {
+    onChange?.(id);
+    onPackageChange?.(id);
+  };
+
   return (
-    <div className={styles.options}>
-      <div className={styles.packages} role="radiogroup" aria-label="الباقة">
+    <div style={{ display: "flex", flexDirection: "column", gap: "0.9rem" }}>
+      <div
+        className={styles.packageRow}
+        role="radiogroup"
+        aria-label={copy.packagesAria}
+      >
         {pricing.packages
-          .filter((p) => isSelfServe(p.id) && (p.active || p.id === packageId))
+          .filter((p) => p.active && isSelfServe(p.id))
           .map((p) => (
             <button
               key={p.id}
               type="button"
               role="radio"
               aria-checked={packageId === p.id}
-              className={styles.packageCard}
-              onClick={() => onChange(p.id)}
+              className={styles.packageOption}
+              onClick={() => selectPackage(p.id)}
             >
-              <strong>{p.name}</strong>
-              <span className={styles.price}>{formatEgp(p.price)}</span>
+              <strong>
+                {packageDisplayName(p, lang)} · {formatStorePrice(p.price, lang)}
+              </strong>
               <ul>
-                {p.points.map((pt) => (
+                {packageDisplayPoints(p, lang).map((pt) => (
                   <li key={pt}>{pt}</li>
                 ))}
               </ul>
@@ -41,34 +72,53 @@ export default function OrderOptions({ pricing, packageId, onChange, music, musi
           ))}
       </div>
 
-      <p className={styles.hint}>في كل الباقات: {INCLUDED_IN_ALL.join(" · ")}</p>
+      <p className={styles.hint}>
+        {copy.includedPrefix} {INCLUDED_IN_ALL_COPY[lang].join(" · ")}
+      </p>
 
       {packageId >= 2 && music && onMusicChange && (
-        <label className={styles.field}>
-          <span>المزيكا</span>
+        <div className={styles.field}>
+          <span>{copy.soundtrackLabel}</span>
           {music.length === 0 ? (
-            <small className={styles.hint}>هنختارلك مزيكا مناسبة.</small>
+            <small className={styles.hint}>{copy.soundtrackEmpty}</small>
           ) : (
             <>
-              <select value={musicTrackId ?? ""} onChange={(e) => onMusicChange(e.target.value)}>
-                <option value="">من غير مزيكا</option>
-                {music.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name}
-                  </option>
-                ))}
-              </select>
+              <EditorialSelect
+                value={musicTrackId ?? ""}
+                onChange={onMusicChange}
+                ariaLabel={copy.soundtrackLabel}
+                placeholder={copy.noMusicLabel}
+                dir={lang === "ar" ? "rtl" : "ltr"}
+                icon={<Music size={15} strokeWidth={1.5} aria-hidden="true" />}
+                options={[
+                  {
+                    value: "",
+                    label: copy.noMusicLabel,
+                    sublabel: copy.noMusicSub,
+                  },
+                  ...music.map((m) => ({
+                    value: m.id,
+                    label: m.name,
+                    sublabel: copy.curatedTrackSub,
+                  })),
+                ]}
+              />
               {musicTrackId && (
-                <audio controls preload="none" src={music.find((m) => m.id === musicTrackId)?.url} className={styles.audio} />
+                <audio
+                  controls
+                  preload="none"
+                  src={music.find((m) => m.id === musicTrackId)?.url}
+                  className={styles.audio}
+                />
               )}
             </>
           )}
-        </label>
+        </div>
       )}
 
       <div className={styles.total}>
-        <span>الإجمالي</span>
-        <strong>{formatEgp(priceOf(pricing, packageId))}</strong>
+        <span>{copy.totalLabel}</span>
+        <strong>{formatStorePrice(priceOf(pricing, packageId), lang)}</strong>
       </div>
     </div>
   );
