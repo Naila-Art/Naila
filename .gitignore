@@ -48,3 +48,6 @@ next-env.d.ts
 # local reference media / experiments
 /Video References - ignore/
 /gflow-test/
+
+# local review recordings
+/recordings/

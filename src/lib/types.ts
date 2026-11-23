@@ -35,6 +35,25 @@ export interface Template {
   ambientUrl?: string;
   /** When (ms into the video) the scene is open enough for the names to appear. */
   revealAtMs?: number;
+  /** Doors family: where the names sit on this design's last frame. */
+  scene?: SceneLayout;
+}
+
+/**
+ * Placement of the names over the last frame of a "doors" opening, in % of the screen
+ * (the frame is 9:16 and covers the screen). Find the values by eye on end.jpg: the names
+ * belong in the calmest open area (sky, wall, sea), the reflection on still water.
+ */
+export interface SceneLayout {
+  /** Top of the names block. Default 19. */
+  skyTop?: number;
+  /** Width of the names block. Default 58. */
+  skyWidth?: number;
+  /** Top of the mirrored names in water; null when the scene has no still water. Default 58.5. */
+  reflectionTop?: number | null;
+  /** Colour of all text drawn on the scene (threshold, names, farewell). Default ivory #f7eedd;
+   *  use a deep tone from the palette for bright daytime scenes. */
+  ink?: string;
 }
 
 export type TemplateFamily = "envelope" | "doors";

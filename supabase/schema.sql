@@ -16,6 +16,7 @@ create table templates (
   end_poster_url text,                         -- last frame of the video (doors family)
   ambient_url text,                            -- blurred last frame, desktop backdrop
   reveal_at_ms integer,                        -- when the names appear over the opening
+  scene jsonb,                                 -- doors family: {skyTop, skyWidth, reflectionTop, ink}
   created_at  timestamptz not null default now()
 );
 

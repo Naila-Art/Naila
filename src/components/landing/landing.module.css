@@ -55,6 +55,11 @@
   line-height: 1.8;
 }
 
+.landingMain[dir="rtl"] .manifestoCopy {
+  line-height: 1.44;
+  word-spacing: -0.04em;
+}
+
 /* Preserve clean Arabic cursive ligatures (zero letter-spacing) on all eyebrows & micro-labels */
 .landingMain[dir="rtl"] .brandSub,
 .landingMain[dir="rtl"] .switchLabelText,

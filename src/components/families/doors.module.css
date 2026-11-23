@@ -9,7 +9,7 @@
   --body: "Instrument Sans", "Avenir Next", "Segoe UI", Arial, sans-serif;
   --ink-soft: color-mix(in srgb, var(--text) 72%, var(--surface));
   --rule: color-mix(in srgb, var(--accent) 70%, var(--surface));
-  --ivory: #f7eedd;
+  --ivory: var(--scene-ink, #f7eedd);
   --column: 440px;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 
@@ -197,6 +197,9 @@
   fill: color-mix(in srgb, var(--seal) 55%, #120c08);
   stroke: var(--accent);
   stroke-width: 1.4;
+  /* SVG groups default to transform-box: view-box, which puts "center" at
+     the viewBox's (60,60), not the star's origin, and the star orbits. */
+  transform-box: fill-box;
   transform-origin: center;
   animation: turn 60s linear infinite;
 }
@@ -234,10 +237,10 @@
 
 .sky {
   position: absolute;
-  top: 19%;
+  top: var(--sky-top, 19%);
   left: 50%;
   z-index: 3;
-  width: 58%;
+  width: var(--sky-width, 58%);
   translate: -50% 0;
   text-align: center;
   pointer-events: none;
@@ -321,10 +324,10 @@
 /* The pool: the same names, upside down, softened, gently moving. */
 .reflection {
   position: absolute;
-  top: 58.5%;
+  top: var(--reflection-top, 58.5%);
   left: 50%;
   z-index: 3;
-  width: 58%;
+  width: var(--sky-width, 58%);
   translate: -50% 0;
   text-align: center;
   pointer-events: none;
@@ -332,6 +335,10 @@
   mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.9), transparent 78%);
   -webkit-mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.9), transparent 78%);
   mix-blend-mode: screen;
+}
+
+.scene[data-reflection="off"] .reflection {
+  display: none;
 }
 
 .scene[data-stage="revealed"] .reflection {

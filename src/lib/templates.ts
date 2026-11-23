@@ -29,6 +29,7 @@ export const builtInTemplates: Template[] = [
     endPosterUrl: "/templates/alhambra/end.jpg",
     ambientUrl: "/templates/alhambra/end-blur.jpg",
     revealAtMs: 3600,
+    scene: { skyTop: 19, skyWidth: 58, reflectionTop: 58.5 },
     theme: {
       background: "#1e2d3b",
       surface: "#f2e6d0",

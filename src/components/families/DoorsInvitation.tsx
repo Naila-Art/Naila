@@ -192,6 +192,7 @@ export default function DoorsInvitation(props: InvitationProps) {
     if (videoRef.current) videoRef.current.muted = next;
   };
 
+  const scene = template.scene ?? {};
   const themeVars = {
     "--bg": template.theme.background,
     "--surface": template.theme.surface,
@@ -199,6 +200,10 @@ export default function DoorsInvitation(props: InvitationProps) {
     "--accent": template.theme.accent,
     "--seal": template.theme.seal,
     "--ambient": template.ambientUrl ? `url("${template.ambientUrl}")` : "none",
+    ...(scene.skyTop != null && { "--sky-top": `${scene.skyTop}%` }),
+    ...(scene.skyWidth != null && { "--sky-width": `${scene.skyWidth}%` }),
+    ...(scene.reflectionTop != null && { "--reflection-top": `${scene.reflectionTop}%` }),
+    ...(scene.ink && { "--scene-ink": scene.ink }),
   } as CSSProperties;
 
   const names = (
@@ -223,6 +228,7 @@ export default function DoorsInvitation(props: InvitationProps) {
           data-stage={stage}
           data-done={videoDone || undefined}
           data-scrolled={scrolled || undefined}
+          data-reflection={scene.reflectionTop === null ? "off" : undefined}
         >
           {template.endPosterUrl && (
             // eslint-disable-next-line @next/next/no-img-element
