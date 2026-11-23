@@ -581,93 +581,6 @@ export default function Builder({
           })}
         </ol>
 
-        {/* Clean Frameless Invitation Stage */}
-        <div className={styles.previewStageWrap}>
-          <div
-            className={styles.previewCanvas}
-            style={{
-              backgroundColor: activeTemplate?.theme.background ?? "#29231f",
-            }}
-          >
-            {activeTemplate?.posterUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={activeTemplate.posterUrl}
-                alt=""
-                className={styles.previewCanvasMedia}
-              />
-            )}
-            <div className={styles.previewCanvasScrim} />
-
-            <div
-              className={styles.previewInviteCard}
-              dir={inviteLang === "ar" ? "rtl" : "ltr"}
-            >
-              <p
-                className={`${styles.previewInviteEyebrow} ${
-                  inviteLang === "ar" ? styles.previewInviteEyebrowAr : ""
-                }`}
-              >
-                {inviteLang === "ar"
-                  ? "يسعدنا حضوركم"
-                  : "TOGETHER WITH THEIR FAMILIES"}
-              </p>
-              <p
-                className={`${styles.previewInviteCouple} ${
-                  inviteLang === "ar" ? styles.previewInviteCoupleAr : ""
-                }`}
-              >
-                {displayPartnerA} {inviteLang === "ar" ? "و" : "&"}{" "}
-                {displayPartnerB}
-              </p>
-              <span aria-hidden="true" className={styles.previewInviteDivider} />
-              <p className={styles.previewInviteMeta}>
-                {previewDateLabel}
-                <br />
-                {displayVenue}
-                {venueAddress.trim() ? ` · ${venueAddress.trim()}` : ""}
-              </p>
-
-              {/* Sleek Matte Espresso Editorial Preview Button */}
-              {activeTemplate ? (
-                <Link
-                  href={`/t/${activeTemplate.id}`}
-                  target="_blank"
-                  className={styles.previewOpenBtn}
-                >
-                  <span
-                    className={
-                      inviteLang === "ar"
-                        ? styles.previewOpenLabelAr
-                        : styles.previewOpenLabelEn
-                    }
-                  >
-                    {inviteLang === "ar" ? "افتح الدعوة" : "Open invitation"}
-                  </span>
-                  <ArrowUpRight
-                    size={13}
-                    strokeWidth={1.7}
-                    aria-hidden="true"
-                    className={styles.previewOpenArrow}
-                  />
-                </Link>
-              ) : (
-                <span className={styles.previewOpenBtn}>
-                  <span
-                    className={
-                      inviteLang === "ar"
-                        ? styles.previewOpenLabelAr
-                        : styles.previewOpenLabelEn
-                    }
-                  >
-                    {inviteLang === "ar" ? "افتح الدعوة" : "Open invitation"}
-                  </span>
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-
         <div className={styles.previewMetaBar}>
           <div>
             <p className={styles.previewDesignName}>{activeTemplateTitle}</p>
@@ -712,6 +625,114 @@ export default function Builder({
             </button>
           </div>
         </div>
+
+        {/* Live invitation: a true 9:16 invitation that starts at the top of the frame
+            and floats down past the card's bottom edge, over the page background. */}
+        <div className={styles.builderStage}>
+          <div className={styles.builderStageBg} aria-hidden="true">
+            {activeTemplate?.posterUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={activeTemplate.posterUrl} alt="" />
+            )}
+          </div>
+          <div
+            className={styles.builderInvite}
+            style={{
+              backgroundColor: activeTemplate?.theme.background ?? "#29231f",
+            }}
+          >
+            {activeTemplate?.videoUrl ? (
+              <video
+                key={activeTemplate.id}
+                className={styles.builderInviteMedia}
+                src={activeTemplate.videoUrl}
+                poster={activeTemplate.posterUrl}
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="metadata"
+              />
+            ) : (
+              activeTemplate?.posterUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={activeTemplate.posterUrl}
+                  alt=""
+                  className={styles.builderInviteMedia}
+                />
+              )
+            )}
+            <div className={styles.builderInviteScrim} aria-hidden="true" />
+                <div
+                  className={`${styles.previewInviteCard} ${styles.builderInviteCard}`}
+                  dir={inviteLang === "ar" ? "rtl" : "ltr"}
+                >
+                  <p
+                    className={`${styles.previewInviteEyebrow} ${
+                      inviteLang === "ar" ? styles.previewInviteEyebrowAr : ""
+                    }`}
+                  >
+                    {inviteLang === "ar"
+                      ? "يسعدنا حضوركم"
+                      : "TOGETHER WITH THEIR FAMILIES"}
+                  </p>
+                  <p
+                    className={`${styles.previewInviteCouple} ${
+                      inviteLang === "ar" ? styles.previewInviteCoupleAr : ""
+                    }`}
+                  >
+                    {displayPartnerA} {inviteLang === "ar" ? "و" : "&"}{" "}
+                    {displayPartnerB}
+                  </p>
+                  <span aria-hidden="true" className={styles.previewInviteDivider} />
+                  <p className={styles.previewInviteMeta}>
+                    {previewDateLabel}
+                    <br />
+                    {displayVenue}
+                    {venueAddress.trim() ? ` · ${venueAddress.trim()}` : ""}
+                  </p>
+
+                  {/* Sleek Matte Espresso Editorial Preview Button */}
+                  {activeTemplate ? (
+                    <Link
+                      href={`/t/${activeTemplate.id}`}
+                      target="_blank"
+                      className={styles.previewOpenBtn}
+                    >
+                      <span
+                        className={
+                          inviteLang === "ar"
+                            ? styles.previewOpenLabelAr
+                            : styles.previewOpenLabelEn
+                        }
+                      >
+                        {inviteLang === "ar" ? "افتح الدعوة" : "Open invitation"}
+                      </span>
+                      <ArrowUpRight
+                        size={13}
+                        strokeWidth={1.7}
+                        aria-hidden="true"
+                        className={styles.previewOpenArrow}
+                      />
+                    </Link>
+                  ) : (
+                    <span className={styles.previewOpenBtn}>
+                      <span
+                        className={
+                          inviteLang === "ar"
+                            ? styles.previewOpenLabelAr
+                            : styles.previewOpenLabelEn
+                        }
+                      >
+                        {inviteLang === "ar" ? "افتح الدعوة" : "Open invitation"}
+                      </span>
+                    </span>
+                  )}
+                </div>
+          </div>
+        </div>
+
       </aside>
     </div>
   );

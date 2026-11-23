@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { LandingCopy } from "./copy";
 import styles from "./landing.module.css";
 
@@ -16,6 +16,7 @@ export default function SwitchNarrative({
   onToneChange,
 }: SwitchNarrativeProps) {
   const sectionRef = useRef<HTMLElement | null>(null);
+  const fadeId = useId().replace(/:/g, "");
   const [state, setState] = useState<SwitchState>("dot");
   const [ribbonProgress, setRibbonProgress] = useState(0.2);
   const [ribbonOpacity, setRibbonOpacity] = useState(1);
@@ -140,29 +141,48 @@ export default function SwitchNarrative({
           transform: `translateY(${Math.round(-ribbonProgress * 40)}px)`,
         }}
       >
+        {/* Both ribbons flow straight down past the hero copy (never looping
+            around it) and dissolve through a vertical fade as they reach the
+            next section. */}
+
         {/* Mobile Ribbon */}
         <svg
           viewBox="0 0 390 3580"
           preserveAspectRatio="none"
           className={styles.journeySvgMobile}
         >
+          <defs>
+            <linearGradient
+              id={`${fadeId}-m`}
+              gradientUnits="userSpaceOnUse"
+              x1="0"
+              y1="0"
+              x2="0"
+              y2="2100"
+            >
+              <stop offset="0" stopColor="#fcf7ed" stopOpacity="1" />
+              <stop offset="0.5" stopColor="#fcf7ed" stopOpacity="1" />
+              <stop offset="0.8" stopColor="#fcf7ed" stopOpacity="0.35" />
+              <stop offset="1" stopColor="#fcf7ed" stopOpacity="0" />
+            </linearGradient>
+          </defs>
           <path
-            d="M300 -60 C 270 85 165 150 120 315 C 75 470 145 620 260 680 C 335 720 335 900 295 1065 C 250 1230 155 1290 125 1190 C 95 1085 185 1025 255 1100 C 315 1180 295 1480 220 1750 C 170 1940 190 2150 195 2273"
+            d="M318 -60 C 372 110 384 300 352 500 C 320 700 232 840 206 1030 C 184 1200 214 1360 200 1540 C 190 1700 196 1900 196 2100"
             fill="none"
             opacity="0.78"
             pathLength={1}
-            stroke="#fcf7ed"
+            stroke={`url(#${fadeId}-m)`}
             strokeLinecap="round"
             strokeWidth="1.5"
             vectorEffect="non-scaling-stroke"
             style={{ strokeDasharray: "1 1", strokeDashoffset: dashOffset }}
           />
           <path
-            d="M316 -60 C 285 95 180 165 137 330 C 92 480 160 610 267 660 C 330 700 330 890 280 1050 C 240 1210 170 1265 142 1175 C 115 1095 195 1045 250 1115 C 305 1190 280 1465 205 1735 C 155 1930 190 2150 195 2273"
+            d="M336 -60 C 388 120 398 315 364 515 C 330 715 246 860 222 1045 C 202 1210 228 1370 212 1550 C 202 1710 200 1900 198 2100"
             fill="none"
             opacity="0.38"
             pathLength={1}
-            stroke="#fcf7ed"
+            stroke={`url(#${fadeId}-m)`}
             strokeLinecap="round"
             strokeWidth="0.8"
             vectorEffect="non-scaling-stroke"
@@ -176,23 +196,38 @@ export default function SwitchNarrative({
           preserveAspectRatio="none"
           className={styles.journeySvgDesktop}
         >
+          <defs>
+            <linearGradient
+              id={`${fadeId}-d`}
+              gradientUnits="userSpaceOnUse"
+              x1="0"
+              y1="0"
+              x2="0"
+              y2="1420"
+            >
+              <stop offset="0" stopColor="#fcf7ed" stopOpacity="1" />
+              <stop offset="0.6" stopColor="#fcf7ed" stopOpacity="1" />
+              <stop offset="0.85" stopColor="#fcf7ed" stopOpacity="0.35" />
+              <stop offset="1" stopColor="#fcf7ed" stopOpacity="0" />
+            </linearGradient>
+          </defs>
           <path
-            d="M900 -80 C 810 45 680 135 570 290 C 455 450 480 600 680 650 C 880 700 1030 585 1065 370 C 1095 180 990 90 885 190 C 760 305 760 530 805 745 C 850 940 790 1110 738 1245 C 724 1280 720 1306 720 1326"
+            d="M985 -80 C 1125 60 1235 225 1205 425 C 1175 625 1060 765 900 865 C 760 955 700 1065 718 1200 C 730 1300 722 1370 720 1420"
             fill="none"
             opacity="0.78"
             pathLength={1}
-            stroke="#fcf7ed"
+            stroke={`url(#${fadeId}-d)`}
             strokeLinecap="round"
             strokeWidth="1.5"
             vectorEffect="non-scaling-stroke"
             style={{ strokeDasharray: "1 1", strokeDashoffset: dashOffset }}
           />
           <path
-            d="M925 -80 C 830 55 695 150 590 305 C 480 460 510 585 695 630 C 875 675 1005 565 1040 365 C 1070 195 985 115 900 205 C 785 320 785 525 830 730 C 875 925 810 1100 750 1235 C 728 1275 720 1306 720 1326"
+            d="M1012 -80 C 1155 70 1262 240 1230 435 C 1198 635 1080 785 918 885 C 782 970 724 1078 740 1210 C 750 1305 730 1375 722 1420"
             fill="none"
             opacity="0.38"
             pathLength={1}
-            stroke="#fcf7ed"
+            stroke={`url(#${fadeId}-d)`}
             strokeLinecap="round"
             strokeWidth="0.8"
             vectorEffect="non-scaling-stroke"

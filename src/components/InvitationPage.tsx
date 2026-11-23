@@ -106,6 +106,9 @@ export default async function InvitationPage({ slug, token }: { slug: string; to
       isPreview={ctx.isDraft}
       calendarUrl={calendarUrl(event)}
       initialRsvp={rsvp?.status ?? null}
+      schedule={event.schedule}
+      dressCode={event.dressCode}
+      notes={event.notes}
     />
   );
 }

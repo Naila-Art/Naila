@@ -1,16 +1,19 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import styles from "./invitation.module.css";
+import baseStyles from "./invitation.module.css";
 import type { Strings } from "@/lib/i18n";
 
 interface Props {
   slug: string;
   token?: string;
   strings: Strings;
+  /** Class overrides from a layout family's stylesheet. */
+  ui?: Partial<Record<string, string>>;
 }
 
-export default function WishForm({ slug, token, strings: s }: Props) {
+export default function WishForm({ slug, token, strings: s, ui }: Props) {
+  const styles = { ...baseStyles, ...ui } as Record<string, string>;
   const [name, setName] = useState("");
   const [body, setBody] = useState("");
   const [busy, setBusy] = useState(false);

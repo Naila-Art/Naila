@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
-import { ArrowUpRight, Check, Languages, Sparkles, X } from "lucide-react";
+import { ArrowUpRight, Check, Heart, Languages, X } from "lucide-react";
 import styles from "./store.module.css";
 import { EditorialDatePicker, EditorialSelect } from "./EditorialControls";
 import {
@@ -150,7 +150,7 @@ export default function RequestForm({
               <label className={styles.field}>
                 <span>{r.yourName}</span>
                 <input
-                  dir="auto"
+                  dir={isAr ? "rtl" : "ltr"}
                   value={clientName}
                   onChange={(e) => setClientName(e.target.value)}
                   maxLength={60}
@@ -163,6 +163,7 @@ export default function RequestForm({
                 <input
                   type="tel"
                   dir="ltr"
+                  className={isAr ? styles.inputAlignEnd : undefined}
                   inputMode="tel"
                   value={clientPhone}
                   onChange={(e) => setClientPhone(e.target.value)}
@@ -180,7 +181,7 @@ export default function RequestForm({
                   onChange={(val) => setCategory(val as Category)}
                   ariaLabel={r.celebrationType}
                   dir={isAr ? "rtl" : "ltr"}
-                  icon={<Sparkles size={15} strokeWidth={1.5} aria-hidden="true" />}
+                  icon={<Heart size={15} strokeWidth={1.5} aria-hidden="true" />}
                   options={(Object.keys(CATEGORY_LABELS) as Category[]).map(
                     (c) => ({
                       value: c,
@@ -208,7 +209,7 @@ export default function RequestForm({
             <label className={styles.field}>
               <span>{r.aestheticLabel}</span>
               <textarea
-                dir="auto"
+                dir={isAr ? "rtl" : "ltr"}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 maxLength={2000}
@@ -245,64 +246,77 @@ export default function RequestForm({
         </h2>
         <p className={styles.studioSubtitle}>{r.asideDesc}</p>
 
-        <ul className={styles.samplePoints} style={{ marginTop: "1.5rem" }}>
+        <ul className={styles.requestPoints}>
           {packageDisplayPoints(pkg, lang).map((pt) => (
-            <li key={pt}>{pt}</li>
+            <li key={pt}>
+              <span className={styles.requestPointMark} aria-hidden="true">
+                <Check size={13} strokeWidth={2} />
+              </span>
+              <span>{pt}</span>
+            </li>
           ))}
         </ul>
 
-        <div
-          className={styles.previewStageWrap}
-          style={{ marginTop: "1.75rem", minHeight: "16rem" }}
-        >
-          <div className={styles.previewCanvas} style={{ minHeight: "16rem" }}>
+        {/* Live sample: a tall 9:16 invitation that deliberately spills out of the bottom of its frame. */}
+        <div className={styles.requestStage}>
+          <div className={styles.requestStageBg} aria-hidden="true">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/showcase/alhambra-end.jpg"
-              alt=""
-              className={styles.previewCanvasMedia}
-            />
-            <div className={styles.previewCanvasScrim} />
-            <div className={styles.previewInviteCard}>
-              <p
-                className={`${styles.previewInviteEyebrow} ${
-                  isAr ? styles.previewInviteEyebrowAr : ""
-                }`}
-              >
-                {r.liveSampleEyebrow}
-              </p>
-              <p
-                className={`${styles.previewInviteCouple} ${
-                  isAr ? styles.previewInviteCoupleAr : ""
-                }`}
-              >
-                {r.liveSampleCouple}
-              </p>
-              <p className={styles.previewInviteMeta}>{r.liveSampleMeta}</p>
-              <a
-                href={sampleLink(packageId)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={styles.previewOpenBtn}
-              >
-                <span
-                  className={
-                    isAr
-                      ? styles.previewOpenLabelAr
-                      : styles.previewOpenLabelEn
-                  }
-                >
-                  {r.openLiveSample}
-                </span>
-                <ArrowUpRight
-                  size={13}
-                  strokeWidth={1.7}
-                  aria-hidden="true"
-                  className={styles.previewOpenArrow}
-                />
-              </a>
-            </div>
+            <img src="/showcase/alhambra-end.jpg" alt="" />
           </div>
+          <div className={styles.requestStageCopy}>
+            <p
+              className={`${styles.previewInviteEyebrow} ${
+                isAr ? styles.previewInviteEyebrowAr : ""
+              }`}
+            >
+              {r.liveSampleEyebrow}
+            </p>
+            <p
+              className={`${styles.requestStageCouple} ${
+                isAr ? styles.previewInviteCoupleAr : ""
+              }`}
+            >
+              {r.liveSampleCouple}
+            </p>
+            <p className={styles.requestStageMeta}>{r.liveSampleMeta}</p>
+            <a
+              href={sampleLink(packageId)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`${styles.previewOpenBtn} ${styles.requestStageBtn}`}
+            >
+              <span
+                className={
+                  isAr ? styles.previewOpenLabelAr : styles.previewOpenLabelEn
+                }
+              >
+                {r.openLiveSample}
+              </span>
+              <ArrowUpRight
+                size={13}
+                strokeWidth={1.7}
+                aria-hidden="true"
+                className={styles.previewOpenArrow}
+              />
+            </a>
+          </div>
+          <a
+            href={sampleLink(packageId)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.requestPhone}
+            aria-label={r.openLiveSample}
+          >
+            <video
+              src="/showcase/alhambra.mp4"
+              poster="/showcase/alhambra-start.jpg"
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+            />
+          </a>
         </div>
       </aside>
     </div>

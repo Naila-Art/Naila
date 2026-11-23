@@ -3,20 +3,41 @@
 import { useEffect, useState, type FormEvent } from "react";
 import m from "../manage/manage.module.css";
 import a from "./admin.module.css";
-import { DEFAULT_PRICING, INCLUDED_IN_ALL, hasNamedGuests, isSelfServe, type PackageInfo, type Pricing } from "@/lib/pricing";
+import {
+  DEFAULT_PRICING,
+  INCLUDED_IN_ALL,
+  hasNamedGuests,
+  isSelfServe,
+  type PackageInfo,
+  type Pricing,
+  type StepText,
+} from "@/lib/pricing";
 import { UploadError, postJson } from "@/lib/upload-client";
 
 const ERRORS: Record<string, string> = {
   need_self_serve: "لازم باقة 1 أو 2 تفضل شغالة، عشان الموقع يقدر يبيع.",
+  steps_count: "لازم يبقى فيه 3 نقط بالظبط.",
 };
 
 function errorText(code: string): string {
   if (ERRORS[code]) return ERRORS[code];
-  const pkg = code.match(/^package_(\d)_(name|price|points)$/);
+  const pkg = code.match(/^package_(\d)_(name|price|points|pointsEn)$/);
   if (pkg) {
     const what =
-      pkg[2] === "name" ? "الاسم فاضي أو طويل" : pkg[2] === "price" ? "السعر لازم يبقى رقم صحيح" : "النقط كتير أو طويلة (8 نقط بحد أقصى)";
+      pkg[2] === "name"
+        ? "الاسم فاضي أو طويل"
+        : pkg[2] === "price"
+          ? "السعر لازم يبقى رقم صحيح"
+          : pkg[2] === "pointsEn"
+            ? "المميزات بالإنجليزي كتير أو طويلة (8 نقط بحد أقصى)"
+            : "النقط كتير أو طويلة (8 نقط بحد أقصى)";
     return `باقة ${pkg[1]}: ${what}.`;
+  }
+  const step = code.match(/^step_(\d)_(ar|en)_(title|body)$/);
+  if (step) {
+    const lang = step[2] === "ar" ? "العربي" : "الإنجليزي";
+    const what = step[3] === "title" ? "العنوان فاضي أو طويل (80 حرف)" : "الشرح فاضي أو طويل (240 حرف)";
+    return `نقطة ${step[1]} (${lang}): ${what}.`;
   }
   return "ماتحفظش. جرب تاني.";
 }
@@ -46,7 +67,13 @@ export default function PricingAdmin({ adminKey, initial }: { adminKey: string; 
   }, [dirty]);
 
   const setPkg = (id: number, patch: Partial<PackageInfo>) =>
-    setP((x) => ({ packages: x.packages.map((pk) => (pk.id === id ? { ...pk, ...patch } : pk)) }));
+    setP((x) => ({ ...x, packages: x.packages.map((pk) => (pk.id === id ? { ...pk, ...patch } : pk)) }));
+
+  const setStep = (i: number, lang: "ar" | "en", patch: Partial<StepText>) =>
+    setP((x) => ({
+      ...x,
+      steps: x.steps.map((s, j) => (j === i ? { ...s, [lang]: { ...s[lang], ...patch } } : s)),
+    }));
 
   async function save(e: FormEvent) {
     e.preventDefault();
@@ -123,8 +150,75 @@ export default function PricingAdmin({ adminKey, initial }: { adminKey: string; 
                 onChange={(e) => setPkg(pk.id, { points: e.target.value.split("\n") })}
               />
             </label>
+            <label className={m.field}>
+              <span>المميزات بالإنجليزي (للزوار اللي فاتحين الموقع إنجليزي، كل سطر نقطة)</span>
+              <textarea
+                className={m.input}
+                dir="ltr"
+                rows={Math.max(3, (pk.pointsEn?.length ?? 0) + 1)}
+                value={(pk.pointsEn ?? []).join("\n")}
+                placeholder="Leave empty to use the built-in English text"
+                onChange={(e) => setPkg(pk.id, { pointsEn: e.target.value.split("\n") })}
+              />
+            </label>
           </section>
         ))}
+
+        <section className={m.panel}>
+          <div className={m.panelHead}>
+            <h2>
+              النقط التلاتة تحت الباقات
+              <small className={m.hint}> · ظاهرة في كارت الأسعار على الصفحة الرئيسية</small>
+            </h2>
+          </div>
+          {p.steps.map((step, i) => (
+            <fieldset key={i} className={a.stepFields}>
+              <legend>نقطة {i + 1}</legend>
+              <div className={a.twoCols}>
+                <label className={m.field}>
+                  <span>العنوان (عربي)</span>
+                  <input
+                    className={m.input}
+                    value={step.ar.title}
+                    maxLength={80}
+                    onChange={(e) => setStep(i, "ar", { title: e.target.value })}
+                  />
+                </label>
+                <label className={m.field}>
+                  <span>Title (English)</span>
+                  <input
+                    className={m.input}
+                    dir="ltr"
+                    value={step.en.title}
+                    maxLength={80}
+                    onChange={(e) => setStep(i, "en", { title: e.target.value })}
+                  />
+                </label>
+                <label className={m.field}>
+                  <span>الشرح (عربي)</span>
+                  <textarea
+                    className={m.input}
+                    rows={3}
+                    value={step.ar.body}
+                    maxLength={240}
+                    onChange={(e) => setStep(i, "ar", { body: e.target.value })}
+                  />
+                </label>
+                <label className={m.field}>
+                  <span>Description (English)</span>
+                  <textarea
+                    className={m.input}
+                    dir="ltr"
+                    rows={3}
+                    value={step.en.body}
+                    maxLength={240}
+                    onChange={(e) => setStep(i, "en", { body: e.target.value })}
+                  />
+                </label>
+              </div>
+            </fieldset>
+          ))}
+        </section>
 
         <div className={a.saveBar}>
           {msg && (

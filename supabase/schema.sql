@@ -12,6 +12,10 @@ create table templates (
   video_url   text,
   poster_url  text,
   theme       jsonb not null,                  -- { background, surface, text, accent, seal }
+  family      text not null default 'envelope' check (family in ('envelope', 'doors')),
+  end_poster_url text,                         -- last frame of the video (doors family)
+  ambient_url text,                            -- blurred last frame, desktop backdrop
+  reveal_at_ms integer,                        -- when the names appear over the opening
   created_at  timestamptz not null default now()
 );
 
@@ -68,6 +72,9 @@ create table events (
   music_url       text,                         -- client's own song (R2)
   general_text    text not null,
   personal_text   text not null,                -- supports {title} {name}
+  schedule        jsonb,                        -- [{ time: '19:00', label: 'Katb kitab' }, ...]
+  dress_code      text,
+  notes           text,
   created_at      timestamptz not null default now()
 );
 

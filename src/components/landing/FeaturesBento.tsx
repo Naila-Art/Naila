@@ -104,7 +104,7 @@ export default function FeaturesBento({ copy }: FeaturesBentoProps) {
                 autoPlay
                 preload="metadata"
               >
-                <source src="/videos/globe-spinning.mp4" type="video/mp4" />
+                <source src="/videos/globe-spinning-ivory.mp4" type="video/mp4" />
               </video>
             </div>
           </article>

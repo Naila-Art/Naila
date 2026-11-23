@@ -46,6 +46,27 @@ export default function TemplatePreview({ template }: { template: Template }) {
       calendarUrl="#"
       initialRsvp={null}
       isPreview
+      schedule={
+        isAr
+          ? [
+              { time: "٧:٠٠ م", label: "كتب الكتاب" },
+              { time: "٨:٣٠ م", label: "الزفة ودخول العروسين" },
+              { time: "٩:٣٠ م", label: "العشاء" },
+              { time: "١١:٠٠ م", label: "تقطيع التورتة" },
+            ]
+          : [
+              { time: "7:00 pm", label: "Katb kitab" },
+              { time: "8:30 pm", label: "Zaffa & the couple's entrance" },
+              { time: "9:30 pm", label: "Dinner" },
+              { time: "11:00 pm", label: "Cutting the cake" },
+            ]
+      }
+      dressCode={isAr ? "سواريه" : "Black tie"}
+      notes={
+        isAr
+          ? "الحفل للكبار فقط. الباركينج متاح عند البوابة رقم ٢."
+          : "An adults-only evening. Valet parking is available at Gate 2."
+      }
     />
   );
 }

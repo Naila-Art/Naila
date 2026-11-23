@@ -291,18 +291,6 @@ export default function LandingExperience({
     return selfPkg?.price ?? 1500;
   }, [activePackages]);
 
-  const showcaseMedia = useMemo(() => {
-    const heroMatch =
-      templates.find((t) => t.id === "arabian-veil" && t.videoUrl) ??
-      templates.find((t) => t.id === "ballroom" && t.videoUrl) ??
-      templates.find((t) => t.videoUrl);
-    return {
-      templateId: heroMatch?.id ?? "arabian-veil",
-      videoUrl: heroMatch?.videoUrl ?? "/showcase/arabian-veil.mp4",
-      posterUrl: heroMatch?.posterUrl ?? "/showcase/arabian-veil-start.jpg",
-    };
-  }, [templates]);
-
   const templateCards = useMemo<ShowcaseCardItem[]>(() => {
     return templates.map((tpl) => {
       const meta = TEMPLATE_EDITORIAL_META[tpl.id];
@@ -364,8 +352,8 @@ export default function LandingExperience({
           descPoints.length > 0
             ? descPoints.join(" · ")
             : lang === "ar"
-            ? "افتح الدعوة على موبايلك وجرّب اللحظة زي ما ضيوفك هيشوفوها."
-            : "Open the complete live invitation on your phone.",
+            ? "افتحي الدعوة على موبايلك وعيشي اللحظة زي ما ضيوفك هيشوفوها."
+            : "Open the live invitation on your phone and feel the reveal.",
         posterUrl: pal.poster,
         stationery: {
           couple,
@@ -410,14 +398,11 @@ export default function LandingExperience({
             lang={lang}
             currency={currency}
             startingPriceEgp={startingPriceEgp}
-            showcaseTemplateId={showcaseMedia.templateId}
-            showcaseVideoUrl={showcaseMedia.videoUrl}
-            showcasePosterUrl={showcaseMedia.posterUrl}
           />
           <SwitchNarrative copy={copy} onToneChange={handleToneChange} />
         </div>
 
-        {/* Dual Showcases: Wedding Invitations (4:3) + Live Sample Suites (4:5) */}
+        {/* Dual Showcases: Wedding Invitations (3:4) + Live Sample Suites (4:5) */}
         <div className={styles.showcasesWrapper}>
           <EditorialShowcase
             id="templates"
@@ -455,6 +440,7 @@ export default function LandingExperience({
             lang={lang}
             currency={currency}
             packages={pricing.packages}
+            steps={pricing.steps}
           />
           <FaqAccordion copy={copy} />
           <LandingFooter

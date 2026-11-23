@@ -35,6 +35,11 @@ export default function TrialCta({
       ? styles.trialCtaSm
       : "";
 
+  // "Design yours — 300 EGP": give the price its own emphasis.
+  const dashAt = label.lastIndexOf("—");
+  const lead = dashAt >= 0 ? label.slice(0, dashAt + 1) : label;
+  const price = dashAt >= 0 ? label.slice(dashAt + 1).trim() : "";
+
   return (
     <Link
       href={href}
@@ -43,7 +48,8 @@ export default function TrialCta({
       }`}
     >
       <span className={styles.trialCtaLabel}>
-        {label}
+        <span>{lead}</span>
+        {price && <span className={styles.trialCtaPrice}>{price}</span>}
         {showArrow && (
           <ArrowUpRight className={styles.trialCtaArrow} aria-hidden="true" />
         )}

@@ -24,6 +24,25 @@ export interface Template {
   };
   /** Set for templates uploaded from the admin dashboard (not the built-in fallback). */
   createdAt?: string;
+  /**
+   * Layout family. "envelope" (default) is the classic card; "doors" is the Doors & Arches
+   * family: the opening video plays full-screen and the invitation rises over its last frame.
+   */
+  family?: TemplateFamily;
+  /** Last frame of the video: the scene the invitation sits on after the opening. */
+  endPosterUrl?: string;
+  /** A small blurred copy of the last frame, used as the desktop backdrop. */
+  ambientUrl?: string;
+  /** When (ms into the video) the scene is open enough for the names to appear. */
+  revealAtMs?: number;
+}
+
+export type TemplateFamily = "envelope" | "doors";
+
+/** One line of the night's programme, e.g. { time: "19:00", label: "Katb kitab" }. */
+export interface ScheduleItem {
+  time: string;
+  label: string;
 }
 
 export const CATEGORY_LABELS: Record<Category, string> = {
@@ -62,6 +81,12 @@ export interface EventData {
   category?: Category;
   /** A track from our music library (package 2+). */
   musicTrackId?: string;
+  /** The night's programme, in order. Optional. */
+  schedule?: ScheduleItem[];
+  /** e.g. "Black tie" / "سواريه". Optional. */
+  dressCode?: string;
+  /** Short practical notes for guests (parking, children, gifts…). Optional. */
+  notes?: string;
   createdAt?: string;
   /**
    * Set on the storefront's sample invitations (one per package). They show that package's

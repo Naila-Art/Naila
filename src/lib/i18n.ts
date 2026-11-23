@@ -32,6 +32,13 @@ const strings = {
     previewNoReplies: "الردود هتشتغل بعد تفعيل الدعوة",
     closedTitle: "الدعوة دي مش متاحة",
     closedBody: "اللينك ده اتقفل. لو محتاج تتأكد من حاجة، كلم أصحاب الدعوة.",
+    openTheDoors: "اضغط لفتح الأبواب",
+    scrollDown: "اسحب لأعلى",
+    theEvening: "برنامج الليلة",
+    dressCode: "الدريس كود",
+    goodToKnow: "معلومة تهمك",
+    withLove: "بكل حب",
+    at: "الساعة",
   },
   en: {
     tapToOpen: "Tap to open",
@@ -64,6 +71,13 @@ const strings = {
     previewNoReplies: "Replies open once the invitation is live",
     closedTitle: "This invitation is no longer available",
     closedBody: "This link has been closed. Please contact the hosts if you need anything.",
+    openTheDoors: "Tap to open the doors",
+    scrollDown: "Scroll",
+    theEvening: "The evening",
+    dressCode: "Dress code",
+    goodToKnow: "Good to know",
+    withLove: "With love",
+    at: "at",
   },
 } as const;
 

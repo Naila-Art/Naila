@@ -15,7 +15,6 @@
 }
 
 .landingMain[dir="rtl"] .heroHeadline,
-.landingMain[dir="rtl"] .soloInviteMonogram,
 .landingMain[dir="rtl"] .switchHeadline,
 .landingMain[dir="rtl"] .showcaseH2,
 .landingMain[dir="rtl"] .showcaseSubtitle,
@@ -37,10 +36,27 @@
   line-height: 1.24;
 }
 
+.landingMain[dir="rtl"] .heroLead,
+.landingMain[dir="rtl"] .switchSubCopy,
+.landingMain[dir="rtl"] .reviewQuote {
+  font-family: var(--font-arabic-display);
+  font-style: normal;
+  letter-spacing: 0;
+}
+
+.landingMain[dir="rtl"] .heroLead {
+  font-size: clamp(1.12rem, 1.55vw, 1.36rem);
+  line-height: 1.82;
+  color: rgba(252, 247, 237, 0.86);
+}
+
+.landingMain[dir="rtl"] .switchSubCopy {
+  font-size: clamp(1.1rem, 1.45vw, 1.3rem);
+  line-height: 1.8;
+}
+
 /* Preserve clean Arabic cursive ligatures (zero letter-spacing) on all eyebrows & micro-labels */
 .landingMain[dir="rtl"] .brandSub,
-.landingMain[dir="rtl"] .soloInviteEyebrow,
-.landingMain[dir="rtl"] .soloInviteMeta,
 .landingMain[dir="rtl"] .switchLabelText,
 .landingMain[dir="rtl"] .showcaseCardEyebrow,
 .landingMain[dir="rtl"] .stationeryTop,
@@ -559,7 +575,7 @@
   width: 100%;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 640px) {
   .trialCtaFullMobile {
     width: auto;
   }
@@ -602,6 +618,13 @@
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
+}
+
+.trialCtaPrice {
+  font-size: 1.14em;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
 }
 
 .trialCtaArrow {
@@ -723,20 +746,68 @@
   overflow-x: clip;
 }
 
-.heroSlideshow {
+/* Hero reveal backdrop: video plays once, then settles into a still. */
+.heroReveal {
   position: absolute;
   inset: 0;
+  overflow: hidden;
+  background-color: #efe7da;
 }
 
-.heroSlideImg {
+.heroRevealMedia {
   pointer-events: none;
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center;
-  transition: opacity 800ms ease-in-out;
+  object-position: center 42%;
+  transform: scale(1);
+  filter: blur(0) saturate(1) brightness(1);
+  transition: transform 16s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 2.8s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform, filter;
+}
+
+.heroRevealVideo {
+  transition: transform 16s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 2.8s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 1.4s ease-in-out 0.2s;
+}
+
+.heroRevealWash {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at 50% 40%,
+    rgba(250, 245, 236, 0.55),
+    rgba(250, 245, 236, 0.18) 60%,
+    rgba(250, 245, 236, 0) 100%
+  );
+  opacity: 0;
+  transition: opacity 3.2s cubic-bezier(0.22, 1, 0.36, 1) 0.4s;
+}
+
+.heroRevealSettled .heroRevealVideo {
+  opacity: 0;
+}
+
+.heroRevealSettled .heroRevealMedia {
+  transform: scale(1.06);
+  filter: blur(5px) saturate(0.92) brightness(1.04);
+}
+
+.heroRevealSettled .heroRevealWash {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heroRevealMedia,
+  .heroRevealVideo,
+  .heroRevealWash {
+    transition: none;
+  }
 }
 
 .heroToneOverlay {
@@ -749,17 +820,17 @@
     ),
     linear-gradient(
       180deg,
-      rgba(8, 6, 8, 0.28),
-      rgba(8, 6, 8, 0.42) 30%,
-      rgba(8, 6, 8, 0.72) 72%,
-      rgba(8, 6, 8, 0.9)
+      rgba(20, 14, 10, 0.18),
+      rgba(20, 14, 10, 0.24) 30%,
+      rgba(20, 14, 10, 0.5) 72%,
+      rgba(20, 14, 10, 0.72)
     );
 }
 
 .heroContrastOverlay {
   position: absolute;
   inset: 0;
-  background-color: rgba(0, 0, 0, 0.18);
+  background-color: rgba(0, 0, 0, 0.08);
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
 }
@@ -840,13 +911,9 @@
   flex-direction: column;
 }
 
-@media (min-width: 1024px) {
-  .heroGrid {
-    display: grid;
-    grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
-    align-items: center;
-    gap: 1.75rem;
-  }
+.heroGrid {
+  align-items: center;
+  justify-content: center;
 }
 
 .heroCopyCol {
@@ -856,19 +923,23 @@
   min-height: 0;
   flex: 1;
   flex-direction: column;
-  justify-content: flex-end;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  max-width: 52rem;
+  text-align: center;
 }
 
 @media (min-width: 1024px) {
   .heroCopyCol {
     flex: none;
-    justify-content: center;
   }
 }
 
 .heroCopyStack {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 1rem;
 }
 
@@ -902,7 +973,8 @@
 
 .heroHeadline {
   font-family: var(--font-display);
-  max-width: 12ch;
+  max-width: 14ch;
+  margin-inline: auto;
   font-size: clamp(2.75rem, 12vw, 3.5rem);
   font-weight: 400;
   line-height: 0.94;
@@ -924,6 +996,7 @@
 
 .heroLead {
   max-width: 36rem;
+  margin-inline: auto;
   font-size: 0.875rem;
   line-height: 1.65;
   color: rgba(255, 255, 255, 0.78);
@@ -946,6 +1019,8 @@
   margin-top: 1.5rem;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  width: 100%;
   gap: 0.75rem;
 }
 
@@ -959,19 +1034,16 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: 0.75rem;
+  width: 100%;
 }
 
 @media (min-width: 640px) {
   .heroCtaRow {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 1024px) {
-  .heroCtaRow {
     display: flex;
     flex-wrap: wrap;
     align-items: flex-start;
+    justify-content: center;
+    width: auto;
   }
 }
 
@@ -1010,7 +1082,7 @@
   }
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 640px) {
   .heroSecondaryBtn {
     width: auto;
   }
@@ -1019,7 +1091,9 @@
 .heroSubLinkRow {
   order: -1;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: 0.4rem;
   font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.65);
@@ -1043,152 +1117,6 @@
 .heroUnderlineLink:hover {
   color: #ffffff;
   text-decoration-color: #ffffff;
-}
-
-/* Right Column — Singular Borderless Couture Floating Invitation */
-.heroDeviceCol {
-  position: relative;
-  z-index: 20;
-  display: none;
-  min-width: 0;
-  align-items: center;
-  justify-content: center;
-}
-
-@media (min-width: 1024px) {
-  .heroDeviceCol {
-    display: flex;
-    padding-inline-start: 1.5rem;
-  }
-}
-
-.soloInviteStage {
-  position: relative;
-  display: flex;
-  width: 100%;
-  align-items: center;
-  justify-content: center;
-  padding-block: 0.75rem;
-  perspective: 1400px;
-}
-
-.soloInviteFloat {
-  display: block;
-  text-decoration: none;
-  transform-style: preserve-3d;
-  transition: transform 0.6s var(--ease-editorial);
-  will-change: transform;
-}
-
-@keyframes soloInviteLevitate {
-  0%,
-  100% {
-    transform: translate3d(0, 0px, 0);
-  }
-  50% {
-    transform: translate3d(0, -10px, 0);
-  }
-}
-
-.soloInviteCard {
-  position: relative;
-  margin: 0;
-  width: clamp(19rem, 25.5vw, 24rem);
-  aspect-ratio: 3 / 4.2;
-  overflow: hidden;
-  border: 0;
-  border-radius: 1.5rem;
-  background-color: #161114;
-  box-shadow: 0 42px 96px -18px rgba(0, 0, 0, 0.74),
-    0 18px 42px -12px rgba(0, 0, 0, 0.45);
-  animation: soloInviteLevitate 7.6s ease-in-out infinite;
-  transition: box-shadow 0.55s var(--ease-editorial);
-  will-change: transform;
-}
-
-.soloInviteFloat:hover .soloInviteCard {
-  box-shadow: 0 54px 118px -16px rgba(0, 0, 0, 0.82),
-    0 22px 52px -10px rgba(0, 0, 0, 0.52);
-}
-
-.soloInviteVideo {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-  transform: scale(1.02);
-  transition: transform 0.9s var(--ease-editorial);
-}
-
-.soloInviteFloat:hover .soloInviteVideo {
-  transform: scale(1.06);
-}
-
-.soloInviteVeil {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(
-    180deg,
-    rgba(22, 14, 10, 0.08) 0%,
-    transparent 42%,
-    rgba(22, 14, 10, 0.76) 100%
-  );
-}
-
-.soloInviteOverlay {
-  position: absolute;
-  inset-inline: 0;
-  bottom: 0;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.55rem;
-  padding: 2.15rem 1.75rem 1.85rem;
-  text-align: center;
-  pointer-events: none;
-}
-
-.soloInviteEyebrow {
-  font-size: 9.5px;
-  font-weight: 600;
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-  color: rgba(241, 207, 170, 0.92);
-  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.45);
-}
-
-.soloInviteMonogram {
-  font-family: var(--font-display);
-  font-style: italic;
-  font-size: clamp(1.85rem, 2.5vw, 2.35rem);
-  font-weight: 400;
-  line-height: 1;
-  letter-spacing: -0.025em;
-  color: #fcf7ed;
-  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.36);
-}
-
-.soloInviteRule {
-  width: 2.25rem;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(241, 207, 170, 0.72),
-    transparent
-  );
-}
-
-.soloInviteMeta {
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.28em;
-  text-transform: uppercase;
-  color: rgba(252, 247, 237, 0.78);
 }
 
 /* ============================================================================
@@ -1845,7 +1773,7 @@
 }
 
 .aspectLandscape {
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 3 / 4;
 }
 
 .aspectPortrait {
@@ -2884,12 +2812,14 @@
 }
 
 .tierLedgerPrice {
-  margin-top: 0.15rem;
-  font-size: 0.68rem;
-  font-weight: 500;
-  letter-spacing: 0.06em;
+  margin-top: 0.3rem;
+  font-size: clamp(1.05rem, 1.3vw, 1.2rem);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
-  color: rgba(241, 207, 170, 0.68);
+  font-variant-numeric: tabular-nums;
+  color: rgba(241, 207, 170, 0.9);
   transition: color 0.25s ease;
 }
 
@@ -3783,7 +3713,6 @@
 
   .trialTab,
   .trialTab::after,
-  .soloInviteCard,
   .propWaxSealAlive,
   .propBurgundyBowAlive,
   .propGardeniaSprigAlive,
@@ -3835,4 +3764,10 @@
   .manifestoSection {
     min-height: auto;
   }
+}
+
+/* RTL: chevrons point in reading direction ("next" = left in Arabic). */
+.landingMain[dir="rtl"] .carouselArrowBtn svg,
+.landingMain[dir="rtl"] .cardArrowBadge svg {
+  transform: scaleX(-1);
 }

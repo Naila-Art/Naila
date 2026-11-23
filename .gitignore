@@ -44,3 +44,7 @@ next-env.d.ts
 # local dev data store
 /data
 /.next-prod/
+
+# local reference media / experiments
+/Video References - ignore/
+/gflow-test/

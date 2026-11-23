@@ -8,12 +8,88 @@ import { formatLandingPrice, type Currency, type LandingCopy } from "./copy";
 import type { Lang } from "@/lib/types";
 import styles from "./landing.module.css";
 
-const HERO_SLIDES = [
-  "/assets/hero/hero-1.jpg?v=3",
-  "/assets/hero/hero-2.jpg?v=3",
-  "/assets/hero/hero-3.jpg?v=3",
-  "/assets/hero/hero-4.jpg?v=3",
-];
+// Hero backdrop: the Barakah door reveal plays once, eases to a stop on the
+// open nave, then settles into a calm still of that exact frame.
+const HERO_REVEAL_VIDEO = "/assets/hero/hero-reveal.mp4?v=1";
+const HERO_REVEAL_START = "/assets/hero/hero-reveal-start.jpg?v=1";
+const HERO_REVEAL_END = "/assets/hero/hero-reveal-end.jpg?v=1";
+// Seconds before the end where playback starts decelerating.
+const REVEAL_EASE_WINDOW = 1.2;
+const REVEAL_MIN_RATE = 0.12;
+
+function HeroRevealBackdrop({ play }: { play: boolean }) {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [settled, setSettled] = useState(false);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setSettled(true);
+      return;
+    }
+    if (!play) return;
+
+    let raf = 0;
+    let done = false;
+
+    const finish = () => {
+      if (done) return;
+      done = true;
+      video.pause();
+      setSettled(true);
+    };
+
+    const tick = () => {
+      const dur = video.duration;
+      if (Number.isFinite(dur) && dur > 0) {
+        const remaining = dur - video.currentTime;
+        if (remaining <= 0.045 || video.ended) {
+          finish();
+          return;
+        }
+        if (remaining < REVEAL_EASE_WINDOW) {
+          // Ease-out: rate glides from 1 toward a crawl as the doors settle open.
+          const p = 1 - remaining / REVEAL_EASE_WINDOW;
+          const eased = 1 - p * p * (3 - 2 * p);
+          video.playbackRate = Math.max(REVEAL_MIN_RATE, eased);
+        }
+      }
+      raf = requestAnimationFrame(tick);
+    };
+
+    video.addEventListener("ended", finish);
+    const attempt = video.play();
+    if (attempt) attempt.catch(finish);
+    raf = requestAnimationFrame(tick);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      video.removeEventListener("ended", finish);
+    };
+  }, [play]);
+
+  return (
+    <div
+      className={`${styles.heroReveal} ${settled ? styles.heroRevealSettled : ""}`}
+    >
+      {/* Identical to the video's final frame, so the hand-off is invisible. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={HERO_REVEAL_END} alt="" className={styles.heroRevealMedia} />
+      <video
+        ref={videoRef}
+        className={`${styles.heroRevealMedia} ${styles.heroRevealVideo}`}
+        src={HERO_REVEAL_VIDEO}
+        poster={HERO_REVEAL_START}
+        muted
+        playsInline
+        preload="auto"
+      />
+      <div className={styles.heroRevealWash} />
+    </div>
+  );
+}
 
 function DotFieldCanvas() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -118,9 +194,6 @@ interface HeroSectionProps {
   lang: Lang;
   currency: Currency;
   startingPriceEgp: number;
-  showcaseTemplateId: string;
-  showcaseVideoUrl: string;
-  showcasePosterUrl: string;
 }
 
 export default function HeroSection({
@@ -128,36 +201,8 @@ export default function HeroSection({
   lang,
   currency,
   startingPriceEgp,
-  showcaseTemplateId,
-  showcaseVideoUrl,
-  showcasePosterUrl,
 }: HeroSectionProps) {
   const { heroRevealed, immediate } = useLandingEntrance();
-  const [slideIdx, setSlideIdx] = useState(0);
-  const [tilt, setTilt] = useState({ rx: 0, ry: 0 });
-  const stageRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduced) return;
-    const id = window.setInterval(() => {
-      setSlideIdx((prev) => (prev + 1) % HERO_SLIDES.length);
-    }, 5500);
-    return () => window.clearInterval(id);
-  }, []);
-
-  const handleStageMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    const el = stageRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const nx = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
-    const ny = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
-    setTilt({ rx: -ny * 4.5, ry: nx * 5.5 });
-  };
-
-  const handleStageLeave = () => {
-    setTilt({ rx: 0, ry: 0 });
-  };
 
   const priceLabel = formatLandingPrice(startingPriceEgp, currency, lang);
   const revealClass = (idx: number) => {
@@ -172,19 +217,7 @@ export default function HeroSection({
       {/* Sticky Full-Bleed Backdrop */}
       <div className={styles.heroBackdropSticky} aria-hidden="true">
         <div className={styles.heroBackdropCanvas}>
-          <div className={styles.heroSlideshow}>
-            {HERO_SLIDES.map((src, i) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                key={src}
-                src={src}
-                alt=""
-                loading={i === 0 ? "eager" : "lazy"}
-                className={styles.heroSlideImg}
-                style={{ opacity: i === slideIdx ? 1 : 0 }}
-              />
-            ))}
-          </div>
+          <HeroRevealBackdrop play={heroRevealed || immediate} />
           <div className={styles.heroToneOverlay} />
           <div className={styles.heroContrastOverlay} />
           <DotFieldCanvas />
@@ -238,57 +271,6 @@ export default function HeroSection({
                 </div>
               </div>
 
-              {/* Right Column — Singular Borderless Couture Floating Invitation */}
-              <div className={`${styles.heroDeviceCol} ${revealClass(2)}`}>
-                <div
-                  ref={stageRef}
-                  data-testid="device-preview-stage"
-                  onPointerMove={handleStageMove}
-                  onPointerLeave={handleStageLeave}
-                  className={styles.soloInviteStage}
-                >
-                  <Link
-                    href={`/t/${showcaseTemplateId}`}
-                    aria-label={
-                      lang === "ar"
-                        ? "معاينة دعوة الزفاف التفاعلية"
-                        : "Preview live wedding invitation"
-                    }
-                    className={styles.soloInviteFloat}
-                    style={{
-                      transform: `rotateX(${tilt.rx.toFixed(2)}deg) rotateY(${tilt.ry.toFixed(2)}deg)`,
-                    }}
-                  >
-                    <figure className={styles.soloInviteCard}>
-                      <video
-                        className={styles.soloInviteVideo}
-                        src={showcaseVideoUrl}
-                        poster={showcasePosterUrl}
-                        autoPlay
-                        loop
-                        muted
-                        playsInline
-                        preload="metadata"
-                      />
-                      <div aria-hidden="true" className={styles.soloInviteVeil} />
-                      <figcaption className={styles.soloInviteOverlay}>
-                        <span className={styles.soloInviteEyebrow}>
-                          {lang === "ar" ? "دعوة حفل زفاف" : "THE WEDDING OF"}
-                        </span>
-                        <span className={styles.soloInviteMonogram}>
-                          {lang === "ar" ? "أحمد و سارة" : "Ahmed & Sara"}
-                        </span>
-                        <span className={styles.soloInviteRule} aria-hidden="true" />
-                        <span className={styles.soloInviteMeta}>
-                          {lang === "ar"
-                            ? "١٤ فبراير ٢٠٢٧ · القاهرة"
-                            : "FEBRUARY 14, 2027 · CAIRO"}
-                        </span>
-                      </figcaption>
-                    </figure>
-                  </Link>
-                </div>
-              </div>
             </div>
           </div>
         </section>

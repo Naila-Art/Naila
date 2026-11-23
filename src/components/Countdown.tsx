@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import styles from "./invitation.module.css";
+import baseStyles from "./invitation.module.css";
 import type { Strings } from "@/lib/i18n";
 
 function remaining(target: number, now: number) {
@@ -15,7 +15,17 @@ function remaining(target: number, now: number) {
   };
 }
 
-export default function Countdown({ dateIso, strings: s }: { dateIso: string; strings: Strings }) {
+export default function Countdown({
+  dateIso,
+  strings: s,
+  ui,
+}: {
+  dateIso: string;
+  strings: Strings;
+  /** Class overrides from a layout family's stylesheet. */
+  ui?: Partial<Record<string, string>>;
+}) {
+  const styles = { ...baseStyles, ...ui } as Record<string, string>;
   const target = new Date(dateIso).getTime();
   const [now, setNow] = useState(() => Date.now());
 

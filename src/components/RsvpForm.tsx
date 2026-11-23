@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import styles from "./invitation.module.css";
+import baseStyles from "./invitation.module.css";
 import type { Strings } from "@/lib/i18n";
 import type { RsvpStatus } from "@/lib/types";
 
@@ -10,9 +10,12 @@ interface Props {
   token?: string;
   strings: Strings;
   initial: RsvpStatus | null;
+  /** Class overrides from a layout family's stylesheet. */
+  ui?: Partial<Record<string, string>>;
 }
 
-export default function RsvpForm({ slug, token, strings: s, initial }: Props) {
+export default function RsvpForm({ slug, token, strings: s, initial, ui }: Props) {
+  const styles = { ...baseStyles, ...ui } as Record<string, string>;
   const [status, setStatus] = useState<RsvpStatus | null>(initial);
   const [editing, setEditing] = useState(initial === null);
   const [name, setName] = useState("");

@@ -6,7 +6,8 @@ import Countdown from "./Countdown";
 import RsvpForm from "./RsvpForm";
 import WishForm from "./WishForm";
 import type { Strings } from "@/lib/i18n";
-import type { Lang, RsvpStatus, Template } from "@/lib/types";
+import type { Lang, RsvpStatus, ScheduleItem, Template } from "@/lib/types";
+import DoorsInvitation from "./families/DoorsInvitation";
 
 export interface InvitationProps {
   slug: string;
@@ -33,6 +34,10 @@ export interface InvitationProps {
   personalMessage?: string;
   /** Draft (not paid yet): ribbon on top, replies off. */
   isPreview?: boolean;
+  /** Optional programme, dress code and notes (shown by layout families that support them). */
+  schedule?: ScheduleItem[];
+  dressCode?: string;
+  notes?: string;
 }
 
 type Stage = "sealed" | "opening" | "open";
@@ -42,7 +47,13 @@ const CSS_OPEN_MS = 2200;
 /** Safety net in case a video never fires `ended`. */
 const VIDEO_MAX_MS = 15000;
 
+/** Picks the layout family for the template. */
 export default function Invitation(props: InvitationProps) {
+  if (props.template.family === "doors") return <DoorsInvitation {...props} />;
+  return <EnvelopeInvitation {...props} />;
+}
+
+function EnvelopeInvitation(props: InvitationProps) {
   const { strings: s, template, lang } = props;
   const [stage, setStage] = useState<Stage>("sealed");
   const [muted, setMuted] = useState(false);

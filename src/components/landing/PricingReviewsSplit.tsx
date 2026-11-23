@@ -9,7 +9,7 @@ import {
   type LandingCopy,
   type ReviewItem,
 } from "./copy";
-import { isSelfServe, type PackageInfo } from "@/lib/pricing";
+import { isSelfServe, type PackageInfo, type PricingStep } from "@/lib/pricing";
 import type { Lang } from "@/lib/types";
 import styles from "./landing.module.css";
 
@@ -18,6 +18,8 @@ interface PricingReviewsSplitProps {
   lang: Lang;
   currency: Currency;
   packages: PackageInfo[];
+  /** The three "how it works" keypoints, edited from the admin dashboard. */
+  steps: PricingStep[];
 }
 
 const ROMAN = ["I", "II", "III", "IV"];
@@ -58,6 +60,7 @@ export default function PricingReviewsSplit({
   lang,
   currency,
   packages,
+  steps,
 }: PricingReviewsSplitProps) {
   const activePackages = packages.filter((p) => p.active);
   const defaultPkg =
@@ -170,12 +173,14 @@ export default function PricingReviewsSplit({
 
           {/* 3 Numbered Editorial Steps */}
           <ol className={styles.pricingSteps}>
-            {copy.pricing.steps.map((step) => (
-              <li key={step.num} className={styles.pricingStepItem}>
-                <span className={styles.pricingStepNum}>{step.num}</span>
+            {steps.map((step, i) => (
+              <li key={i} className={styles.pricingStepItem}>
+                <span className={styles.pricingStepNum}>
+                  {String(i + 1).padStart(2, "0")}
+                </span>
                 <div>
-                  <h3 className={styles.pricingStepTitle}>{step.title}</h3>
-                  <p className={styles.pricingStepBody}>{step.body}</p>
+                  <h3 className={styles.pricingStepTitle}>{step[lang].title}</h3>
+                  <p className={styles.pricingStepBody}>{step[lang].body}</p>
                 </div>
               </li>
             ))}

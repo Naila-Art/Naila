@@ -22,7 +22,7 @@ Every token, curve, timing constant, transform matrix, and layer order in this s
 - **Editorial Stationery Luxury**: The entire experience reads like heavy cotton letterpress stationery paired with a fashion editorial magazine — never SaaS dashboard chrome.
 - **Tactile Light & Dark Rhythm**: Opens in moody, candlelit noir photography (`#120d10`), breaks cleanly into sunlit warm cream (`#fcf7ed`) via a literal mechanical switch flip, plunges back into deep espresso charcoal (`#29231f`) during the pinned manifesto climax, resurfaces onto cream for features/FAQ, and closes inside painterly pastel clouds.
 - **Physical Depth Without Clutter**: Depth is achieved through multi-layer progressive backdrop blurs, `mix-blend-mode: multiply` watercolor editorial props peeking from viewport edges, subtle micro-dotted texture grains, inset bevels on recessed CTA tabs, and true 3D CSS `perspective(1400px)` device stacking.
-- **Bilingual Native Support (EN ↔ العربية)**: Defaults to English (`LTR`) to render `Libre Caslon Condensed` + `Instrument Sans` at 100% pixel-parity with Cordially, while the persistent floating Language Switcher seamlessly mirrors the entire storefront into natural Egyptian/Modern Arabic (`RTL`) with calligraphic `Amiri` editorial display headlines paired with refined `IBM Plex Sans Arabic` UI/body copy.
+- **Bilingual Native Support (EN ↔ العربية)**: Defaults to English (`LTR`) to render `Libre Caslon Condensed` + `Instrument Sans` at 100% pixel-parity with Cordially, while the persistent floating Language Switcher seamlessly mirrors the entire storefront into natural Egyptian/Modern Arabic (`RTL`) with calligraphic `Amiri` editorial display headlines & hero prose paired with sculptural `El Messiri` UI/button typography.
 
 ---
 
@@ -92,7 +92,7 @@ All legacy styles (`#f4ede3`, `#3b2a22`, etc.) are discarded and replaced with t
   - Self-hosted `.woff2` files in `/public/fonts/libre-caslon-condensed/` (`Regular` & `Italic`, `Latin` & `LatinExt`, `font-display: block` for italic wordmark, `swap` for regular).
 - **UI & Body Sans (`--font-sans`)**: `"Instrument Sans", "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif` (`400`, `500`, `600`, `700`).
 - **Arabic Display (`--font-arabic-display`)**: `"Amiri", "Traditional Arabic", Georgia, serif` (activated under `[dir="rtl"]` / `lang="ar"` and on Arabic tier/editorial names).
-- **Arabic Body (`--font-arabic`)**: `"IBM Plex Sans Arabic", "Amiri", sans-serif` (weights `300`, `400`, `500`, `600`).
+- **Arabic Body & UI (`--font-arabic`)**: `"El Messiri", "Amiri", sans-serif` (weights `400`, `500`, `600`, `700`) — sculptural Egyptian editorial calligraphy for buttons, labels, navigation, and builder controls.
 
 ### Complete Type Scale
 

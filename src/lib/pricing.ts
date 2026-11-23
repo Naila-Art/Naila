@@ -8,21 +8,74 @@ import type { EventData, Features, Order, PackageId } from "./types";
  *
  * What a package *does* (self-serve or not, which features it unlocks) is fixed by its number
  * in code below; the dashboard edits names, prices, bullet points and whether it's on sale.
+ *
+ * The same settings hold the three "how it works" keypoints shown under the packages on the
+ * landing page, in Arabic and English. There are always exactly three.
  */
 export interface PackageInfo {
   id: PackageId;
   name: string;
   price: number;
   points: string[];
+  /** English selling points; the storefront falls back to built-in English copy when empty. */
+  pointsEn?: string[];
   /** e.g. "تبدأ من" on the open-ended package. */
   priceNote?: string;
   /** Hidden from the storefront and refused for new orders when false. */
   active: boolean;
 }
 
+export interface StepText {
+  title: string;
+  body: string;
+}
+
+/** One "how it works" keypoint on the landing page's pricing card. */
+export interface PricingStep {
+  ar: StepText;
+  en: StepText;
+}
+
+export const STEP_COUNT = 3;
+
 export interface Pricing {
   packages: PackageInfo[];
+  /** Always STEP_COUNT long. */
+  steps: PricingStep[];
 }
+
+export const DEFAULT_STEPS: PricingStep[] = [
+  {
+    ar: {
+      title: "اختاري الروح اللي شبهك",
+      body: "شوفي مجموعتنا للزفاف والخطوبة وكتب الكتاب، أو اطلبي تصميم حصري ننفّذه على ذوقك وألوان قاعتك من الصفر.",
+    },
+    en: {
+      title: "Choose the mood that feels like you",
+      body: "Explore our curated wedding, engagement, and katb kitab themes—or commission a bespoke suite matched to your venue and palette.",
+    },
+  },
+  {
+    ar: {
+      title: "ضيفي تفاصيل فرحك",
+      body: "اكتبي الأسامي، التاريخ، القاعة، واختاري الموسيقى وشوفي دعوتك بتتشكّل قدام عينيك لحظة بلحظة.",
+    },
+    en: {
+      title: "Personalize every detail in minutes",
+      body: "Add your names, date, venue pin, soundtrack, and wording, and watch your live invitation come together on screen.",
+    },
+  },
+  {
+    ar: {
+      title: "فعّليها وشاركي الفرحة",
+      body: "ادفعي مرة واحدة، ابعتي اللينكات على واتساب، وتابعي تأكيدات الحضور ودفتر التهاني لايف.",
+    },
+    en: {
+      title: "Activate & share with confidence",
+      body: "Pay once, send named WhatsApp links to your guest list, and watch opens, RSVPs, and heartfelt wishes arrive live.",
+    },
+  },
+];
 
 export const DEFAULT_PRICING: Pricing = {
   packages: [
@@ -44,6 +97,7 @@ export const DEFAULT_PRICING: Pricing = {
       points: ["تصميم خاص مع المصمم", "تعديلات لحد ما توصل للي في دماغك", "دعوة باسم كل معزوم ورسالة خاصة", "خصم 50% لأول حد ترشحه"],
     },
   ],
+  steps: DEFAULT_STEPS,
 };
 
 /** What every package includes, shown once on the storefront instead of repeating it per package. */
@@ -64,9 +118,23 @@ export function priceOf(pricing: Pricing, packageId: PackageId): number {
   return getPackage(pricing, packageId)?.price ?? 0;
 }
 
-/** Older saved settings may carry add-on fields; keep only the packages. */
+const isStepText = (t: unknown): t is StepText =>
+  !!t && typeof (t as StepText).title === "string" && typeof (t as StepText).body === "string";
+
+const validSteps = (steps: unknown): steps is PricingStep[] =>
+  Array.isArray(steps) &&
+  steps.length === STEP_COUNT &&
+  steps.every((s) => isStepText((s as PricingStep)?.ar) && isStepText((s as PricingStep)?.en));
+
+/**
+ * Older saved settings may carry add-on fields and no keypoints; keep only the packages and
+ * fill in the default keypoints until someone saves new ones.
+ */
 export function withDefaults(p: Partial<Pricing> | undefined): Pricing {
-  return p?.packages?.length === 4 ? { packages: p.packages } : DEFAULT_PRICING;
+  return {
+    packages: p?.packages?.length === 4 ? p.packages : DEFAULT_PRICING.packages,
+    steps: validSteps(p?.steps) ? p.steps : DEFAULT_STEPS,
+  };
 }
 
 /** What a package unlocks. */
@@ -108,9 +176,37 @@ export function parsePricing(input: unknown): { ok: true; value: Pricing } | { o
       .map((x) => (typeof x === "string" ? x.trim() : ""))
       .filter(Boolean);
     if (points.length > 8 || points.some((x) => x.length > 100)) return { ok: false, error: `package_${id}_points` };
+    const pointsEn = (Array.isArray(p.pointsEn) ? p.pointsEn : [])
+      .map((x) => (typeof x === "string" ? x.trim() : ""))
+      .filter(Boolean);
+    if (pointsEn.length > 8 || pointsEn.some((x) => x.length > 100)) return { ok: false, error: `package_${id}_pointsEn` };
     const priceNote = typeof p.priceNote === "string" && p.priceNote.trim() ? p.priceNote.trim().slice(0, 20) : undefined;
-    packages.push({ id, name, price: pr, points, priceNote, active: p.active !== false });
+    packages.push({
+      id,
+      name,
+      price: pr,
+      points,
+      pointsEn: pointsEn.length ? pointsEn : undefined,
+      priceNote,
+      active: p.active !== false,
+    });
   }
   if (!packages.some((p) => p.active && isSelfServe(p.id))) return { ok: false, error: "need_self_serve" };
-  return { ok: true, value: { packages } };
+
+  const rawSteps = Array.isArray(o.steps) ? o.steps : [];
+  if (rawSteps.length !== STEP_COUNT) return { ok: false, error: "steps_count" };
+  const steps: PricingStep[] = [];
+  for (let i = 0; i < STEP_COUNT; i++) {
+    const s = (rawSteps[i] ?? {}) as Record<string, Record<string, unknown> | undefined>;
+    const step = {} as PricingStep;
+    for (const lang of ["ar", "en"] as const) {
+      const title = text(s[lang]?.title, 80);
+      if (!title) return { ok: false, error: `step_${i + 1}_${lang}_title` };
+      const body = text(s[lang]?.body, 240);
+      if (!body) return { ok: false, error: `step_${i + 1}_${lang}_body` };
+      step[lang] = { title, body };
+    }
+    steps.push(step);
+  }
+  return { ok: true, value: { packages, steps } };
 }

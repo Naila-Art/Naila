@@ -83,9 +83,9 @@
 
   /* Typography */
   --font-display: "Libre Caslon Condensed", "Baskerville", "Times New Roman", serif;
-  --font-sans: "Instrument Sans", "IBM Plex Sans Arabic", "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-sans: "Instrument Sans", "Noto Kufi Arabic", "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --font-arabic-display: "Amiri", "Traditional Arabic", Georgia, serif;
-  --font-arabic: "IBM Plex Sans Arabic", "Amiri", sans-serif;
+  --font-arabic: "Noto Kufi Arabic", "Amiri", sans-serif;
   --font-brand-wordmark: "Libre Caslon Condensed", "Baskerville", "Times New Roman", serif;
 
   /* Shadows */

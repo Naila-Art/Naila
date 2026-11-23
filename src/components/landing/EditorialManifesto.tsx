@@ -11,7 +11,8 @@ interface EditorialManifestoProps {
 
 const SLOT_IMAGES: Record<1 | 2 | 3, [string, string]> = {
   1: ["/assets/hero/hero-3.jpg?v=3", "/assets/hero/hero-1.jpg?v=3"],
-  2: ["/assets/hero/hero-4.jpg?v=3", "/assets/hero/hero-2.jpg?v=3"],
+  // Wide interior scenes read well in the small pill and don't echo slot 1's florals.
+  2: ["/showcase/ballroom-end.jpg", "/showcase/alhambra-end.jpg"],
   3: ["/assets/hero/hero-2.jpg?v=3", "/assets/hero/hero-4.jpg?v=3"],
 };
 

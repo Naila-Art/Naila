@@ -14,3 +14,13 @@ export function fillPersonalText(template: string, guest: Pick<Guest, "title" | 
 export function displayName(guest: Pick<Guest, "title" | "name">): string {
   return [guest.title?.trim(), guest.name.trim()].filter(Boolean).join(" ");
 }
+
+/**
+ * Arabic-Indic digits for prices. The Arabic thousands separator (٬) sits high in our Arabic
+ * font and looks like a stray mark, so 4-digit numbers are left ungrouped (١٠٠٠) and larger
+ * ones are grouped with a thin space (١٠ ٠٠٠).
+ */
+export function formatArabicNumber(n: number): string {
+  if (Math.abs(n) < 10_000) return n.toLocaleString("ar-EG", { useGrouping: false });
+  return n.toLocaleString("ar-EG").replace(/٬/g, " ");
+}

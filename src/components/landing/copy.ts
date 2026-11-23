@@ -1,4 +1,5 @@
 import type { Lang } from "@/lib/types";
+import { formatArabicNumber } from "@/lib/text";
 
 export type Currency = "EGP" | "USD";
 
@@ -9,7 +10,7 @@ export function formatLandingPrice(egp: number, currency: Currency, lang: Lang):
     const usd = Math.max(1, Math.round(egp / USD_EXCHANGE_RATE));
     return `$${usd} USD`;
   }
-  const num = egp.toLocaleString(lang === "ar" ? "ar-EG" : "en-US");
+  const num = lang === "ar" ? formatArabicNumber(egp) : egp.toLocaleString("en-US");
   return lang === "ar" ? `${num} ج.م` : `${num} EGP`;
 }
 
@@ -109,7 +110,6 @@ export interface LandingCopy {
     badge: string;
     title: string;
     lead: string;
-    steps: Array<{ num: string; title: string; body: string }>;
     customCta: string;
     allIncludedLabel: string;
   };
@@ -136,24 +136,24 @@ export interface LandingCopy {
 
 export const LANDING_COPY: Record<Lang, LandingCopy> = {
   en: {
-    brandSub: "Wedding Essentials",
+    brandSub: "Bridal Stationery House",
     nav: {
       features: "Features",
-      reviews: "Reviews",
+      reviews: "Bride Stories",
       faq: "FAQ",
-      exploreTemplates: "Explore Templates",
-      startPrefix: "Start your invite —",
-      trialSub: "Preview free before paying.",
+      exploreTemplates: "Browse Designs",
+      startPrefix: "Design yours —",
+      trialSub: "Preview free before you pay.",
     },
     hero: {
       starsLabel: "4.9 stars",
-      chosenBy: "Chosen by 100+ couples",
+      chosenBy: "Loved by 100+ brides",
       eyebrow: "Editorial Digital Invitations",
-      headline: "Unlike any wedding invite you've ever seen.",
-      lead: "For couples who want something far beyond the usual, Naila crafts an animated wax-seal invitation that feels bold, elevated, and unmistakably your own from the very first tap.",
-      exploreTemplates: "Explore Templates",
-      haveSampleLead: "Want to test every tier live?",
-      samplesLink: "View live samples",
+      headline: "The wedding invite you've been dreaming of.",
+      lead: "You've curated every bloom, ribbon, and candle—your wedding shouldn't begin with a plain WhatsApp image. Naila turns your announcement into a cinematic wax-seal reveal with soft music, addressed personally to everyone you love.",
+      exploreTemplates: "Browse Designs",
+      haveSampleLead: "Want to feel the reveal yourself?",
+      samplesLink: "Try live samples",
       bullets: [
         "Wax-Seal Opening",
         "Named Guest Links",
@@ -169,20 +169,20 @@ export const LANDING_COPY: Record<Lang, LandingCopy> = {
     },
     switchSection: {
       srHeading:
-        "Planning a wedding may not be as simple as flipping a switch. Naila gives every guest, detail, and moment one beautiful place to come together.",
+        "Planning a wedding means holding a hundred details at once. Naila gives your guest list, invitations, and RSVPs one serene space to come together.",
       srSub:
-        "Naila keeps every guest, invitation, and RSVP thoughtfully connected.",
-      label: "Make it yours",
-      offHeadline: "If only planning a wedding were as simple as flipping a switch.",
-      offSub: "The guest list, the names, the RSVPs—it adds up quickly.",
-      onHeadlineStart: "There may not be a single switch—but there is ",
-      onHeadlineAccent: "one beautiful place for everything.",
-      onSub: "Naila keeps every guest, detail, and moment thoughtfully connected.",
+        "From the first wax seal opened on WhatsApp to the wishes you'll treasure the morning after.",
+      label: "All in harmony",
+      offHeadline: "Planning your wedding means holding a hundred details at once.",
+      offSub: "Guest lists, spelling every name right, chasing RSVPs across WhatsApp chats—it shouldn't steal your calm.",
+      onHeadlineStart: "There may not be a magic switch—but there is ",
+      onHeadlineAccent: "one serene place for every guest and detail.",
+      onSub: "From the first wax seal opened on WhatsApp to the heartfelt wishes you'll read the morning after.",
     },
     templates: {
-      title: "Wedding invites, made memorable.",
+      title: "Designs that reflect your taste from the first tap.",
       subtitle:
-        "Complete cinematic invitation designs with animated openings, refined typography, and bespoke details.",
+        "Editorial wedding openings crafted for brides who care about every detail—graceful motion, couture typography, and a first impression guests talk about.",
       carousel: "Carousel",
       grid: "Grid",
       liveDemo: "Live demo",
@@ -190,28 +190,28 @@ export const LANDING_COPY: Record<Lang, LandingCopy> = {
       nextAria: "Next design",
     },
     samples: {
-      title: "Live suites, crafted for every tier.",
+      title: "Feel the moment your guests will open.",
       subtitle:
-        "Open any package sample on your phone and tap the wax seal—experience every detail exactly as your guests will.",
+        "Tap the wax seal on your own phone, hear the music swell, and experience every suite exactly as your family and friends will.",
       eyebrow: "Live suite",
       liveDemo: "Live demo",
     },
     manifesto: {
       srLabel:
-        "Your wedding lives in the details. Naila turns them into a moment that already feels like yours.",
+        "Your taste lives in every detail. Naila turns it into a reveal that already feels like yours.",
       segments: [
         { text: "Your" },
-        { text: "wedding" },
+        { text: "taste" },
         { text: "lives", imageSlot: 1 },
         { text: "in", italic: true },
-        { text: "the", italic: true },
-        { text: "details.", italic: true },
+        { text: "every", italic: true },
+        { text: "detail.", italic: true },
         { text: "Naila" },
         { text: "turns" },
-        { text: "them", imageSlot: 2 },
+        { text: "it", imageSlot: 2 },
         { text: "into" },
         { text: "a" },
-        { text: "place" },
+        { text: "reveal" },
         { text: "that" },
         { text: "already", imageSlot: 3 },
         { text: "feels", italic: true },
@@ -220,23 +220,23 @@ export const LANDING_COPY: Record<Lang, LandingCopy> = {
       ],
     },
     features: {
-      eyebrow: "Made for the whole celebration",
-      title: "Everything your wedding needs, beautifully connected.",
+      eyebrow: "Designed for your peace of mind",
+      title: "Everything your guest list needs, beautifully calm.",
       subtitle:
-        "From the first tap on the wax seal to the final RSVP, every part of Naila is designed to feel considered, effortless, and unmistakably yours.",
+        "No pixelated WhatsApp flyers, no awkward RSVP follow-up texts—every step from the opening reveal to your guest count flows effortlessly.",
       cards: {
         global: {
-          title: "Made for your global guest list",
-          body: "Welcome guests near and far with invitations that flow effortlessly between Arabic and English.",
+          title: "For family & friends everywhere",
+          body: "Whether your loved ones are in Cairo or flying in from abroad, your invitation reads effortlessly in both Arabic and English.",
         },
         guests: {
-          title: "Guests and RSVPs, together",
-          body: "Import your guest list from Excel, generate named WhatsApp links, and watch opens and RSVPs live.",
-          rows: ["The Mansour household", "Karim + guest", "Dr. Mona El-Sayed"],
+          title: "Guest list & RSVPs, without the chaos",
+          body: "Upload your Excel guest list in seconds, send named WhatsApp links, and see who opened and confirmed—no spreadsheets or awkward texts.",
+          rows: ["Aunt Nadia & family", "Salma + guest", "Dr. Mona El-Sayed"],
         },
         events: {
-          title: "Every moment, beautifully choreographed",
-          body: "From the animated envelope reveal and curated music to the live countdown and Google Maps pin.",
+          title: "An opening moment they'll replay",
+          body: "A graceful animated reveal, soft curated music, a live countdown to your night, and an instant Google Maps pin for your venue.",
           steps: [
             { label: "Step 1", title: "Tap the wax seal" },
             { label: "Step 2", title: "Cinematic reveal & music" },
@@ -244,171 +244,154 @@ export const LANDING_COPY: Record<Lang, LandingCopy> = {
           ],
         },
         notes: {
-          title: "Personal notes for every guest",
-          body: "Address each guest by title and name—and slip an intimate personal message into their invitation alone.",
-          eyebrow: "Personal invitation",
-          caption: "A first impression",
+          title: "A warm note for every loved one",
+          body: "Greet elders, aunts, and best friends by name and title—and tuck a personal note inside their invitation alone.",
+          eyebrow: "Personal note",
+          caption: "Made with love for you",
         },
         domain: {
-          title: "Share effortlessly on WhatsApp",
-          body: "Send one crisp, password-free link per guest—ready to open instantly on iPhone and Android.",
+          title: "A WhatsApp link worth forwarding",
+          body: "No blurry images or heavy PDFs—one crisp, graceful link that opens instantly in full beauty on iPhone and Android.",
           url: "naila.inv/ahmed-and-sara",
         },
         manage: {
-          title: "No accounts or passwords",
-          body: "Manage your guests, wishes book, and event details from one private studio link you own.",
-          initials: ["A", "S", "N"],
+          title: "Effortless control, zero passwords",
+          body: "One private studio link you can open anytime—or share with your sister or fiancé—to update details, check RSVPs, and read every wish.",
+          initials: ["S", "A", "N"],
         },
       },
     },
     pricing: {
-      eyebrow: "Naila Studio",
-      badge: "One-time purchase",
-      title: "Everything you need, without another subscription.",
-      lead: "Build and preview your complete invitation before paying a single pound. When you are ready, one simple payment via Paymob or Instapay keeps everything live through your celebration.",
-      steps: [
-        {
-          num: "01",
-          title: "Choose a starting design",
-          body: "Pick from our editorial wedding, engagement, and katb kitab themes—or commission a bespoke suite.",
-        },
-        {
-          num: "02",
-          title: "Make every detail yours",
-          body: "Add your names, date, Google Maps venue, soundtrack, and personalized wording in minutes.",
-        },
-        {
-          num: "03",
-          title: "Publish and share on WhatsApp",
-          body: "Activate with one payment, send named WhatsApp links, and track every open, RSVP, and wish live.",
-        },
-      ],
-      customCta: "Request bespoke design",
-      allIncludedLabel: "Included in every package",
+      eyebrow: "Naila Bridal Studio",
+      badge: "One-time payment",
+      title: "Couture invitations, with zero subscription stress.",
+      lead: "Design and preview your complete invitation on your phone—and share it with your sister or fiancé—before paying a single pound. When every detail feels right, one payment via Paymob or Instapay keeps it live through your night.",
+      customCta: "Commission a bespoke design",
+      allIncludedLabel: "Included in every suite",
     },
     reviews: {
-      eyebrow: "Notes from our couples",
-      title: "The kind of invite guests keep talking about.",
+      eyebrow: "Notes from our brides",
+      title: "The invitation your friends won't stop asking about.",
       rating: "4.9",
-      ratingLabel: "Average rating",
+      ratingLabel: "Bride rating",
       row1: [
         {
           quote:
-            "We kept replaying the preview because it genuinely felt like us. Our guests noticed every little detail, especially how smoothly the wax seal opened on their phones.",
-          couple: "Sara & Ahmed",
+            "I sent our invitation to my family group and my phone didn't stop ringing for hours! Every single cousin asked who designed it—it set the exact tone for my wedding before the night even started.",
+          couple: "Sara M.",
           location: "New Cairo",
         },
         {
           quote:
-            "Having both Arabic and English invitations without feeling cluttered was huge for our families abroad. It felt bespoke from the very first click.",
-          couple: "Laila & Omar",
+            "My family is in Cairo and my bridesmaids flew in from London, so having Arabic and English look equally couture—never cluttered—gave me so much relief.",
+          couple: "Laila H.",
           location: "Zamalek, Cairo",
         },
         {
           quote:
-            "Our friends kept asking which studio designed our invitation. Seeing each guest's name appear inside the envelope made everyone message us back immediately.",
-          couple: "Nour & Karim",
+            "My mom was in tears seeing every aunt and uncle greeted by their exact title inside the envelope. It felt so respectful, intimate, and truly ours.",
+          couple: "Nour E.",
           location: "Sheikh Zayed",
         },
         {
           quote:
-            "We imported 240 guests from Excel in thirty seconds and sent every single WhatsApp link with a personal note. Tracking who opened and confirmed saved us weeks.",
-          couple: "Mariam & Youssef",
+            "I uploaded my 240-guest Excel sheet in thirty seconds and sent every WhatsApp link in one evening. Knowing who opened and confirmed saved me from wedding-week stress.",
+          couple: "Mariam K.",
           location: "Heliopolis",
         },
       ],
       row2: [
         {
           quote:
-            "The mobile opening feels like cinema—nothing feels squeezed in or secondary, which mattered because every single guest opened it on WhatsApp.",
-          couple: "Salma & Tarek",
+            "I refused to send a blurry WhatsApp flyer after spending months on my wedding palette. Seeing the wax seal open with soft music on everyone's phone felt like pure magic.",
+          couple: "Salma A.",
           location: "Alexandria",
         },
         {
           quote:
-            "The wishes wall turned into our favorite keepsake from the entire wedding weekend. We read every message together the morning after.",
-          couple: "Farah & Ziad",
+            "The wishes book became my favorite keepsake from the entire wedding. I curled up the morning after our reception and read every single blessing with happy tears.",
+          couple: "Farah T.",
           location: "Maadi, Cairo",
         },
         {
           quote:
-            "No logins, no subscriptions, and we previewed the full animation with our real names before paying on Instapay. Effortless from start to finish.",
-          couple: "Hana & Sherif",
+            "Being able to build the whole invitation, see our real names inside it, and send the preview to my sister before paying via Instapay made choosing Naila a no-brainer.",
+          couple: "Hana S.",
           location: "El Gouna",
         },
         {
           quote:
-            "Our guests said it felt like opening a luxury couture invitation magazine right on their phone. Truly unlike anything we had seen.",
-          couple: "Dina & Mostafa",
+            "We used Naila for both my katb kitab and wedding—three of my best friends immediately saved the link for their own engagements. Quiet luxury at its finest.",
+          couple: "Dina R.",
           location: "Dubai & Cairo",
         },
       ],
     },
     faq: {
       eyebrow: "Good to know",
-      title: "Questions, answered.",
+      title: "Everything on your mind, answered.",
       subtitle:
-        "The practical details before you commit—what you can preview, how payment works, and what your guests experience.",
+        "Clear, calm answers before you start—free previewing, payment, and what your guests will experience.",
       items: [
         {
-          question: "Can I preview my invitation before I pay?",
+          question: "Can I see my finished invitation before I pay?",
           answer:
-            "Yes. You can pick any design, enter your names, venue, date, and soundtrack, and inspect the complete live invitation on your phone before paying anything. Once you love it, activate with a single payment.",
+            "Yes. Choose your favorite design, enter your names, venue, date, and music, and preview the full live invitation on your phone—you can even show your fiancé or sister first. You only pay once you love every detail.",
         },
         {
-          question: "Is Naila a subscription?",
+          question: "Is there any monthly subscription or hidden fee?",
           answer:
-            "No. Every package is a simple one-time payment with zero recurring charges. Your invitation, guest links, RSVP tracking, and wishes book remain active through your event and beyond.",
+            "Never. Every suite is a single, transparent one-time payment. Your invitation, named guest links, live RSVP tracker, and wishes keepsake stay active through your celebration and beyond.",
         },
         {
-          question: "How do guests open and RSVP to the invitation?",
+          question: "What do my guests experience when they tap the link?",
           answer:
-            "You share a clean link via WhatsApp. Your guest taps the wax seal, watches the animated opening accompanied by music, sees their personalized greeting, confirms attendance in one tap, sends a wish, and opens Google Maps.",
+            "You share a clean link on WhatsApp. They tap the wax seal, watch the animated opening with soft music, read their personal greeting, confirm attendance in one tap, leave you a heartfelt wish, and open Google Maps—no app or login needed.",
         },
         {
           question: "Can each guest receive a link with their own name and personal note?",
           answer:
-            "Yes. On our Signature and Bespoke packages, every guest gets a private named link greeting them by title and name—plus an optional personal message written exclusively for them.",
+            "Yes! On our Tailored and Bespoke suites, every guest opens a private link greeting them by title and name—plus an optional warm message written exclusively for them.",
         },
         {
-          question: "Can I import my guest list from Excel?",
+          question: "Can I upload my guest list from Excel?",
           answer:
-            "Absolutely. Upload an Excel or CSV sheet with title, name, phone number, and personal note columns. Naila normalizes Egyptian phone numbers automatically and creates ready-to-send WhatsApp links.",
+            "Easily. Upload your Excel or CSV file with names, titles, phone numbers, and personal notes. Naila formats Egyptian numbers automatically and prepares ready-to-send WhatsApp links in seconds.",
         },
         {
-          question: "Do invitations support both Arabic and English?",
+          question: "Are both Arabic and English included?",
           answer:
-            "Yes. Every package includes full Arabic (RTL) and English (LTR) support with refined typography tailored to each script, at no extra charge.",
+            "Yes—full Arabic (RTL) and English (LTR) support with luxury editorial calligraphy is included in every suite at no extra cost.",
         },
         {
           question: "How do I pay—card or Instapay?",
           answer:
-            "You can activate instantly online via Paymob (Visa/Mastercard) or transfer via Instapay and upload your confirmation screenshot directly from your private management page.",
+            "You can activate instantly online with Visa/Mastercard via Paymob, or transfer through Instapay and upload your confirmation screenshot right inside your private studio page.",
         },
         {
-          question: "Can I edit details or wording after creating my invitation?",
+          question: "What if our venue timing or a small wording detail changes later?",
           answer:
-            "Yes. Your private management studio lets you update venue details, date, greeting text, guest list, and music anytime without needing a password or account.",
+            "No stress at all. Your private management link stays with you so you can update the date, time, venue, greeting text, music, or guest list anytime without needing a password.",
         },
         {
-          question: "Can your studio design a completely custom theme for our wedding?",
+          question: "Can your studio match my exact wedding colors and moodboard?",
           answer:
-            "Yes. Choose our Tailored or Bespoke tier to share your moodboard, venue colors, or Pinterest references—our design team crafts an original animated invitation made exclusively for your day.",
+            "We'd love to. Choose our Tailored or Bespoke tier to share your Pinterest board, floral palette, or venue architecture—our design team will craft an original animated invitation made exclusively for your night.",
         },
       ],
     },
     footer: {
       tagline:
-        "Digital wedding invitations, thoughtfully choreographed from first tap to final RSVP.",
+        "Editorial digital invitations—crafted so the first glimpse of your wedding feels as graceful as the night itself.",
       links: [
-        { label: "Templates", href: "/#templates" },
+        { label: "Designs", href: "/#templates" },
         { label: "Live Samples", href: "/samples" },
         { label: "Features", href: "/#features" },
-        { label: "Pricing", href: "/#reviews" },
+        { label: "Suites & Pricing", href: "/#reviews" },
         { label: "FAQ", href: "/#faq" },
-        { label: "Create Invite", href: "/create" },
-        { label: "Bespoke Design", href: "/request?p=3" },
-        { label: "Reviews", href: "/#reviews" },
+        { label: "Design Yours", href: "/create" },
+        { label: "Bespoke Suite", href: "/request?p=3" },
+        { label: "Bride Stories", href: "/#reviews" },
       ],
       copyright: "© 2026 NAILA",
     },
@@ -417,21 +400,21 @@ export const LANDING_COPY: Record<Lang, LandingCopy> = {
     brandSub: "دار نايلة للدعوات الرقمية",
     nav: {
       features: "المزايا",
-      reviews: "حكايات العرسان",
+      reviews: "حكايات العرايس",
       faq: "الأسئلة الشائعة",
-      exploreTemplates: "المجموعة",
-      startPrefix: "صمّم دعوتك —",
-      trialSub: "جرّبها كاملة مجاناً قبل الدفع.",
+      exploreTemplates: "التصميمات",
+      startPrefix: "صمّمي دعوتك —",
+      trialSub: "جرّبيها كاملة مجاناً قبل ما تدفعي.",
     },
     hero: {
       starsLabel: "٤.٩ نجوم",
-      chosenBy: "اختيار أكثر من ١٠٠ عريس وعروسة",
+      chosenBy: "اختيار أكثر من ١٠٠ عروسة",
       eyebrow: "دار نايلة للدعوات الرقمية",
-      headline: "دعوة تليق بليلة العمر.",
-      lead: "الفرح الحقيقي بيبدأ من اللحظة اللي ضيفكم يفتح فيها الظرف. نايلة بتحوّل دعوتكم لتجربة سينمائية بختم شمع وموسيقى مختارة، توصل لكل معزوم باسمه وذوقه.",
-      exploreTemplates: "تصفّح التصميمات",
-      haveSampleLead: "حابب تعيش التجربة بنفسك؟",
-      samplesLink: "جرّب الأمثلة الحيّة",
+      headline: "دعوة تليق بفرحك… من أول لحظة.",
+      lead: "تعبتي في اختيار كل تفصيلة في فرحك — من الفستان للورد ولون القاعة — فما ينفعش تبدأي ليلتك بصورة عادية على واتساب. نايلة بتحوّل دعوتك للحظة راقية بختم شمع وموسيقى هادية، توصل لكل ضيف باسمه وبذوقك.",
+      exploreTemplates: "شوفي التصميمات",
+      haveSampleLead: "حابّة تعيشي التجربة بنفسك؟",
+      samplesLink: "جرّبي الأمثلة الحيّة",
       bullets: [
         "فتح سينمائي بختم الشمع",
         "لينك شخصي باسم كل ضيف",
@@ -443,24 +426,24 @@ export const LANDING_COPY: Record<Lang, LandingCopy> = {
       phoneRsvp: "تأكيد الحضور",
       phoneTitle: "ليلة العمر",
       phoneSub: "أول لحظة في حكايتنا",
-      phoneCaption: "المس الختم لفتح الدعوة",
+      phoneCaption: "اضغط على الختم لفتح الدعوة",
     },
     switchSection: {
       srHeading:
-        "تجهيزات الفرح تفاصيلها ما بتخلصش، بس دعوته وتنظيم ضيوفه بقوا في مكان واحد.",
+        "تجهيزات فرحك تفاصيلها ما بتخلصش، بس دعوتك ومعازيمك بقوا متجمعين في مكان واحد.",
       srSub:
-        "من أول دعوة بتتبعت على واتساب، لحد آخر تهنئة بتوصلكم يوم الفرح.",
-      label: "بلمسة واحدة",
-      offHeadline: "تجهيزات الفرح تفاصيلها ما بتخلصش.",
-      offSub: "كشف المعازيم، ترتيب الأسامي، تأكيد الحضور، والرد على كل سؤال.",
+        "من أول لحظة بتبعتي فيها الدعوة على واتساب، لحد آخر تهنئة هتقريها تاني يوم الصبح.",
+      label: "كل حاجة في إيدك",
+      offHeadline: "تجهيزات فرحك تفاصيلها ما بتخلصش.",
+      offSub: "كشف المعازيم، ترتيب الأسامي، السؤال مين جاي ومين لأ، والتفاصيل اللي بتتوه في شاتات واتساب.",
       onHeadlineStart: "يمكن الفرح ما بيجهزش بضغطة زرار… بس ",
-      onHeadlineAccent: "دعوته وتنظيم ضيوفه بقوا في مكان واحد.",
-      onSub: "من أول دعوة بتتبعت على واتساب، لحد آخر تهنئة بتوصلكم يوم الفرح.",
+      onHeadlineAccent: "دعوتك ومعازيمك بقوا في مكان واحد.",
+      onSub: "من أول لحظة بتبعتي فيها الدعوة على واتساب، لحد آخر تهنئة هتقريها تاني يوم الصبح.",
     },
     templates: {
-      title: "تصميمات تفضل في الذاكرة.",
+      title: "تصميمات راقية تليق بفرحك.",
       subtitle:
-        "كل تصميم حكاية لوحده — حركة فتح سينمائية، خطوط عربية وإنجليزية متقنة، وإحساس فخامة يبان من أول لمسة.",
+        "كل تصميم معمول بتفاصيل هادية وشياكة حقيقية — فتحة ظرف ناعمة، خطوط عربية وإنجليزية فخمة، وإحساس مختلف من أول ما الضيف يفتحه.",
       carousel: "عرض سينمائي",
       grid: "كل التصميمات",
       liveDemo: "معاينة حيّة",
@@ -468,220 +451,204 @@ export const LANDING_COPY: Record<Lang, LandingCopy> = {
       nextAria: "التصميم التالي",
     },
     samples: {
-      title: "عيش تجربة ضيوفك قبل ما تبدأ.",
+      title: "جرّبي الدعوة بنفسك قبل ما تختاري.",
       subtitle:
-        "افتح أي باقة على موبايلك، المس الختم، واسمع الموسيقى — نفس اللحظة اللي هيعيشها كل معزوم يوم ما توصله دعوتكم.",
+        "افتحي أي باقة على موبايلك، اضغطي على الختم، واسمعي الموسيقى — نفس التجربة اللي هيعيشها أهلك وأصحابك أول ما توصلهم دعوتك.",
       eyebrow: "نموذج حي",
       liveDemo: "معاينة حيّة",
     },
     manifesto: {
       srLabel:
-        "الفرحة بتكمل بالتفاصيل الصغيرة. ونايلة بتجمعها في دعوة تشبهكم من أول لحظة.",
+        "جمال الفرح في تفاصيله الصغيرة. ونايلة بتجمعها في دعوة شبهك من أول لحظة.",
       segments: [
-        { text: "الفرحة" },
-        { text: "بتكمل", imageSlot: 1 },
-        { text: "بالتفاصيل", italic: true },
+        { text: "جمال" },
+        { text: "الفرح", imageSlot: 1 },
+        { text: "في", italic: true },
+        { text: "تفاصيله", italic: true },
         { text: "الصغيرة.", italic: true },
         { text: "ونايلة" },
         { text: "بتجمعها", imageSlot: 2 },
         { text: "في" },
         { text: "دعوة" },
-        { text: "تشبهكم", imageSlot: 3 },
+        { text: "شبهك", imageSlot: 3 },
         { text: "من", italic: true },
         { text: "أول", italic: true },
         { text: "لحظة.", italic: true },
       ],
     },
     features: {
-      eyebrow: "تفاصيل مصممة لراحتكم",
-      title: "كل ما يخص ضيوفكم… مترابط بسلاسة.",
+      eyebrow: "معمولة لراحة بالك",
+      title: "كل تفاصيل دعوتك ومعازيمك… في مكان واحد.",
       subtitle:
-        "من أول ما الضيف يضغط على الختم لحد ما يأكد حضوره ويكتبلكم كلمته، كل خطوة معمول حسابها بهدوء وأناقة.",
+        "من غير كركبة ولا مكالمات متابعة محرجة — كل خطوة معمول حسابها بهدوء عشان تركّزي في فرحتك وبس.",
       cards: {
         global: {
-          title: "أهلكم وأصحابكم في أي مكان في العالم",
-          body: "سواء ضيوفكم في القاهرة أو مسافرين من بره مصر، الدعوة بتتقرأ بسلاسة تامة بالعربي أو الإنجليزي.",
+          title: "أهلك وأصحابك… مهما كانوا بعيد",
+          body: "سواء عيلتك في القاهرة أو أصحابك مسافرين من بره مصر، دعوتك بتوصلهم بنفس الشياكة بالعربي أو الإنجليزي.",
         },
         guests: {
-          title: "المعازيم وتأكيد الحضور في صفحة واحدة",
-          body: "ارفع كشف الأسامي من إكسل في ثانية، ابعت لكل ضيف لينك باسمه على واتساب، واعرف مين فتح الدعوة ومين جاي فوراً.",
-          rows: ["عائلة المهندس طارق منصور", "أستاذ كريم وزوجته", "د. منى الشاذلي"],
+          title: "كشف معازيمك وتأكيد الحضور قدامك لحظة بلحظة",
+          body: "ارفعي كشف الضيوف من إكسل في ثانية، ابعتي لكل حد لينك باسمه على واتساب، واعرفي مين فتح ومين جاي من غير إحراج ولا مكالمات.",
+          rows: ["عائلة المهندس طارق منصور", "سلمى وزوجها", "د. منى الشاذلي"],
         },
         events: {
-          title: "لحظة فتح ما تتنسيش",
-          body: "ظرف بيتفتح بحركة ناعمة، موسيقى تعيشهم الأجواء، عدّاد تنازلي لليوم المنتظر، ولوكيشن القاعة على الخريطة.",
+          title: "لحظة فتح تخلي الكل يسألك عنها",
+          body: "ظرف بيتفتح بحركة ناعمة، موسيقى تعيشهم الأجواء، عدّاد تنازلي ليومك المنتظر، ولوكيشن القاعة على الخريطة.",
           steps: [
-            { label: "أولاً", title: "لمسة على ختم الشمع" },
-            { label: "ثانياً", title: "فتح سينمائي وموسيقى هادئة" },
+            { label: "أولاً", title: "ضغطة على ختم الشمع" },
+            { label: "ثانياً", title: "فتح سينمائي وموسيقى هادية" },
             { label: "ثالثاً", title: "تأكيد الحضور وحفظ الموعد" },
           ],
         },
         notes: {
-          title: "كلمة من القلب لكل معزوم",
-          body: "كل ضيف بيشوف اسمه ولقبه على الدعوة، وتقدر تضيفله رسالة خاصة بيه لوحده تحسّسه بغلاوته عندكم.",
+          title: "كلمة دافية من قلبك لكل ضيف",
+          body: "كل حد غالي عليكي يشوف اسمه ولقبه جوه الدعوة، وتقدري تسيبيله كلمة منك لوحده تحسّسه قد إيه وجوده فارق معاكي.",
           eyebrow: "إهداء خاص",
-          caption: "في انتظار تشريفكم",
+          caption: "وجودك ينوّر ليلتنا",
         },
         domain: {
-          title: "لينك واحد يليق على واتساب",
-          body: "مفيش صور مكسّرة ولا ملفات PDF تقيلة — لينك أنيق يفتح فوراً على أي موبايل بأعلى جودة.",
+          title: "لينك شيك يليق على واتساب",
+          body: "مفيش صور بتبكسل ولا ملفات PDF تقيلة — لينك أنيق يفتح فوراً على أي موبايل بأعلى جودة.",
           url: "naila.inv/ahmed-and-sara",
         },
         manage: {
-          title: "تحكم كامل… من غير باسورد ولا تعقيد",
-          body: "صفحة إدارة خاصة بيكم لوحدكم لتعديل التفاصيل، متابعة الحضور، وقراءة كل التهاني في أي وقت.",
-          initials: ["أ", "س", "ن"],
+          title: "كل حاجة في إيدك… من غير باسورد ولا تعقيد",
+          body: "صفحة خاصة بيكي — وتقدري تشاركيها مع أختك أو خطيبك — تعدّلي منها التفاصيل، تتابعي الحضور، وتقري كل كلام حبايبك في أي وقت.",
+          initials: ["س", "أ", "ن"],
         },
       },
     },
     pricing: {
       eyebrow: "باقات نايلة",
       badge: "دفعة واحدة بدون اشتراك",
-      title: "فخامة كاملة… بتكلفة واضحة لمرة واحدة.",
-      lead: "صمّم دعوتك وجرّبها بأساميكم الحقيقية مجاناً قبل ما تدفع جنيه واحد. ولما تقتنع بيها، دفعة واحدة بفيزا أو إنستاباي تفعّلها لحد بعد الفرح.",
-      steps: [
-        {
-          num: "01",
-          title: "اختار روح التصميم",
-          body: "تصفّح مجموعتنا للفرح والخطوبة وكتب الكتاب، أو اطلب تصميم حصري ننفّذه ليكم من الصفر.",
-        },
-        {
-          num: "02",
-          title: "اكتب تفاصيل ليلتكم",
-          body: "ضيف الأسامي، الموعد، القاعة، والموسيقى وشوف دعوتكم بتتشكّل قدامك لحظة بلحظة.",
-        },
-        {
-          num: "03",
-          title: "فعّل وشارك الفرحة",
-          body: "ادفع مرة واحدة، ابعت اللينكات على واتساب، وتابع تأكيدات الحضور ودفتر التهاني لايف.",
-        },
-      ],
-      customCta: "اطلب تصميمك الخاص",
+      title: "كل اللي تحتاجيه لدعوتك… بدفعة واحدة واضحة.",
+      lead: "صمّمي دعوتك بأساميكم الحقيقية وشوفيها على موبايلك — وورّيها لأختك أو خطيبك — مجاناً قبل ما تدفعي جنيه واحد. ولما ترتاحي لكل تفصيلة، دفعة واحدة بفيزا أو إنستاباي تفعّلها لحد بعد الفرح.",
+      customCta: "اطلبي تصميمك الخاص",
       allIncludedLabel: "مشمول مجاناً في كل الباقات",
     },
     reviews: {
-      eyebrow: "من كلام عرساننا",
-      title: "دعوة بتخلي المعازيم يكلموكم قبل الفرح بأسبوع.",
+      eyebrow: "من كلام عرايس نايلة",
+      title: "الدعوة اللي كل صحابك وقرايبك هيسألوكي عليها.",
       rating: "٤.٩",
-      ratingLabel: "تقييم العرسان",
+      ratingLabel: "تقييم العرايس",
       row1: [
         {
           quote:
-            "أول ما بعتنا الدعوة للعيلة، التليفونات ما سكتتش! كل الناس اتبسطت بفتحة الختم والموسيقى، وبقينا حاسين إن الفرح بدأ قبل ميعاده.",
-          couple: "سارة وأحمد",
+            "أول ما بعت الدعوة على جروب العيلة، التليفون ما سكتش! كل قرايبي وصحابي سألوني عملتها فين — بجد خلّت الفرحة تبدأ قبل ميعاد الفرح بأسبوع.",
+          couple: "سارة م.",
           location: "التجمع الخامس",
         },
         {
           quote:
-            "عيلتي في القاهرة وأصحاب عمر بره مصر، وإن الدعوة تطلع بالعربي والإنجليزي بنفس الشياكة والذوق كان أريح وأرقى حل لقيناه.",
-          couple: "ليلى وعمر",
+            "أهلي في القاهرة وأصحابي جايين من لندن، وإن الدعوة تطلع بالعربي والإنجليزي بنفس الشياكة ريّحني جداً وحسّيت إنها معمولة ليا مخصوص.",
+          couple: "ليلى ح.",
           location: "الزمالك",
         },
         {
           quote:
-            "تفصيلة إن كل معزوم يفتح اللينك يلاقي اسمه ولقبه جوه الدعوة فرقت مع الكبار قبل الصغيرين — فعلاً حسّستهم بغلاوتهم.",
-          couple: "نور وكريم",
+            "ماما فرحت أوي لما شافت خالاتي وأعمامي كل واحد بيفتح اللينك يلاقي اسمه ولقبه جوه الظرف — تفصيلة صغيرة بس فرقت مع الكبار قبل الصغيرين.",
+          couple: "نور ع.",
           location: "الشيخ زايد",
         },
         {
           quote:
-            "رفعنا كشف فيه ٢٤٠ ضيف من شيت الإكسل في أقل من دقيقة، وبقينا عارفين بالظبط مين فتح ومين جاي من غير ما نتعب نفسنا في المكالمات.",
-          couple: "مريم ويوسف",
+            "رفعت كشف فيه ٢٤٠ ضيف من الإكسل في ثواني وبعت اللينكات في قعدة واحدة. إني عارفة مين فتح ومين جاي شال عني توتر أسبوع الفرح كله.",
+          couple: "مريم ك.",
           location: "مصر الجديدة",
         },
       ],
       row2: [
         {
           quote:
-            "شكل الدعوة على الموبايل تحفة فنية بجد — لا صورة بتبكسل على واتساب ولا ملف بيتوه، كله راقي وبيفتح في ثانية.",
-          couple: "سلمى وطارق",
+            "بعد شهور من التجهيز واختيار ألوان الفرح، ما كنتش متخيلة أبعت صورة عادية بتبكسل على واتساب. فتحة الختم بالموسيقى على الموبايل طلعت تحفة بجد.",
+          couple: "سلمى أ.",
           location: "الإسكندرية",
         },
         {
           quote:
-            "دفتر التهاني اللي اتجمع من المعازيم كان أحلى مفاجأة بعد الفرح — قعدنا نقرأ دعواتهم وكلامهم تاني يوم الصبح واحنا مبسوطين.",
-          couple: "فرح وزياد",
+            "دفتر التهاني كان أحلى ذكرى فضلتلي من الفرح كله — قعدت تاني يوم الصبح أقرا دعوات حبايبي وأنا مبسوطة أوي بكل كلمة اتكتبتلي.",
+          couple: "فرح ط.",
           location: "المعادي",
         },
         {
           quote:
-            "أكتر حاجة طمّنتنا إننا شفنا دعوتنا كاملة بأسامينا وتفاصيل القاعة على الموبايل قبل ما نحول جنيه واحد على إنستاباي.",
-          couple: "هنا وشريف",
+            "أكتر حاجة طمّنتني إني شفت دعوتنا كاملة بأسامينا على موبايلي وورّيتها لأختي قبل ما أحوّل جنيه واحد على إنستاباي. تجربة سلسة ومريحة جداً.",
+          couple: "هنا س.",
           location: "الجونة",
         },
         {
           quote:
-            "عملنا بيها كتب الكتاب والفرح، وكل أصحابنا طلبوا اللينك علشان يحجزوا لفرحهم. ذوق هادي وفخم بعيد عن أي زحمة.",
-          couple: "دينا ومصطفى",
+            "عملت بيها كتب الكتاب والفرح، وصحابي حفظوا اللينك فوراً عشان يعملوا بيها خطوبتهم. ذوق هادي وفخم من غير أي زحمة.",
+          couple: "دينا ر.",
           location: "دبي والقاهرة",
         },
       ],
     },
     faq: {
-      eyebrow: "كل التفاصيل",
+      eyebrow: "كل اللي يطمنك",
       title: "كل اللي في بالك، جاوبناه.",
       subtitle:
-        "كل التفاصيل العملية قبل ما تبدأ — المعاينة المجانية، الدفع، وتجربة ضيوفك.",
+        "إجابات واضحة قبل ما تبدأي — المعاينة المجانية، الدفع، وتجربة ضيوفك.",
       items: [
         {
           question: "أقدر أشوف دعوتنا كاملة قبل ما أدفع؟",
           answer:
-            "طبعاً. بتختار التصميم، تكتب الأسامي والتاريخ والقاعة والموسيقى، وتشوف دعوتك كاملة لايف على موبايلك قبل ما تدفع جنيه واحد. ولما تعجبك، بتفعّلها بدفعة واحدة.",
+            "طبعاً! بتختاري التصميم، تكتبي الأسامي والتاريخ والقاعة والموسيقى، وتشوفي دعوتك كاملة لايف على موبايلك — وتقدري تورّيها لخطيبك أو لأختك — قبل ما تدفعي جنيه واحد. ولما تعجبك، بتفعّليها بدفعة واحدة.",
         },
         {
           question: "هل في أي اشتراك شهري أو مصاريف مخفية؟",
           answer:
-            "أبداً. كل باقة بتدفعها مرة واحدة فقط من غير أي تجديد، وبتفضل الدعوة ولينكات الضيوف ودفتر التهاني شغالين معاكم لحد بعد الفرح.",
+            "أبداً. كل باقة بتدفعيها مرة واحدة بس من غير أي تجديد، وبتفضل الدعوة ولينكات الضيوف ودفتر التهاني شغالين معاكي لحد بعد الفرح.",
         },
         {
-          question: "ضيفنا بيشوف الدعوة وبيأكد حضوره إزاي؟",
+          question: "ضيوفي بيشوفوا الدعوة وبيأكدوا حضورهم إزاي؟",
           answer:
-            "بتبعتله اللينك على واتساب، يفتح يلمس ختم الشمع، يشوف فتحة الظرف بالموسيقى وتفاصيل الليلة واللوكيشن على جوجل ماب، ويأكد حضوره ويبعت تهنئته في ثانية من غير أي تسجيل.",
+            "بتبعتيلهم اللينك على واتساب، يفتحوه ويضغطوا على ختم الشمع، يشوفوا فتحة الظرف بالموسيقى وتفاصيل الفرح واللوكيشن على جوجل ماب، ويأكدوا حضورهم ويسيبولك كلمة حلوة في ثانية من غير أي تسجيل.",
         },
         {
           question: "ينفع كل معزوم يوصله لينك باسمه ورسالة مخصوصة ليه؟",
           answer:
-            "أكيد! في باقتي «على ذوقك» و«الخاصة»، كل ضيف بيوصله لينك شخصي بيلقّبه باسمه (مثلاً: أستاذ / دكتورة / عائلة…) ومعاه كلمة خاصة منكم لو حابين.",
+            "أكيد! في باقتي «على ذوقك» و«الخاصة»، كل ضيف بيوصله لينك شخصي بيلقّبه باسمه (مثلاً: أستاذ / دكتورة / عائلة…) ومعاه كلمة دافية منك لو حابّة.",
         },
         {
           question: "لو عندي كشف معازيم كبير على إكسل، أقدر أرفعه مرة واحدة؟",
           answer:
-            "أيوه بسهولة جداً. ارفع ملف إكسل أو CSV فيه الأسامي والأرقام، ونايلة بتظبط أرقام الموبايل المصرية تلقائياً وتجهزلك لينك واتساب جاهز لكل ضيف بضغطة واحدة.",
+            "بسهولة جداً! ارفعي ملف إكسل أو CSV فيه الأسامي والأرقام، ونايلة بتظبط أرقام الموبايل المصرية تلقائياً وتجهزلك لينك واتساب جاهز لكل ضيف بضغطة واحدة.",
         },
         {
           question: "هل الدعوة تنفع عربي وإنجليزي؟",
           answer:
-            "طبعاً، العربي والإنجليزي مشمولين مجاناً في كل الباقات، وبخطوط عربية وإنجليزية مختارة بعناية علشان الاتنين يطلعوا بنفس الفخامة.",
+            "طبعاً، العربي والإنجليزي مشمولين مجاناً في كل الباقات، وبخطوط عربية وإنجليزية فخمة مختارة بعناية عشان الاتنين يطلعوا بنفس الرقي.",
         },
         {
           question: "إيه طرق الدفع المتاحة عندكم؟",
           answer:
-            "تقدر تفعّل فوراً أونلاين بفيزا أو ماستركارد عن طريق Paymob، أو تحوّل على إنستاباي وترفع صورة التحويل من صفحتك الخاصة.",
+            "تقدري تفعّلي فوراً أونلاين بفيزا أو ماستركارد عن طريق Paymob، أو تحوّلي على إنستاباي وترفعي صورة التحويل من صفحتك الخاصة.",
         },
         {
-          question: "لو ميعاد القاعة اتغيّر أو حبيت أعدّل كلمة بعد ما أعمل الدعوة؟",
+          question: "لو ميعاد القاعة اتغيّر أو حبّيت أعدّل كلمة بعد ما أعمل الدعوة؟",
           answer:
-            "ولا يهمك — صفحتك الخاصة بتفضل معاك على طول، تقدر تعدّل التاريخ أو العنوان أو نص الدعوة أو تزوّد معازيم في أي وقت من غير باسورد.",
+            "ولا يهمك خالص — صفحتك الخاصة بتفضل معاكي على طول، تقدري تعدّلي التاريخ أو العنوان أو نص الدعوة أو تزوّدي معازيم في أي وقت من غير باسورد.",
         },
         {
-          question: "ممكن تصمموا دعوة مخصوصة بألوان وثيم فرحنا من الصفر؟",
+          question: "ممكن تصمموا دعوة مخصوصة بألوان وثيم فرحي من الصفر؟",
           answer:
-            "أكيد! اختار باقة «على ذوقك» أو «الخاصة» وابعتلنا صور الإلهام أو ألوان الديكور، وفريق التصميم عندنا هينفّذلكم دعوة حصرية معمولة ليكم لوحدكم.",
+            "أكيد طبعاً! اختاري باقة «على ذوقك» أو «الخاصة» وابعتيلنا صور الإلهام أو ألوان القاعة والورد، وفريق التصميم عندنا هينفّذلك دعوة حصرية معمولة ليلتك لوحدها.",
         },
       ],
     },
     footer: {
       tagline:
-        "دار مصرية للدعوات الرقمية — نصمّم أول لحظة في فرحتكم بذوق يليق بيها.",
+        "دار مصرية للدعوات الرقمية — نصمّم أول لحظة في فرحك بذوق شبهك.",
       links: [
         { label: "التصميمات", href: "/#templates" },
         { label: "أمثلة حيّة", href: "/samples" },
         { label: "المزايا", href: "/#features" },
         { label: "الباقات", href: "/#reviews" },
         { label: "الأسئلة الشائعة", href: "/#faq" },
-        { label: "صمّم دعوتك", href: "/create" },
+        { label: "صمّمي دعوتك", href: "/create" },
         { label: "تصميم حصري", href: "/request?p=3" },
-        { label: "حكايات العرسان", href: "/#reviews" },
+        { label: "حكايات العرايس", href: "/#reviews" },
       ],
       copyright: "© ٢٠٢٦ نايلة",
     },
