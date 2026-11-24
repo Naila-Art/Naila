@@ -1,23 +1,41 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import RequestForm from "@/components/store/RequestForm";
 import styles from "@/components/store/store.module.css";
 import { getSiteSettings, whatsappLink } from "@/lib/site";
 import { getPackage } from "@/lib/pricing";
 import { getPricing } from "@/lib/store";
+import { localeHref } from "@/lib/locale";
+import { requestLang, storefrontMetadata } from "@/lib/seo";
+import type { Pricing } from "@/lib/pricing";
 
-export const metadata: Metadata = {
-  title: "Commission a Bespoke Suite | Naila",
-};
 export const dynamic = "force-dynamic";
 
 type Props = { searchParams: Promise<{ p?: string }> };
 
+/** Only the open-ended package (4) is a request now; packages 1-3 are ordered from /create. */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- ?p= is kept so old links still work
+function bespokePackage(pricing: Pricing, p?: string) {
+  return [getPackage(pricing, 4)].find((x) => x?.active);
+}
+
+export async function generateMetadata({ searchParams }: Props) {
+  const available = Boolean(bespokePackage(await getPricing(), (await searchParams).p));
+  return storefrontMetadata(
+    "/request",
+    { en: "Bespoke Invitation Suite | Naila", ar: "تصميم دعوة حصري | نايلة" },
+    {
+      en: "Commission a fully custom invitation suite: a personal message for every guest, your own music and a design made for your wedding.",
+      ar: "اطلبي دعوة مصمّمة خصيصًا لكِ: رسالة شخصية لكل ضيف، وموسيقاكِ الخاصة، وتصميم مخصّص لفرحك.",
+    },
+    // While bespoke suites are paused the page is only a notice: keep it out of search results.
+    { noindex: !available },
+  );
+}
+
 export default async function RequestPage({ searchParams }: Props) {
   const pricing = await getPricing();
-  await searchParams;
-  // Only the open-ended package is a request now; packages 1-3 are ordered from /create.
-  const pkg = [getPackage(pricing, 4)].find((p) => p?.active);
+  const pkg = bespokePackage(pricing, (await searchParams).p);
+  const lang = await requestLang();
   const site = await getSiteSettings();
   const wa = whatsappLink(
     site.whatsapp,
@@ -37,10 +55,10 @@ export default async function RequestPage({ searchParams }: Props) {
             Custom tiers are currently paused. Reach out on WhatsApp or start with one of our ready editorial suites.
           </p>
           <div className={styles.studioFooterRow}>
-            <Link href="/" className={styles.ctaGhost}>
+            <Link href={localeHref(lang, "/")} className={styles.ctaGhost}>
               Return home
             </Link>
-            <Link href="/create" className={styles.cta}>
+            <Link href={localeHref(lang, "/create")} className={styles.cta}>
               Create invitation
             </Link>
           </div>

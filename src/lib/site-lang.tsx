@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { LANG_COOKIE, isStorefrontPath, langPath, localeHref, stripLang } from "./locale";
 import type { Lang } from "./types";
 
 interface SiteLangContextValue {
@@ -23,20 +24,19 @@ const SiteLangContext = createContext<SiteLangContextValue>({
   toggleLang: () => {},
 });
 
-const STORAGE_KEY = "naila_lang";
-
+/** Remembers the choice and moves a storefront page to its URL in that language (/ar/... for Arabic). */
 function persistLang(next: Lang) {
   try {
-    window.localStorage.setItem(STORAGE_KEY, next);
-  } catch {
-    // Ignore storage quota / private mode issues
-  }
-  try {
-    document.cookie = `${STORAGE_KEY}=${next}; path=/; max-age=31536000; samesite=lax`;
+    document.cookie = `${LANG_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`;
   } catch {
     // Ignore cookie errors
   }
   document.documentElement.lang = next;
+  const { path } = stripLang(window.location.pathname);
+  if (isStorefrontPath(path)) {
+    // Same page, other language: swap the URL without a reload so in-progress work (the builder) is kept.
+    window.history.replaceState(window.history.state, "", langPath(next, path) + window.location.search + window.location.hash);
+  }
 }
 
 export function SiteLangProvider({
@@ -48,21 +48,10 @@ export function SiteLangProvider({
 }) {
   const [lang, setLangState] = useState<Lang>(initialLang);
 
-  // Sync with localStorage if cookie wasn't set yet (first migration)
+  // The server picks the language from the URL (/ar/...), so the page always matches its address.
   useEffect(() => {
-    try {
-      const saved = window.localStorage.getItem(STORAGE_KEY);
-      if (saved === "ar" || saved === "en") {
-        if (saved !== initialLang) {
-          setLangState(saved);
-        }
-        document.documentElement.lang = saved;
-      } else {
-        document.documentElement.lang = initialLang;
-      }
-    } catch {
-      document.documentElement.lang = initialLang;
-    }
+    setLangState(initialLang);
+    document.documentElement.lang = initialLang;
   }, [initialLang]);
 
   const setLang = useCallback((next: Lang) => {
@@ -90,4 +79,10 @@ export function SiteLangProvider({
 
 export function useSiteLang() {
   return useContext(SiteLangContext);
+}
+
+/** Localizes an internal storefront link for the current language: "/create" -> "/ar/create". */
+export function useLocaleHref(): (href: string) => string {
+  const { lang } = useSiteLang();
+  return useCallback((href: string) => localeHref(lang, href), [lang]);
 }

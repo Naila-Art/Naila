@@ -7,6 +7,7 @@ import TrialCta from "./TrialCta";
 import { formatLandingPrice, type Currency, type LandingCopy } from "./copy";
 import type { Lang } from "@/lib/types";
 import styles from "./landing.module.css";
+import { localeHref } from "@/lib/locale";
 
 export interface FooterHandoffState {
   progress: number;
@@ -96,7 +97,7 @@ export default function LandingHeader({
           {/* Brand Wordmark — FLIP-glides down into Footer brand slot */}
           <Link
             ref={brandRef}
-            href="/"
+            href={localeHref(lang, "/")}
             translate="no"
             data-tx={handoff.brandDx.toFixed(2)}
             data-ty={handoff.brandDy.toFixed(2)}
@@ -213,7 +214,7 @@ export default function LandingHeader({
 
               <div className={styles.navPrimaryWrap}>
                 <TrialCta
-                  href="/create"
+                  href={localeHref(lang, "/create")}
                   label={`${copy.nav.startPrefix} ${priceLabel}`}
                   subLabel={copy.nav.trialSub}
                   variant={isLightText ? "light" : "dark"}

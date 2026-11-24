@@ -6,6 +6,7 @@ import TrialCta from "./TrialCta";
 import { formatLandingPrice, type Currency, type LandingCopy } from "./copy";
 import type { Lang } from "@/lib/types";
 import styles from "./landing.module.css";
+import { localeHref } from "@/lib/locale";
 
 interface LandingFooterProps {
   brand: string;
@@ -179,7 +180,7 @@ export default function LandingFooter({
         <div className={styles.footerBrandCol}>
           <Link
             ref={brandSlotRef}
-            href="/"
+            href={localeHref(lang, "/")}
             translate="no"
             className={`notranslate ${styles.footerBrandMark} ${
               handoffDocked ? styles.footerSlotVisible : styles.footerSlotHiddenDesktop
@@ -244,7 +245,7 @@ export default function LandingFooter({
           {copy.nav.exploreTemplates}
         </a>
         <TrialCta
-          href="/create"
+          href={localeHref(lang, "/create")}
           label={`${copy.nav.startPrefix} ${priceLabel}`}
           subLabel={copy.nav.trialSub}
           variant="dark"

@@ -18,6 +18,7 @@ import type { PackageInfo } from "@/lib/pricing";
 import { sampleLink } from "@/lib/samples";
 import { CATEGORY_LABELS, type Category, type PackageId } from "@/lib/types";
 import { UploadError, postJson } from "@/lib/upload-client";
+import { localeHref } from "@/lib/locale";
 
 /** Packages 3-4: Bespoke concierge request studio (bilingual EN / native Arabic). */
 export default function RequestForm({
@@ -90,7 +91,7 @@ export default function RequestForm({
               <span>{copy.switchLangTitle}</span>
             </button>
             <Link
-              href="/"
+              href={localeHref(lang, "/")}
               aria-label={copy.backHomeAria}
               className={styles.studioCloseBtn}
             >
@@ -135,7 +136,7 @@ export default function RequestForm({
                   <ArrowUpRight size={15} />
                 </a>
               )}
-              <Link href="/" className={styles.ctaGhost}>
+              <Link href={localeHref(lang, "/")} className={styles.ctaGhost}>
                 {r.returnHome}
               </Link>
             </div>
@@ -224,7 +225,7 @@ export default function RequestForm({
             )}
 
             <div className={styles.studioFooterRow}>
-              <Link href="/" className={styles.ctaGhost}>
+              <Link href={localeHref(lang, "/")} className={styles.ctaGhost}>
                 {r.back}
               </Link>
               <button className={styles.cta} type="submit" disabled={busy}>

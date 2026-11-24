@@ -1,12 +1,20 @@
-import type { Metadata } from "next";
 import Builder from "@/components/store/Builder";
 import styles from "@/components/store/store.module.css";
 import { getPricing, listMusic, listTemplates } from "@/lib/store";
 import type { PackageId } from "@/lib/types";
+import { storefrontMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Create Your Invitation | Naila",
-};
+// One canonical /create: the ?t= and ?p= preselections are the same page.
+export function generateMetadata() {
+  return storefrontMetadata(
+    "/create",
+    { en: "Design Your Digital Invitation | Naila", ar: "صمّمي دعوتك الرقمية | نايلة" },
+    {
+      en: "Choose a design, add your names, date, venue and music, and preview your invitation for free before you pay.",
+      ar: "اختاري التصميم، وأضيفي الأسماء والموعد والمكان والموسيقى، وعايني دعوتك مجانًا قبل الدفع.",
+    },
+  );
+}
 export const dynamic = "force-dynamic";
 
 type Props = { searchParams: Promise<{ t?: string; p?: string }> };

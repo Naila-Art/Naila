@@ -7,6 +7,7 @@ import TrialCta from "./TrialCta";
 import { formatLandingPrice, type Currency, type LandingCopy } from "./copy";
 import type { Lang } from "@/lib/types";
 import styles from "./landing.module.css";
+import { localeHref } from "@/lib/locale";
 
 // Hero backdrop: the Barakah door reveal plays once, eases to a stop on the
 // open nave, then settles into a calm still of that exact frame.
@@ -250,7 +251,7 @@ export default function HeroSection({
                   <div className={styles.heroCtaRow}>
                     <div className={styles.heroPrimarySlot}>
                       <TrialCta
-                        href="/create"
+                        href={localeHref(lang, "/create")}
                         label={`${copy.nav.startPrefix} ${priceLabel}`}
                         subLabel={copy.nav.trialSub}
                         variant="light"
@@ -264,7 +265,7 @@ export default function HeroSection({
 
                   <div className={styles.heroSubLinkRow}>
                     <span>{copy.hero.haveSampleLead}</span>
-                    <Link href="/samples" className={styles.heroUnderlineLink}>
+                    <Link href={localeHref(lang, "/samples")} className={styles.heroUnderlineLink}>
                       {copy.hero.samplesLink}
                     </Link>
                   </div>
