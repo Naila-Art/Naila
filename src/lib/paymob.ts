@@ -40,6 +40,17 @@ export const paymobEnabled = () => config() !== null;
 const reference = (orderId: string) => `${orderId}.${Date.now()}`;
 export const orderIdFromReference = (ref: string) => ref.split(".")[0];
 
+/** Placeholder billing email (we don't collect emails): no-reply@ on the site's own domain. */
+function billingEmail(siteUrl: string): string {
+  const configured = process.env.PAYMOB_BILLING_EMAIL?.trim();
+  if (configured) return configured;
+  try {
+    return `no-reply@${new URL(siteUrl).hostname.replace(/^www\./, "")}`;
+  } catch {
+    return "no-reply@naila.mavoid.com";
+  }
+}
+
 /** Creates a payment intention and returns the Unified Checkout URL to send the client to. */
 export async function createCheckout(order: Order, event: EventData, siteUrl: string): Promise<string> {
   const c = config();
@@ -55,12 +66,13 @@ export async function createCheckout(order: Order, event: EventData, siteUrl: st
       currency: "EGP",
       payment_methods: c.integrationIds,
       items: [{ name: `Invitation package ${order.packageId}`, amount: amountCents, description: `${event.partnerA} & ${event.partnerB}`, quantity: 1 }],
-      // Paymob requires billing fields; we only collect name and phone.
+      // Paymob requires billing fields; we only collect name and phone. The email must be a valid
+      // address (Paymob rejects "NA"), so it's a placeholder on our own domain.
       billing_data: {
         first_name: firstName || "Client",
         last_name: rest.join(" ") || "-",
         phone_number: order.clientPhone,
-        email: "NA",
+        email: billingEmail(siteUrl),
         country: "EG",
         city: "NA",
         street: "NA",
