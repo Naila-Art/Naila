@@ -18,7 +18,7 @@ import styles from "./store.module.css";
 import OrderOptions from "./OrderOptions";
 import TemplateGallery, { TemplateThumb } from "./TemplateGallery";
 import { EditorialDatePicker, EditorialSelect, type EditorialSelectOption } from "./EditorialControls";
-import { CEREMONY_TIMES, DETAIL_ERRORS_BY_LANG, STORE_COPY, formatStorePrice } from "./storeCopy";
+import { CEREMONY_TIMES, DETAIL_ERRORS_BY_LANG, STORE_COPY, formatStorePrice, packageDisplayName } from "./storeCopy";
 import { useSiteLang } from "@/lib/site-lang";
 import { normalizePhone } from "@/lib/guests";
 import { getPackage, isSelfServe, priceOf, type Pricing } from "@/lib/pricing";
@@ -593,7 +593,7 @@ export default function Builder({ pricing, templates, music, initialTemplateId, 
       case "text":
         return d.generalText || suggestions[0];
       case "package":
-        return pkg ? `${pkg.name} · ${formatStorePrice(total, uiLang)}` : "";
+        return pkg ? `${packageDisplayName(pkg, uiLang)} · ${formatStorePrice(total, uiLang)}` : "";
       case "materials":
         return [files.length ? ui.files(files.length) : "", d.briefLink.trim() ? ui.link : "", d.brief.trim() ? ui.notes : ""]
           .filter(Boolean)
@@ -664,7 +664,7 @@ export default function Builder({ pricing, templates, music, initialTemplateId, 
           </div>
         </div>
 
-        <div className={styles.stepProgress} aria-hidden="true">
+        <div className={styles.stepProgress} aria-hidden="true" style={{ gridTemplateColumns: `repeat(${questions.length}, 1fr)`, gap: "0.3rem" }}>
           {questions.map((q, i) => (
             <div key={q.id} className={styles.stepBar}>
               <div className={styles.stepBarFill} style={{ width: !current || i <= index ? "100%" : "0%" }} />
@@ -1026,6 +1026,10 @@ export default function Builder({ pricing, templates, music, initialTemplateId, 
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+          {!current && (
+            <>
               <div className={styles.total}>
                 <span>
                   {activeTemplateTitle} · {b.totalNote}
@@ -1033,7 +1037,7 @@ export default function Builder({ pricing, templates, music, initialTemplateId, 
                 <strong>{formatStorePrice(total, uiLang)}</strong>
               </div>
               <p className={styles.hint}>{ui.reviewAfter}</p>
-            </div>
+            </>
           )}
 
           {errorText && (

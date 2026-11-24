@@ -2967,3 +2967,41 @@
   color: var(--s-text);
   cursor: pointer;
 }
+
+/* Names placed on the opened scene (doors / paper designs): centred on the scene's name area. */
+.thumbNames[data-placed] {
+  inset-inline: auto;
+  transform: translateX(-50%);
+  gap: 0.1em;
+  font-family: var(--font-display);
+  line-height: 1;
+}
+
+.thumbNames[data-placed][data-lang="ar"] {
+  font-family: "Aref Ruqaa", var(--font-arabic-display);
+  line-height: 1.15;
+}
+
+.thumbNames[data-tone="dark"] {
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.55);
+}
+
+.thumbNames[data-tone="light"] {
+  text-shadow: 0 0 10px rgba(255, 252, 246, 0.9);
+}
+
+.galleryHint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: fit-content;
+  color: var(--accent-bronze);
+  font-size: 0.86rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.inlineLink {
+  color: var(--accent-bronze);
+  text-decoration: underline;
+}

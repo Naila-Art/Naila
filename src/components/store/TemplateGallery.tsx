@@ -29,6 +29,9 @@ export interface CoupleNames {
 const BADGE_ORDER = Object.keys(BADGE_LABELS) as TemplateBadge[];
 const badgeRank = (t: Template) => (t.badge ? BADGE_ORDER.indexOf(t.badge) : BADGE_ORDER.length);
 
+/** Share of a 9:16 frame's height a 4:3 card shows: (3/4) / (16/9) ≈ 42.2%. */
+const VISIBLE = (3 / 4 / (16 / 9)) * 100;
+
 const BADGE_EN: Record<TemplateBadge, string> = { featured: "Featured", popular: "Most loved", new: "New" };
 
 /**
@@ -53,13 +56,18 @@ export function TemplateThumb({
   const onScene = Boolean(names && template.endPosterUrl && scene);
   const src = onScene ? template.endPosterUrl : template.posterUrl;
   const light = scene?.light ?? template.family === "paper";
+  // The card is a 4:3 window on a 9:16 frame: it shows VISIBLE of the frame's height. Slide the
+  // window to the names area, then place the names where the real invitation draws them.
+  const skyTop = scene?.skyTop ?? 19;
+  const windowStart = Math.min(Math.max(skyTop - 7, 0), 100 - VISIBLE);
+  const imgStyle: CSSProperties | undefined = onScene ? { objectPosition: `50% ${(windowStart / (100 - VISIBLE)) * 100}%` } : undefined;
   const placed: CSSProperties | undefined = onScene
     ? {
-        top: `${scene?.skyTop ?? 19}%`,
+        top: `${((skyTop - windowStart) / VISIBLE) * 100}%`,
         left: `${scene?.skyCenter ?? 50}%`,
         width: `${scene?.skyWidth ?? 58}%`,
         color: scene?.ink ?? (light ? template.theme.text : "#f7eedd"),
-        fontSize: `calc(var(--thumb-name) * ${scene?.scale ?? 1})`,
+        fontSize: `calc(var(--thumb-name, 1.05rem) * ${scene?.scale ?? 1})`,
       }
     : { color: template.theme.text };
 
@@ -67,7 +75,7 @@ export function TemplateThumb({
     <div className={styles.templateThumb} style={{ background: template.theme.background }}>
       {src ? (
         // eslint-disable-next-line @next/next/no-img-element -- static or R2 URLs, no optimisation needed
-        <img src={src} alt="" loading="lazy" />
+        <img src={src} alt="" loading="lazy" style={imgStyle} />
       ) : (
         <span className={styles.heroSeal} style={{ background: template.theme.seal }} />
       )}
