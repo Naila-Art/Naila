@@ -765,6 +765,7 @@ export default function Builder({ pricing, templates, music, initialTemplateId, 
                   placeholder={b.datePlaceholder}
                   ariaLabel={b.dateLabel}
                   locale={uiLang}
+                  inline
                 />
               </div>
               <div className={styles.field}>

@@ -53,3 +53,4 @@ next-env.d.ts
 /recordings/
 # Setup code, kept on this computer only
 /SETUP-CODE.txt
+/proof

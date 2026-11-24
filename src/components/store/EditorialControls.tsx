@@ -241,6 +241,11 @@ interface EditorialDatePickerProps {
   ariaLabel: string;
   clearable?: boolean;
   locale?: Lang;
+  /**
+   * Open the calendar in the page flow instead of floating over it, so the content below
+   * (e.g. the builder's Back / Next buttons) moves down instead of being covered.
+   */
+  inline?: boolean;
 }
 
 export function EditorialDatePicker({
@@ -250,6 +255,7 @@ export function EditorialDatePicker({
   ariaLabel,
   clearable = false,
   locale = "en",
+  inline = false,
 }: EditorialDatePickerProps) {
   const now = useMemo(() => new Date(), []);
   const parsedVal = useMemo(() => parseYmd(value), [value]);
@@ -398,7 +404,7 @@ export function EditorialDatePicker({
         <div
           role="dialog"
           aria-label={ariaLabel}
-          className={`${styles.editorialPopover} ${styles.calendarSheet}`}
+          className={`${styles.editorialPopover} ${styles.calendarSheet} ${inline ? styles.calendarInline : ""}`}
         >
           {/* Calendar Editorial Header */}
           <div className={styles.calendarHeader}>

@@ -1057,6 +1057,22 @@
   padding: 0.95rem 0.95rem 0.75rem;
 }
 
+/* Inline calendar: part of the page flow, so nothing below it gets covered. */
+.calendarInline {
+  position: relative;
+  top: auto;
+  inset-inline-start: auto;
+  width: 100%;
+  max-width: 22rem;
+  margin-top: 8px;
+  box-shadow: 0 12px 30px -14px rgba(47, 36, 27, 0.25);
+}
+
+/* While it's open, stack the row so the calendar gets the full width of the card. */
+.row:has(.calendarInline) {
+  grid-template-columns: 1fr;
+}
+
 .calendarHeader {
   display: flex;
   align-items: center;
