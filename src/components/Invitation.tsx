@@ -49,7 +49,7 @@ const VIDEO_MAX_MS = 15000;
 
 /** Picks the layout family for the template. */
 export default function Invitation(props: InvitationProps) {
-  if (props.template.family === "doors") return <DoorsInvitation {...props} />;
+  if (props.template.family === "doors" || props.template.family === "paper") return <DoorsInvitation {...props} />;
   return <EnvelopeInvitation {...props} />;
 }
 

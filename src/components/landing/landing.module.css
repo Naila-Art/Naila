@@ -1679,6 +1679,15 @@
   font-size: 0.84rem;
 }
 
+.showcaseToolbar {
+  margin-top: 2.25rem;
+}
+
+.showcaseToolbar + .showcaseCarousel,
+.showcaseToolbar + .showcaseGrid {
+  margin-top: 1.75rem;
+}
+
 .showcaseCarousel {
   margin-top: 3rem;
   display: flex;

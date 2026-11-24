@@ -27,6 +27,8 @@ export interface Template {
   /**
    * Layout family. "envelope" (default) is the classic card; "doors" is the Doors & Arches
    * family: the opening video plays full-screen and the invitation rises over its last frame.
+   * "paper" is the Stationery family: same stage, but the opening ends on a blank card or frame,
+   * the names are printed into it, and the letter is a deckled sheet with engraved details.
    */
   family?: TemplateFamily;
   /** Last frame of the video: the scene the invitation sits on after the opening. */
@@ -35,6 +37,8 @@ export interface Template {
   ambientUrl?: string;
   /** When (ms into the video) the scene is open enough for the names to appear. */
   revealAtMs?: number;
+  /** Sub-category within `category`, for storefront filters (see STYLE_LABELS). */
+  style?: TemplateStyle;
   /** Doors family: where the names sit on this design's last frame. */
   scene?: SceneLayout;
 }
@@ -49,14 +53,48 @@ export interface SceneLayout {
   skyTop?: number;
   /** Width of the names block. Default 58. */
   skyWidth?: number;
+  /** Horizontal centre of the names block, for off-centre cards. Default 50. */
+  skyCenter?: number;
+  /** Multiplies the names' size, for small cards. Default 1. */
+  scale?: number;
+  /** Paper family: lay a soft paper plate behind the names when the frame has no blank area. */
+  plate?: boolean;
   /** Top of the mirrored names in water; null when the scene has no still water. Default 58.5. */
   reflectionTop?: number | null;
-  /** Colour of all text drawn on the scene (threshold, names, farewell). Default ivory #f7eedd;
-   *  use a deep tone from the palette for bright daytime scenes. */
+  /** The first frame is bright (pale watercolor, daylight): threshold text turns to the
+   *  letter's ink with a pale halo, and the veil turns pale. */
+  lightStart?: boolean;
+  /** The last frame is bright: names, date, scroll cue and farewell turn to ink. */
+  light?: boolean;
+  /** The first frame has its own seal, knot or emblem at this height (% from top, centred).
+   *  The guest taps that instead: a pulsing ring marks it and no medallion is drawn over it. */
+  ownSeal?: number;
+  /** Diameter of that seal in % of the screen width (the ring is drawn just outside it). Default 24. */
+  ownSealSize?: number;
+  /** What the guest is opening, for the threshold label. Default "doors". */
+  opens?: "doors" | "curtains" | "other";
+  /** Override for the colour of text on the last frame. Default ivory, or theme.text when light. */
   ink?: string;
 }
 
-export type TemplateFamily = "envelope" | "doors";
+export type TemplateFamily = "envelope" | "doors" | "paper";
+
+/** Storefront sub-category inside a category (Katb Kitab / Wedding / Engagement). */
+export type TemplateStyle = "arches" | "night" | "palace" | "garden" | "coastal" | "stationery" | "storybook";
+
+/** Display order and bilingual labels for the style sub-categories. */
+export const STYLE_LABELS: Record<TemplateStyle, { en: string; ar: string }> = {
+  arches: { en: "Arches & Arabesque", ar: "أقواس وزخارف" },
+  night: { en: "Night & Lanterns", ar: "ليل وفوانيس" },
+  palace: { en: "Palaces & Ballrooms", ar: "قصور وقاعات" },
+  garden: { en: "Gardens & Blooms", ar: "حدائق وزهور" },
+  coastal: { en: "Coast & Sea", ar: "بحر وشواطئ" },
+  storybook: { en: "Storybook & Travel", ar: "حكايات وسفر" },
+  stationery: { en: "Paper & Seals", ar: "ورق وأختام" },
+};
+
+/** Category order on the storefront. */
+export const CATEGORY_ORDER: Category[] = ["katb_kitab", "wedding", "engagement"];
 
 /** One line of the night's programme, e.g. { time: "19:00", label: "Katb kitab" }. */
 export interface ScheduleItem {

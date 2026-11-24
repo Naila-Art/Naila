@@ -49,6 +49,9 @@ Look at the **end frame** and ask what the guest is standing in front of.
 - **doors** (`src/components/families/DoorsInvitation.tsx`): any threshold that opens onto a
   scene with a calm open area for names — doors, gates, curtains, arches, windows, a veil.
   Covers most designs. Still water in the end frame → set `reflectionTop`; otherwise `null`.
+- **paper** (Stationery, same component, `family: "paper"`): the opening ends on a blank card,
+  carved frame or page. Wax-seal threshold, names inked into the blank area, deckled letter
+  with hairline frame and engraved buttons. Fulla is the reference.
 - **envelope** (default, `Invitation.tsx`): the classic card; used when the video is an
   object (envelope, box, letter) rather than a place.
 - **A new family** only when the end frame has no room for the names over the scene, or the

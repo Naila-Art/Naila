@@ -6,6 +6,18 @@
 python3 scripts/template-assets.py <design-id> <template-id> [--name "Seville"] [--category wedding|engagement|katb_kitab] [--video path.mp4]
 ```
 
+Many designs: put rows in a TSV (`design<TAB>slug<TAB>category<TAB>[end-frame]`) and run
+`python3 scripts/template-assets.py --batch rows.tsv --json-dir <dir>` — it encodes **one at a
+time**. Never parallelise encodes with shell `&` loops: in the non-interactive zsh the tools
+use, `jobs -r` reports 0, so a "max N jobs" throttle launches everything at once (50 parallel
+x264 encodes crashed a 24 GB Mac). The script also takes an exclusive lock, so stray parallel
+calls queue rather than pile up.
+
+`--end-frame N` keeps frames `[0, N)`: some Flow renders cross-fade back to the start frame in
+their last ~0.5 s (020, 074, 100, 125 did). Check every video: if the last frame looks like the
+first (mean abs diff of tiny grayscale frames ≈ 1 against the start, versus 20–80 for a real
+opening), cut at the last frame before the fade.
+
 From `gflow-test/batch/out/<design>/video.mp4` it writes `public/templates/<id>/`:
 
 | File | What | Used as |
@@ -47,6 +59,41 @@ Theme roles in the doors family: `background` = page and desktop room; `surface`
 paper; `text` = ink on the paper; `accent` = brass (rules, stars, buttons, medallion disc);
 `seal` = the medallion's star and darker metal. Check `text` on `surface` and `accent` on
 `surface` for contrast (≥ 4.5:1 for body text, ≥ 3:1 for the large names).
+
+## Categories, styles and folders
+
+Every template has a `category` (Katb Kitab, Wedding, Engagement — `CATEGORY_ORDER`) and a
+`style` sub-category (`STYLE_LABELS` in `src/lib/types.ts`: Arches & Arabesque, Night & Lanterns,
+Palaces & Ballrooms, Gardens & Blooms, Coast & Sea, Storybook & Travel, Paper & Seals). The
+storefront (home carousel and the /create picker) filters by both through
+`src/components/TemplateFilterBar.tsx`. Assets live in the same tree:
+`public/templates/<katb-kitab|wedding|engagement>/<style>/<id>/` — pass `--folder wedding/coastal`
+to `template-assets.py`. The `TAXONOMY` table in `catalog_a.py` is the single source for both;
+add a new design there under its category and style. Keep each category balanced and each style
+inside a category at 3+ designs where possible.
+
+## The catalog (where the 50 live)
+
+Built-in doors/paper templates are generated, not hand-edited: the source of truth is
+`gflow-test/batch/templates/catalog_a.py` (theme, scene, Arabic name and storefront copy per
+design; `PAPER_ENABLED` gates paper designs). Run it to write `src/lib/template-catalog.ts`; it
+refuses to write when a theme fails contrast (text/surface ≥ 7, seal/surface ≥ 4.5, accent vs the
+button's dark label ≥ 4.5). `templates.ts` spreads `doorsCatalog` / `doorsCatalogMeta` in.
+Note the manifest palettes are NOT in a fixed order — choose every theme role by hand.
+
+Scene fields beyond placement: `light` / `lightStart` (bright last / first frame → ink text with a
+pale halo and a pale veil; measure mean luminance of the greeting band 8–30% and the label band
+42–62% of start.jpg — above ~140 is light), `opens` ("doors" | "curtains" | "other": the
+threshold label), `ownSeal` / `ownSealSize` (the first frame already shows a wax seal, knot or
+emblem: give its centre height and diameter in % and the guest taps it, ringed by a pulse,
+instead of a medallion drawn over it), and for paper `skyCenter`, `scale`, `plate`. Names never
+wrap their date; cards with `scale` < 0.95 drop the weekday. Paper defaults `light` to true;
+set `light: false` plus `ink` for dark paper (Minuit).
+
+Review stills for many designs at once: `node scripts/shoot-templates.mjs <dir> <id...> --lang en|ar`
+(threshold + revealed, one browser, sequential). The local dev server keeps `data/db.json` in
+memory: editing the file under a running server does nothing (and can be overwritten), so record
+`/t/<id>` with `--lang` instead of re-pointing demo events.
 
 <a id="tune"></a>
 ## 3. Tune by eye (the step that makes it look made-for-this-design)

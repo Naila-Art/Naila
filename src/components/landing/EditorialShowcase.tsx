@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import styles from "./landing.module.css";
@@ -36,6 +36,8 @@ interface EditorialShowcaseProps {
   nextAria: string;
   aspect: "landscape" | "portrait";
   items: ShowcaseCardItem[];
+  /** Optional filters rendered under the heading (e.g. category and style). */
+  toolbar?: ReactNode;
 }
 
 export default function EditorialShowcase({
@@ -48,6 +50,7 @@ export default function EditorialShowcase({
   nextAria,
   aspect,
   items,
+  toolbar,
 }: EditorialShowcaseProps) {
   const [view, setView] = useState<"carousel" | "grid">("carousel");
   const trackRef = useRef<HTMLDivElement | null>(null);
@@ -68,6 +71,12 @@ export default function EditorialShowcase({
     window.addEventListener("resize", syncButtons);
     return () => window.removeEventListener("resize", syncButtons);
   }, [syncButtons, view, items.length]);
+
+  // A new filter starts the carousel from its first card.
+  useEffect(() => {
+    trackRef.current?.scrollTo({ left: 0 });
+    syncButtons();
+  }, [items, syncButtons]);
 
   const scrollByCard = (dir: -1 | 1) => {
     const el = trackRef.current;
@@ -195,6 +204,8 @@ export default function EditorialShowcase({
             </button>
           </div>
         </div>
+
+        {toolbar && <div className={styles.showcaseToolbar}>{toolbar}</div>}
 
         {/* Cards Track / Grid */}
         <div

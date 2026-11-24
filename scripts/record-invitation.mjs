@@ -2,7 +2,10 @@
 // to the farewell. The opening video's sound is laid back in at the tap (browser recordings
 // are silent). Needs the dev server running and playwright-core (gflow-test/batch has it).
 //
-//   node scripts/record-invitation.mjs <url> <out.mp4> [--audio public/templates/<id>/opening.mp4]
+//   node scripts/record-invitation.mjs <url> <out.mp4> [--audio public/templates/<id>/opening.mp4] [--lang en|ar]
+//
+// --lang sets the site language (storefront previews /t/<id> follow it; live invitations
+// /i/... use the event's own language).
 //
 // Output: 780x1688 H.264 MP4. Also writes <out>-sheet.jpg, a contact sheet (one frame / 6s).
 import { createRequire } from "node:module";
@@ -30,7 +33,9 @@ if (!url || !outArg) {
   process.exit(1);
 }
 const out = path.resolve(outArg);
-const audio = rest[rest.indexOf("--audio") + 1] && rest.includes("--audio") ? path.resolve(rest[rest.indexOf("--audio") + 1]) : null;
+const flag = (k) => (rest.includes(k) ? rest[rest.indexOf(k) + 1] : null);
+const audio = flag("--audio") ? path.resolve(flag("--audio")) : null;
+const lang = flag("--lang");
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "rec-"));
 
 // Record at the phone's own CSS size: Playwright pads, it does not upscale, so a larger
@@ -41,12 +46,13 @@ const ctx = await browser.newContext({
   viewport: { width: W, height: H }, deviceScaleFactor: 2, isMobile: true, hasTouch: true,
   recordVideo: { dir: tmp, size: { width: W, height: H } },
 });
+if (lang) await ctx.addCookies([{ name: "naila_lang", value: lang, url: new URL(url).origin }]);
 const page = await ctx.newPage();
 const t0 = Date.now();
 await page.goto(url, { waitUntil: "networkidle" });
 await page.waitForTimeout(3000);
 const tapMs = Date.now() - t0;
-await page.locator("button").first().tap();
+await page.locator("main button").first().tap();
 await page.waitForTimeout(9000);
 const total = await page.evaluate(() => document.documentElement.scrollHeight);
 for (let y = 0; y < total; y += 6) {

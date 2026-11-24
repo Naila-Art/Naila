@@ -7,6 +7,7 @@ import LandingHeader, { type FooterHandoffState } from "./LandingHeader";
 import HeroSection from "./HeroSection";
 import SwitchNarrative from "./SwitchNarrative";
 import EditorialShowcase, { type ShowcaseCardItem } from "./EditorialShowcase";
+import TemplateFilterBar, { useTemplateFilter } from "@/components/TemplateFilterBar";
 import EditorialManifesto from "./EditorialManifesto";
 import FeaturesBento from "./FeaturesBento";
 import PricingReviewsSplit from "./PricingReviewsSplit";
@@ -291,8 +292,10 @@ export default function LandingExperience({
     return selfPkg?.price ?? 1500;
   }, [activePackages]);
 
+  const templateFilter = useTemplateFilter(templates);
+  const filteredTemplates = templateFilter.shown;
   const templateCards = useMemo<ShowcaseCardItem[]>(() => {
-    return templates.map((tpl) => {
+    return filteredTemplates.map((tpl) => {
       const meta = TEMPLATE_EDITORIAL_META[tpl.id];
       return {
         id: tpl.id,
@@ -317,7 +320,7 @@ export default function LandingExperience({
         frameBg: meta?.cardFrame ?? tpl.theme.background,
       };
     });
-  }, [templates, lang]);
+  }, [filteredTemplates, lang]);
 
   const sampleCards = useMemo<ShowcaseCardItem[]>(() => {
     return SAMPLES.map((sample, idx) => {
@@ -414,6 +417,7 @@ export default function LandingExperience({
             nextAria={copy.templates.nextAria}
             aspect="landscape"
             items={templateCards}
+            toolbar={<TemplateFilterBar filter={templateFilter} lang={lang} />}
           />
 
           <EditorialShowcase

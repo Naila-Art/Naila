@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import styles from "./store.module.css";
 import { CATEGORY_COPY } from "./storeCopy";
+import TemplateFilterBar, { styleLabel, useTemplateFilter } from "@/components/TemplateFilterBar";
 import { useSiteLang } from "@/lib/site-lang";
 import { templateDisplayName } from "@/lib/templates";
-import { CATEGORY_LABELS, type Category, type Template } from "@/lib/types";
+import type { Template } from "@/lib/types";
 
 interface Props {
   templates: Template[];
@@ -32,7 +32,7 @@ export function TemplateThumb({ template }: { template: Template }) {
   );
 }
 
-/** Category-filtered selectable template picker for /create studio. */
+/** Category → style filtered template picker for the /create studio. */
 export default function TemplateGallery({
   templates,
   selectedId,
@@ -40,32 +40,13 @@ export default function TemplateGallery({
 }: Props) {
   const { lang } = useSiteLang();
   const catLabels = CATEGORY_COPY[lang];
-  const categories = (Object.keys(CATEGORY_LABELS) as Category[]).filter((c) =>
-    templates.some((t) => t.category === c)
-  );
-  const [filter, setFilter] = useState<Category | "all">("all");
-  const shown =
-    filter === "all"
-      ? templates
-      : templates.filter((t) => t.category === filter);
+  const filter = useTemplateFilter(templates);
+  const shown = filter.shown;
+  const subtitle = (t: Template) => styleLabel(t.style, lang) ?? catLabels[t.category];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-      {categories.length > 1 && (
-        <div className={styles.tabs}>
-          {(["all", ...categories] as (Category | "all")[]).map((c) => (
-            <button
-              key={c}
-              type="button"
-              className={styles.tab}
-              aria-pressed={filter === c}
-              onClick={() => setFilter(c)}
-            >
-              {catLabels[c]}
-            </button>
-          ))}
-        </div>
-      )}
+      <TemplateFilterBar filter={filter} lang={lang} />
 
       <ul
         className={styles.templateGrid}
@@ -87,7 +68,7 @@ export default function TemplateGallery({
                   <TemplateThumb template={t} />
                   <span className={styles.templateInfo}>
                     <strong>{title}</strong>
-                    <small>{catLabels[t.category]}</small>
+                    <small>{subtitle(t)}</small>
                   </span>
                 </button>
               ) : (
@@ -99,7 +80,7 @@ export default function TemplateGallery({
                   <TemplateThumb template={t} />
                   <span className={styles.templateInfo}>
                     <strong>{title}</strong>
-                    <small>{catLabels[t.category]}</small>
+                    <small>{subtitle(t)}</small>
                   </span>
                 </a>
               )}

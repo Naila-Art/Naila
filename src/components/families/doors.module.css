@@ -9,7 +9,15 @@
   --body: "Instrument Sans", "Avenir Next", "Segoe UI", Arial, sans-serif;
   --ink-soft: color-mix(in srgb, var(--text) 72%, var(--surface));
   --rule: color-mix(in srgb, var(--accent) 70%, var(--surface));
-  --ivory: var(--scene-ink, #f7eedd);
+  /* Text drawn on the video. Dusk/night frames take ivory with dark shadows; bright frames
+     (data-start / data-end = "light") take the letter's ink with a pale halo. The threshold
+     sits on the first frame, everything else on the last, so each has its own tone. */
+  --on-start: #f7eedd;
+  --on-end: var(--scene-ink, #f7eedd);
+  --shade-start: rgba(0, 0, 0, 0.6);
+  --shade-end: rgba(0, 0, 0, 0.6);
+  --ivory: var(--on-end);
+  --shade: var(--shade-end);
   --column: 440px;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 
@@ -104,9 +112,10 @@
   inset: 0;
   z-index: 2;
   pointer-events: none;
+  --veil: #0b0e15;
   background:
-    linear-gradient(180deg, rgba(10, 14, 22, 0.62) 0%, rgba(10, 14, 22, 0) 26%),
-    linear-gradient(0deg, rgba(10, 12, 16, 0.72) 0%, rgba(10, 12, 16, 0) 30%);
+    linear-gradient(180deg, color-mix(in srgb, var(--veil) 62%, transparent) 0%, transparent 26%),
+    linear-gradient(0deg, color-mix(in srgb, var(--veil) 72%, transparent) 0%, transparent 30%);
   transition: opacity 1200ms ease;
 }
 
@@ -146,7 +155,7 @@
   font: italic 400 1.3rem/1.35 var(--display);
   text-align: center;
   text-wrap: balance;
-  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.55);
+  text-shadow: 0 2px 18px var(--shade);
 }
 
 .page[data-lang="ar"] .thresholdGreeting {
@@ -167,6 +176,21 @@
   color: var(--ivory);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* A soft halo behind the medallion and label keeps them legible over carving and lace. */
+.knock {
+  position: relative;
+  isolation: isolate;
+}
+
+.knock::before {
+  content: "";
+  position: absolute;
+  inset: -18% -38% -26%;
+  z-index: -1;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--shade) 75%, transparent), transparent);
+  pointer-events: none;
 }
 
 .knock:focus-visible {
@@ -221,10 +245,11 @@
 }
 
 .knockLabel {
+  white-space: nowrap;
   font: 600 0.68rem/1 var(--body);
   letter-spacing: 0.28em;
   text-transform: uppercase;
-  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.7);
+  text-shadow: 0 1px 12px var(--shade);
   animation: breathe 2.8s ease-in-out infinite;
 }
 
@@ -238,7 +263,7 @@
 .sky {
   position: absolute;
   top: var(--sky-top, 19%);
-  left: 50%;
+  left: var(--sky-center, 50%);
   z-index: 3;
   width: var(--sky-width, 58%);
   translate: -50% 0;
@@ -251,19 +276,19 @@
   display: grid;
   margin: 0;
   color: var(--ivory);
-  font: 400 clamp(2.2rem, 10.5vw, 2.85rem) / 0.98 var(--display);
+  font: 400 calc(clamp(2.2rem, 10.5vw, 2.85rem) * var(--name-scale, 1)) / 0.98 var(--display);
   letter-spacing: -0.02em;
 }
 
 .page[data-lang="ar"] .skyNames,
 .page[data-lang="ar"] .reflectionNames {
-  font-size: clamp(2.3rem, 11vw, 3rem);
+  font-size: calc(clamp(2.3rem, 11vw, 3rem) * var(--name-scale, 1));
   line-height: 1.15;
   letter-spacing: 0;
 }
 
 .skyNames {
-  text-shadow: 0 0 30px rgba(255, 230, 190, 0.25), 0 2px 14px rgba(5, 10, 25, 0.5);
+  text-shadow: 0 0 30px rgba(255, 230, 190, 0.25), 0 2px 14px var(--shade);
 }
 
 .amp {
@@ -308,12 +333,18 @@
 }
 
 .skyDate {
+  /* One line, centred on the names even when wider than the block. */
+  position: relative;
+  left: 50%;
+  width: max-content;
   margin: 1.1rem 0 0;
+  transform: translateX(-50%);
+  white-space: nowrap;
   color: color-mix(in srgb, var(--ivory) 88%, var(--accent));
   font: 600 0.6rem/1.5 var(--body);
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.6);
+  text-shadow: 0 1px 10px var(--shade);
 }
 
 .page[data-lang="ar"] .skyDate {
@@ -912,7 +943,7 @@
   padding: 0 1.5rem max(14svh, 5rem);
   color: var(--ivory);
   text-align: center;
-  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.6);
+  text-shadow: 0 2px 18px var(--shade);
 }
 
 .farewellLove {
@@ -947,19 +978,261 @@
   height: 42px;
   border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
   border-radius: 50%;
-  background: color-mix(in srgb, var(--bg) 72%, transparent);
-  color: var(--ivory);
+  background: color-mix(in srgb, var(--text) 62%, transparent);
+  color: var(--surface);
   cursor: pointer;
   transition: background-color 200ms ease;
 }
 
 .sound:hover {
-  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  background: color-mix(in srgb, var(--text) 85%, transparent);
 }
 
 .previewRibbon ~ .column .sound,
 .previewRibbon ~ .sound {
   top: calc(max(1rem, env(safe-area-inset-top)) + 2rem);
+}
+
+/* ---------------- Bright frames ---------------- */
+
+.threshold {
+  --ivory: var(--on-start);
+  --shade: var(--shade-start);
+}
+
+.page[data-start="light"] {
+  --on-start: var(--text);
+  --shade-start: color-mix(in srgb, var(--surface) 90%, transparent);
+}
+
+.page[data-end="light"] {
+  --on-end: var(--scene-ink, var(--text));
+  --shade-end: color-mix(in srgb, var(--surface) 90%, transparent);
+}
+
+.page[data-start="light"] .scene[data-stage="sealed"] .veil,
+.page[data-end="light"] .scene:not([data-stage="sealed"]) .veil {
+  --veil: var(--surface);
+}
+
+/* ==========================================================================
+   Stationery ("paper" family): same stage, printed instead of carved.
+   ========================================================================== */
+
+/* Wax seal threshold */
+.sealWax {
+  fill: var(--seal);
+  filter: drop-shadow(0 2px 0 color-mix(in srgb, var(--seal) 70%, #000));
+}
+
+.sealRing {
+  fill: none;
+  stroke: color-mix(in srgb, var(--seal) 62%, #000);
+  stroke-width: 1.6;
+}
+
+.sealText {
+  fill: color-mix(in srgb, var(--surface) 92%, var(--seal));
+  font: 400 23px var(--display);
+}
+
+/* Names are inked into the blank card: a writing sweep and a letterpress bite, no glow. */
+.page[data-family="paper"] .skyNames {
+  text-shadow: 0 1px 0 color-mix(in srgb, #fff 55%, transparent);
+}
+
+.page[data-family="paper"] .skyDate {
+  text-shadow: none;
+  color: var(--seal);
+}
+
+.page[data-family="paper"] .skyNames > span,
+.page[data-family="paper"] .skyDate {
+  filter: none;
+  translate: 0 0;
+  clip-path: inset(-0.3em 100% -0.3em -0.3em);
+}
+
+.page[data-family="paper"][dir="rtl"] .skyNames > span,
+.page[data-family="paper"][dir="rtl"] .skyDate {
+  clip-path: inset(-0.3em -0.3em -0.3em 100%);
+}
+
+.page[data-family="paper"] .scene[data-stage="revealed"] .skyNames > span,
+.page[data-family="paper"] .scene[data-stage="revealed"] .skyDate {
+  clip-path: inset(-0.3em -0.3em -0.3em -0.3em);
+  transition:
+    opacity 500ms ease,
+    clip-path 1500ms cubic-bezier(0.45, 0, 0.2, 1);
+}
+
+.page[data-family="paper"] .amp {
+  color: var(--seal);
+}
+
+.skyFlourish {
+  display: block;
+  width: 72px;
+  height: 14px;
+  margin: 0 auto 1.1rem;
+  fill: none;
+  stroke: var(--seal);
+  stroke-width: 1.1;
+  stroke-linecap: round;
+  overflow: visible;
+  opacity: 0;
+  transition: opacity 900ms ease 1500ms;
+}
+
+.scene[data-stage="revealed"] .skyFlourish {
+  opacity: 0.85;
+}
+
+/* The frame's own seal is the button: a ring pulses around it, the label sits below. */
+.threshold[data-own-seal] {
+  /* Ring diameter: the printed seal plus a margin; the column is at most 440px wide. */
+  --ring: calc(var(--seal-d) * min(1vw, 4.4px) * 1.28);
+}
+
+.threshold[data-own-seal] .knock {
+  /* grid-area auto: an absolutely placed grid item otherwise measures from its row, not the screen. */
+  grid-area: auto;
+  position: absolute;
+  top: calc(var(--own-seal) - var(--ring) / 2);
+  left: 50%;
+  translate: -50% 0;
+  margin-top: 0;
+}
+
+.threshold[data-own-seal] .knock::before {
+  inset: 70% -60% -40%;
+}
+
+.threshold[data-own-seal] .medallion {
+  width: var(--ring);
+  height: var(--ring);
+  filter: none;
+}
+
+.ringLine {
+  fill: none;
+  stroke: color-mix(in srgb, var(--ivory) 72%, var(--accent));
+  stroke-width: 2;
+  opacity: 0.9;
+}
+
+.ringPulse {
+  fill: none;
+  stroke: color-mix(in srgb, var(--ivory) 72%, var(--accent));
+  stroke-width: 1;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ringPulse 2.6s var(--ease-out) infinite;
+}
+
+@keyframes ringPulse {
+  from {
+    scale: 1;
+    opacity: 0.8;
+  }
+  to {
+    scale: 1.3;
+    opacity: 0;
+  }
+}
+
+/* Frames with no blank area get a soft paper plate behind the names. */
+.sky[data-plate]::before {
+  content: "";
+  position: absolute;
+  inset: -22% -20%;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--surface) 92%, transparent) 55%, transparent);
+  opacity: 0;
+  transition: opacity 1200ms ease;
+}
+
+.scene[data-stage="revealed"] .sky[data-plate]::before {
+  opacity: 1;
+}
+
+/* The letter: a deckled sheet inside a hairline frame. */
+.deckle {
+  display: block;
+  width: 100%;
+  height: 18px;
+  margin-bottom: -1px;
+  filter: drop-shadow(0 -3px 4px rgba(0, 0, 0, 0.12));
+}
+
+.deckleBottom {
+  margin: -1px 0 0;
+  rotate: 180deg;
+  filter: drop-shadow(0 -3px 4px rgba(0, 0, 0, 0.18));
+}
+
+.page[data-family="paper"] .sheet {
+  padding: 2.2rem 1.6rem 2.6rem;
+  background:
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    var(--surface);
+  box-shadow:
+    inset 0 0 0 12px var(--surface),
+    inset 0 0 0 13px var(--rule),
+    inset 0 0 0 16px var(--surface),
+    inset 0 0 0 17px color-mix(in srgb, var(--rule) 55%, transparent);
+}
+
+.ruleFlourish,
+.openingFlourish {
+  flex: none;
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.1;
+  stroke-linecap: round;
+  overflow: visible;
+}
+
+.openingFlourish {
+  width: 84px;
+  height: 16px;
+  margin-bottom: 1.5rem;
+}
+
+.momentDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  justify-self: center;
+}
+
+.page[data-family="paper"] .heading {
+  font-style: italic;
+}
+
+/* Engraved buttons: a card with a double keyline instead of a doorway. */
+.page[data-family="paper"] .archButton,
+.page[data-family="paper"] .outlineButton {
+  padding: 0 1.7rem;
+  border-radius: 2px;
+  font: 600 0.74rem/1 var(--body);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.page[data-family="paper"][data-lang="ar"] .archButton,
+.page[data-family="paper"][data-lang="ar"] .outlineButton {
+  font: 600 0.95rem/1 "Noto Kufi Arabic", var(--body);
+  letter-spacing: 0;
+}
+
+.page[data-family="paper"] .archButton {
+  box-shadow:
+    inset 0 0 0 3px var(--accent),
+    inset 0 0 0 4px color-mix(in srgb, var(--surface) 70%, transparent),
+    0 10px 20px -14px color-mix(in srgb, var(--seal) 80%, #000);
 }
 
 /* ---------------- Motion ---------------- */
@@ -1006,6 +1279,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .medallionStar,
+  .ringPulse,
   .knockLabel,
   .reflectionNames,
   .scrollCue i {
@@ -1014,6 +1288,12 @@
 
   .scene[data-stage="revealed"] .skyNames > span,
   .scene[data-stage="revealed"] .skyDate,
+  .page[data-family="paper"] .scene[data-stage="revealed"] .skyNames > span,
+  .page[data-family="paper"] .scene[data-stage="revealed"] .skyDate,
+  .scene[data-stage="revealed"] .skyFlourish,
+  .scene[data-stage="revealed"] .sky[data-plate]::before,
+  .skyFlourish,
+  .sky[data-plate]::before,
   .threshold {
     transition-duration: 1ms;
     transition-delay: 0ms;
