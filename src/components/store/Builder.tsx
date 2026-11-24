@@ -29,6 +29,7 @@ import { isSelfServe, priceOf, type Pricing } from "@/lib/pricing";
 import { TEMPLATE_EDITORIAL_META, templateDisplayName } from "@/lib/templates";
 import { UploadError, postJson } from "@/lib/upload-client";
 import type { Lang, MusicTrack, PackageId, Template } from "@/lib/types";
+import { localeHref } from "@/lib/locale";
 
 interface Props {
   pricing: Pricing;
@@ -238,7 +239,7 @@ export default function Builder({
               <span>{copy.switchLangTitle}</span>
             </button>
             <Link
-              href="/"
+              href={localeHref(uiLang, "/")}
               aria-label={copy.backHomeAria}
               className={styles.studioCloseBtn}
             >
@@ -474,7 +475,7 @@ export default function Builder({
               <p className={styles.hint}>
                 {b.bespokePrompt}{" "}
                 <Link
-                  href="/request?p=3"
+                  href={localeHref(uiLang, "/request?p=3")}
                   style={{
                     textDecoration: "underline",
                     color: "var(--accent-bronze)",
@@ -519,7 +520,7 @@ export default function Builder({
               {b.back}
             </button>
           ) : (
-            <Link href="/" className={styles.ctaGhost}>
+            <Link href={localeHref(uiLang, "/")} className={styles.ctaGhost}>
               {b.back}
             </Link>
           )}
@@ -602,7 +603,7 @@ export default function Builder({
             </button>
             {activeTemplate && (
               <Link
-                href={`/t/${activeTemplate.id}`}
+                href={localeHref(uiLang, `/t/${activeTemplate.id}`)}
                 target="_blank"
                 aria-label={b.openDemoAria}
                 title={b.openDemoAria}
@@ -696,7 +697,7 @@ export default function Builder({
                   {/* Sleek Matte Espresso Editorial Preview Button */}
                   {activeTemplate ? (
                     <Link
-                      href={`/t/${activeTemplate.id}`}
+                      href={localeHref(uiLang, `/t/${activeTemplate.id}`)}
                       target="_blank"
                       className={styles.previewOpenBtn}
                     >

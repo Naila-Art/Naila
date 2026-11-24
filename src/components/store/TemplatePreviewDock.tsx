@@ -6,6 +6,7 @@ import { STORE_COPY } from "./storeCopy";
 import { useSiteLang } from "@/lib/site-lang";
 import { templateDisplayName } from "@/lib/templates";
 import type { Template } from "@/lib/types";
+import { localeHref } from "@/lib/locale";
 
 export default function TemplatePreviewDock({
   template,
@@ -39,7 +40,7 @@ export default function TemplatePreviewDock({
       }}
     >
       <Link
-        href="/#templates"
+        href={localeHref(lang, "/#templates")}
         style={{
           display: "inline-flex",
           alignItems: "center",
@@ -84,7 +85,7 @@ export default function TemplatePreviewDock({
       </button>
 
       <Link
-        href={`/create?t=${template.id}`}
+        href={localeHref(lang, `/create?t=${template.id}`)}
         style={{
           display: "inline-flex",
           alignItems: "center",

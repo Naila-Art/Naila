@@ -6,6 +6,7 @@ import TemplateFilterBar, { styleLabel, useTemplateFilter } from "@/components/T
 import { useSiteLang } from "@/lib/site-lang";
 import { templateDisplayName } from "@/lib/templates";
 import type { Template } from "@/lib/types";
+import { localeHref } from "@/lib/locale";
 
 interface Props {
   templates: Template[];
@@ -73,7 +74,7 @@ export default function TemplateGallery({
                 </button>
               ) : (
                 <a
-                  href={`/t/${t.id}`}
+                  href={localeHref(lang, `/t/${t.id}`)}
                   className={styles.templateCard}
                   style={{ textDecoration: "none" }}
                 >

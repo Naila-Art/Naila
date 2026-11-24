@@ -12,6 +12,7 @@ import {
 import { isSelfServe, type PackageInfo, type PricingStep } from "@/lib/pricing";
 import type { Lang } from "@/lib/types";
 import styles from "./landing.module.css";
+import { localeHref } from "@/lib/locale";
 
 interface PricingReviewsSplitProps {
   copy: LandingCopy;
@@ -75,11 +76,14 @@ export default function PricingReviewsSplit({
   const selectedPrice = selectedPkg
     ? formatLandingPrice(selectedPkg.price, currency, lang)
     : formatLandingPrice(1500, currency, lang);
-  const ctaHref = selectedPkg
-    ? isSelfServe(selectedPkg.id)
-      ? `/create?p=${selectedPkg.id}`
-      : `/request?p=${selectedPkg.id}`
-    : "/create";
+  const ctaHref = localeHref(
+    lang,
+    selectedPkg
+      ? isSelfServe(selectedPkg.id)
+        ? `/create?p=${selectedPkg.id}`
+        : `/request?p=${selectedPkg.id}`
+      : "/create",
+  );
   const ctaLabel =
     selectedPkg && !isSelfServe(selectedPkg.id)
       ? `${copy.pricing.customCta} — ${selectedPrice}`

@@ -14,6 +14,7 @@ import {
 import { useSiteLang } from "@/lib/site-lang";
 import type { Pricing } from "@/lib/pricing";
 import { SAMPLES, sampleLink } from "@/lib/samples";
+import { localeHref } from "@/lib/locale";
 
 export default function SamplesView({
   brand,
@@ -31,12 +32,12 @@ export default function SamplesView({
     <main className={styles.page} dir={isAr ? "rtl" : "ltr"} lang={lang}>
       <div className={styles.wrap}>
         <nav className={styles.nav}>
-          <Link href="/" className={styles.brand} translate="no">
+          <Link href={localeHref(lang, "/")} className={styles.brand} translate="no">
             {brand}
           </Link>
           <div className={styles.navLinks}>
-            <Link href="/#templates">{sCopy.navTemplates}</Link>
-            <Link href="/#features">{sCopy.navFeatures}</Link>
+            <Link href={localeHref(lang, "/#templates")}>{sCopy.navTemplates}</Link>
+            <Link href={localeHref(lang, "/#features")}>{sCopy.navFeatures}</Link>
             <button
               type="button"
               onClick={toggleLang}
@@ -47,7 +48,7 @@ export default function SamplesView({
               <span>{copy.switchLangTitle}</span>
             </button>
             <Link
-              href="/create"
+              href={localeHref(lang, "/create")}
               className={styles.cta}
               style={{ minHeight: "2.35rem", paddingInline: "1.1rem" }}
             >
@@ -107,11 +108,10 @@ export default function SamplesView({
                     <ArrowUpRight size={15} />
                   </a>
                   <Link
-                    href={
-                      s.packageId <= 2
-                        ? `/create?p=${s.packageId}`
-                        : `/request?p=${s.packageId}`
-                    }
+                    href={localeHref(
+                      lang,
+                      s.packageId <= 2 ? `/create?p=${s.packageId}` : `/request?p=${s.packageId}`,
+                    )}
                     className={styles.ctaGhost}
                   >
                     {sCopy.chooseTier}

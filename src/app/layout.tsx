@@ -1,10 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
+import { LANG_COOKIE, LANG_HEADER } from "@/lib/locale";
+import { siteUrl } from "@/lib/seo";
 import { SiteLangProvider } from "@/lib/site-lang";
 import type { Lang } from "@/lib/types";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl()),
   title: "Naila — Editorial Digital Invitations | نايلة للدعوات الرقمية",
   description:
     "Bespoke digital wedding, engagement, and katb kitab invitations with wax-seal openings, music, named guest links, and instant RSVP tracking.",
@@ -19,9 +22,10 @@ export const viewport: Viewport = {
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const cookieStore = await cookies();
-  const cookieLang = cookieStore.get("naila_lang")?.value;
-  const initialLang: Lang = cookieLang === "ar" ? "ar" : "en";
+  // Storefront pages get their language from the URL (src/middleware.ts); other pages keep the visitor's choice.
+  const urlLang = (await headers()).get(LANG_HEADER);
+  const cookieLang = (await cookies()).get(LANG_COOKIE)?.value;
+  const initialLang: Lang = urlLang === "ar" || urlLang === "en" ? urlLang : cookieLang === "ar" ? "ar" : "en";
 
   return (
     <html lang={initialLang}>

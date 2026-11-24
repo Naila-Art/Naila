@@ -21,6 +21,7 @@ import { SAMPLES, sampleLink } from "@/lib/samples";
 import type { Pricing } from "@/lib/pricing";
 import type { Template } from "@/lib/types";
 import styles from "./landing.module.css";
+import { localeHref } from "@/lib/locale";
 
 interface LandingExperienceProps {
   brand: string;
@@ -299,7 +300,7 @@ export default function LandingExperience({
       const meta = TEMPLATE_EDITORIAL_META[tpl.id];
       return {
         id: tpl.id,
-        href: `/t/${tpl.id}`,
+        href: localeHref(lang, `/t/${tpl.id}`),
         title: templateDisplayName(tpl, lang),
         eyebrow: meta
           ? lang === "ar"
