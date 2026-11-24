@@ -281,6 +281,8 @@ export default function SwitchNarrative({
                 <img
                   src="/assets/props/gold-wax-seal.png"
                   alt=""
+                  loading="lazy"
+                  decoding="async"
                   className={styles.propWaxSealAlive}
                 />
               </div>
@@ -308,6 +310,8 @@ export default function SwitchNarrative({
                 <img
                   src="/assets/props/burgundy-bow.png"
                   alt=""
+                  loading="lazy"
+                  decoding="async"
                   className={styles.propBurgundyBowAlive}
                 />
               </div>
@@ -335,6 +339,8 @@ export default function SwitchNarrative({
                 <img
                   src="/assets/props/gardenia-sprig.png"
                   alt=""
+                  loading="lazy"
+                  decoding="async"
                   className={styles.propGardeniaSprigAlive}
                 />
               </div>

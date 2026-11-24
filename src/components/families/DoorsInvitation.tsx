@@ -259,8 +259,8 @@ export default function DoorsInvitation(props: InvitationProps) {
 
   const names = (
     <>
-      <span>{props.partnerA}</span>
-      <span className={styles.amp}>{s.and}</span>
+      <span>{props.partnerA}</span>{" "}
+      <span className={styles.amp}>{s.and}</span>{" "}
       <span>{props.partnerB}</span>
     </>
   );
@@ -327,7 +327,12 @@ export default function DoorsInvitation(props: InvitationProps) {
           {/* Names in the sky, mirrored in the pool */}
           <div className={styles.sky} aria-hidden={stage !== "revealed"} data-plate={scene.plate || undefined}>
             {paper && <Flourish className={styles.skyFlourish} />}
-            <h1 className={styles.skyNames}>{names}</h1>
+            {/* Previews show sample names, so the template page owns the heading instead. */}
+            {props.isPreview ? (
+              <p className={styles.skyNames}>{names}</p>
+            ) : (
+              <h1 className={styles.skyNames}>{names}</h1>
+            )}
             <p className={styles.skyDate}>
               {(scene.scale ?? 1) < 0.95 ? `${parts.day} ${parts.monthYear}` : `${parts.weekday} · ${parts.day} ${parts.monthYear}`}
             </p>

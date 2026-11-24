@@ -1,5 +1,6 @@
 import "server-only";
 import { randomBytes, randomUUID } from "crypto";
+import { revalidateTag, unstable_cache } from "next/cache";
 import { db, type Collection } from "./db";
 import { builtInTemplates } from "./templates";
 import { withDefaults, type Pricing } from "./pricing";
@@ -219,14 +220,23 @@ export async function addWish(input: { eventId: string; guestId?: string; name: 
 // Templates (admin dashboard)
 // ---------------------------------------------------------------------------
 
+// Templates and pricing are read by every storefront page but change only from the admin dashboard,
+// so they're cached for a few minutes and refreshed immediately whenever the admin saves.
+const CATALOG_TTL = 300;
+
+const uploadedTemplates = unstable_cache(
+  async () => (await db().list<Template>("templates")).sort(byNewest),
+  ["uploaded-templates"],
+  { tags: ["templates"], revalidate: CATALOG_TTL },
+);
+
 /** Uploaded templates first (newest first), then the built-in fallback. */
 export async function listTemplates(): Promise<Template[]> {
-  const uploaded = (await db().list<Template>("templates")).sort(byNewest);
-  return [...uploaded, ...builtInTemplates];
+  return [...(await uploadedTemplates()), ...builtInTemplates];
 }
 
 export async function findTemplate(id: string): Promise<Template | null> {
-  return (await one<Template>("templates", "id", id)) ?? builtInTemplates.find((t) => t.id === id) ?? null;
+  return (await listTemplates()).find((t) => t.id === id) ?? null;
 }
 
 /** Never fails: an unknown id (e.g. a deleted template) falls back to the built-in envelope. */
@@ -236,6 +246,7 @@ export async function getTemplate(id: string): Promise<Template> {
 
 export async function addTemplate(template: Template): Promise<Template> {
   await put("templates", template.id, template);
+  revalidateTag("templates");
   return template;
 }
 
@@ -253,6 +264,7 @@ export async function updateTemplateDetails(
   if (details.badge) tpl.badge = details.badge;
   else delete tpl.badge;
   await put("templates", tpl.id, tpl);
+  revalidateTag("templates");
   return tpl;
 }
 
@@ -266,11 +278,13 @@ export async function setTemplateArt(id: string, slot: ArtSlot, url: string | un
   else delete art[slot];
   tpl.art = Object.keys(art).length ? art : undefined;
   await put("templates", tpl.id, tpl);
+  revalidateTag("templates");
   return { found: true, oldUrl };
 }
 
 export async function deleteTemplate(id: string): Promise<{ deleted: boolean; eventsUsing: number }> {
   const deleted = (await db().remove("templates", "id", id)) > 0;
+  revalidateTag("templates");
   const eventsUsing = (await db().where<EventData>("events", "templateId", id)).length;
   return { deleted, eventsUsing };
 }
@@ -497,12 +511,19 @@ export async function purgeExpiredGuestData(now = new Date()): Promise<{ events:
 // Pricing (admin dashboard)
 // ---------------------------------------------------------------------------
 
+const savedPricing = unstable_cache(
+  async () => (await one<Pricing>("settings", "id", "pricing")) ?? null,
+  ["pricing"],
+  { tags: ["pricing"], revalidate: CATALOG_TTL },
+);
+
 export async function getPricing(): Promise<Pricing> {
-  return withDefaults((await one<Pricing>("settings", "id", "pricing")) ?? undefined);
+  return withDefaults((await savedPricing()) ?? undefined);
 }
 
 export async function savePricing(pricing: Pricing): Promise<Pricing> {
   await put("settings", "pricing", pricing);
+  revalidateTag("pricing");
   return pricing;
 }
 

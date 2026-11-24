@@ -93,7 +93,7 @@ export default function EditorialManifesto({
             }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/assets/props/silver-balloons.png" alt="" />
+            <img src="/assets/props/silver-balloons.png" alt="" loading="lazy" decoding="async" />
           </div>
           <div
             className={styles.propEnvelope}
@@ -103,7 +103,7 @@ export default function EditorialManifesto({
             }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/assets/props/white-envelope.png" alt="" />
+            <img src="/assets/props/white-envelope.png" alt="" loading="lazy" decoding="async" />
           </div>
         </div>
 
@@ -140,6 +140,8 @@ export default function EditorialManifesto({
                     <img
                       src={SLOT_IMAGES[seg.imageSlot][0]}
                       alt=""
+                  loading="lazy"
+                  decoding="async"
                       className={styles.manifestoImgLayer}
                       style={{ opacity: showSecondPhoto ? 0 : 1 }}
                     />
@@ -147,6 +149,8 @@ export default function EditorialManifesto({
                     <img
                       src={SLOT_IMAGES[seg.imageSlot][1]}
                       alt=""
+                  loading="lazy"
+                  decoding="async"
                       className={styles.manifestoImgLayer}
                       style={{ opacity: showSecondPhoto ? 1 : 0 }}
                     />

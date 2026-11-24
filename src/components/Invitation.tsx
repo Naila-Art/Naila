@@ -127,12 +127,15 @@ function EnvelopeInvitation(props: InvitationProps) {
     </>
   ) : null;
 
+  // On a real invitation the couple is the page's heading. Previews show sample names, so the
+  // page around them (e.g. the template page) owns the heading instead.
+  const CoupleTag = props.isPreview ? "p" : "h1";
   const couple = (
-    <h1 className={styles.couple}>
-      <span>{props.partnerA}</span>
-      <span className={styles.amp}>{s.and}</span>
+    <CoupleTag className={styles.couple}>
+      <span>{props.partnerA}</span>{" "}
+      <span className={styles.amp}>{s.and}</span>{" "}
       <span>{props.partnerB}</span>
-    </h1>
+    </CoupleTag>
   );
 
   return (

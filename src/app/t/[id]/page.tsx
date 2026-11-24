@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import TemplatePreview from "@/components/TemplatePreview";
 import TemplatePreviewDock from "@/components/store/TemplatePreviewDock";
-import { findTemplate } from "@/lib/store";
-import { storefrontMetadata } from "@/lib/seo";
+import TemplateIntro from "@/components/store/TemplateIntro";
+import { findTemplate, getPricing, listTemplates } from "@/lib/store";
+import { requestLang, storefrontMetadata } from "@/lib/seo";
 import { TEMPLATE_EDITORIAL_META, templateDisplayName } from "@/lib/templates";
 
 type Props = { params: Promise<{ id: string }> };
@@ -29,9 +30,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function Page({ params }: Props) {
   const template = await findTemplate((await params).id);
   if (!template) notFound();
+  const [all, pricing, lang] = await Promise.all([listTemplates(), getPricing(), requestLang()]);
+  // Similar designs: same style first, then same occasion.
+  const others = all.filter((t) => t.id !== template.id);
+  const related = [
+    ...others.filter((t) => template.style && t.style === template.style),
+    ...others.filter((t) => t.category === template.category && !(template.style && t.style === template.style)),
+  ].slice(0, 6);
   return (
     <>
       <TemplatePreview template={template} />
+      <TemplateIntro template={template} related={related} pricing={pricing} lang={lang} />
       <TemplatePreviewDock template={template} />
     </>
   );
