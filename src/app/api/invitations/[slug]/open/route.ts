@@ -7,6 +7,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   const body = (await readJson(req)) ?? {};
   const resolved = await resolve(slug, body.token);
   if (resolved instanceof NextResponse) return resolved;
+  // Previews before payment aren't real opens.
+  if (resolved.event.status === "draft") return NextResponse.json({ ok: true });
 
   await recordView({
     eventId: resolved.event.id,

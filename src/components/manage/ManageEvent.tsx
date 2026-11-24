@@ -1,39 +1,69 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import styles from "./manage.module.css";
 import GuestImport from "./GuestImport";
-import { MAX_GUEST_MESSAGE, guestKey, toCsv, validateGuest, type ParsedGuest } from "@/lib/guests";
-import { displayName, fillPersonalText } from "@/lib/text";
-import type { GuestWithStatus, Rsvp, Wish } from "@/lib/types";
+import {
+  MAX_GUEST_MESSAGE,
+  guestKey,
+  toCsv,
+  validateGuest,
+  type ParsedGuest,
+} from "@/lib/guests";
+import { displayName } from "@/lib/text";
+import type { GuestWithStatus, Rsvp, RsvpStatus, Wish } from "@/lib/types";
+import Icon from "../Icon";
 
 export interface Dashboard {
   guests: GuestWithStatus[];
-  generalRsvps: Rsvp[];
   generalOpens: number;
   wishes: Wish[];
+  rsvps: Rsvp[];
 }
 
 interface Props {
   manageToken: string;
   slug: string;
   couple: string;
-  initialTexts: { generalText: string; personalText: string };
   initial: Dashboard;
   /** Max named guests from the client's package; 0 = general link only. */
   namesLimit: number;
+  /** Not paid yet: no shareable links (general, per guest, copy-all, export); previews only. */
+  locked: boolean;
+  /** The client's order page (receipt, payment, change requests to us). */
+  orderUrl?: string;
   showWishes: boolean;
+  /** Attendance replies are on for this invitation. */
+  showRsvp?: boolean;
   /** Order, payment, details, music and change-request panels, rendered under the header. */
   children?: ReactNode;
 }
 
-const TITLES = ["أستاذ", "أستاذة", "دكتور", "دكتورة", "مهندس", "مهندسة", "الحاج", "الحاجة"];
+const TITLES = [
+  "أستاذ",
+  "أستاذة",
+  "دكتور",
+  "دكتورة",
+  "مهندس",
+  "مهندسة",
+  "الحاج",
+  "الحاجة",
+];
 
-type Filter = "all" | "opened" | "notOpened" | "attending" | "declined";
+type Filter = "all" | "opened" | "notOpened";
+
+const RSVP_LABELS: Record<RsvpStatus, string> = { attending: "جاي", maybe: "يمكن", declined: "مش جاي" };
 
 function statusOf(g: GuestWithStatus): { label: string; cls: string } {
-  if (g.rsvp === "attending") return { label: "هيحضر", cls: styles.badgeOk };
-  if (g.rsvp === "declined") return { label: "اعتذر", cls: styles.badgeBad };
+  if (g.rsvp === "attending") return { label: `جاي${(g.rsvpCount ?? 1) > 1 ? ` (${g.rsvpCount})` : ""}`, cls: styles.badgeOk };
+  if (g.rsvp === "maybe") return { label: "يمكن ييجي", cls: styles.badgeInfo };
+  if (g.rsvp === "declined") return { label: "مش جاي", cls: styles.badgeBad };
   if (g.openedAt) return { label: "فتح الدعوة", cls: styles.badgeInfo };
   return { label: "لسه مفتحش", cls: styles.badgeMuted };
 }
@@ -47,7 +77,18 @@ async function copy(text: string) {
   }
 }
 
-export default function ManageEvent({ manageToken, slug, couple, initialTexts, initial, namesLimit, showWishes, children }: Props) {
+export default function ManageEvent({
+  manageToken,
+  slug,
+  couple,
+  initial,
+  namesLimit,
+  showWishes,
+  showRsvp = false,
+  locked,
+  orderUrl,
+  children,
+}: Props) {
   const [data, setData] = useState<Dashboard>(initial);
   const [origin, setOrigin] = useState("");
   const [toast, setToast] = useState<string | null>(null);
@@ -69,17 +110,26 @@ export default function ManageEvent({ manageToken, slug, couple, initialTexts, i
 
   const generalLink = `${origin}/i/${slug}`;
   const linkFor = (g: GuestWithStatus) => `${origin}/i/${slug}/${g.token}`;
-  const existingKeys = useMemo(() => new Set(data.guests.map(guestKey)), [data.guests]);
+  const previewBase = `/c/${encodeURIComponent(manageToken)}/preview`;
+  const previewFor = (g: GuestWithStatus) =>
+    `${previewBase}?guest=${encodeURIComponent(g.id)}`;
+  const existingKeys = useMemo(
+    () => new Set(data.guests.map(guestKey)),
+    [data.guests],
+  );
 
   // ---- stats ----
   const stats = useMemo(() => {
     const g = data.guests;
-    const gen = data.generalRsvps;
     return {
       total: g.length,
       opened: g.filter((x) => x.openedAt).length,
-      attending: g.filter((x) => x.rsvp === "attending").length + gen.filter((r) => r.status === "attending").length,
-      declined: g.filter((x) => x.rsvp === "declined").length + gen.filter((r) => r.status === "declined").length,
+      wishes: data.wishes.length,
+      // People expected = everyone the "coming" replies said they're bringing, themselves included.
+      people: (data.rsvps ?? []).filter((r) => r.status === "attending").reduce((n, r) => n + (r.count ?? 1), 0),
+      attending: (data.rsvps ?? []).filter((r) => r.status === "attending").length,
+      maybe: (data.rsvps ?? []).filter((r) => r.status === "maybe").length,
+      declined: (data.rsvps ?? []).filter((r) => r.status === "declined").length,
     };
   }, [data]);
 
@@ -88,17 +138,36 @@ export default function ManageEvent({ manageToken, slug, couple, initialTexts, i
     const res = await fetch(`${api}/guests`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ guests: guests.map(({ title, name, phone, message }) => ({ title, name, phone, message })) }),
+      body: JSON.stringify({
+        guests: guests.map(({ title, name, phone, message }) => ({
+          title,
+          name,
+          phone,
+          message,
+        })),
+      }),
     });
     if (!res.ok) throw new Error(String(res.status));
-    const r = (await res.json()) as { added: number; duplicates: number; invalid: number; overLimit?: number };
-    setToast(r.overLimit ? `اتضاف ${r.added} معزوم، و${r.overLimit} فوق الحد بتاع باقتك (${namesLimit})` : `اتضاف ${r.added} معزوم`);
+    const r = (await res.json()) as {
+      added: number;
+      duplicates: number;
+      invalid: number;
+      overLimit?: number;
+    };
+    setToast(
+      r.overLimit
+        ? `اتضاف ${r.added} ضيف، و${r.overLimit} فوق الحد بتاع باقتك (${namesLimit})`
+        : `اتضاف ${r.added} ضيف`,
+    );
     await refresh();
   };
 
   const removeGuest = async (g: GuestWithStatus) => {
-    if (!window.confirm(`تمسح ${displayName(g)}؟ اللينك بتاعه هيبطل يشتغل.`)) return;
-    const res = await fetch(`${api}/guests?id=${encodeURIComponent(g.id)}`, { method: "DELETE" });
+    if (!window.confirm(`تمسح ${displayName(g)}؟ اللينك بتاعه هيبطل يشتغل.`))
+      return;
+    const res = await fetch(`${api}/guests?id=${encodeURIComponent(g.id)}`, {
+      method: "DELETE",
+    });
     if (res.ok) {
       setToast("اتمسح");
       await refresh();
@@ -108,23 +177,34 @@ export default function ManageEvent({ manageToken, slug, couple, initialTexts, i
   const visible = data.guests.filter((g) => {
     if (filter === "opened" && !g.openedAt) return false;
     if (filter === "notOpened" && g.openedAt) return false;
-    if (filter === "attending" && g.rsvp !== "attending") return false;
-    if (filter === "declined" && g.rsvp !== "declined") return false;
     const q = query.trim();
     return !q || displayName(g).includes(q) || (g.phone ?? "").includes(q);
   });
 
   const copyAll = async () => {
-    const text = data.guests.map((g) => `${displayName(g)}: ${linkFor(g)}`).join("\n");
-    setToast((await copy(text)) ? `اتنسخت ${data.guests.length} لينك` : "مقدرناش ننسخ");
+    const text = data.guests
+      .map((g) => `${displayName(g)}: ${linkFor(g)}`)
+      .join("\n");
+    setToast(
+      (await copy(text)) ? `اتنسخت ${data.guests.length} لينك` : "مقدرناش ننسخ",
+    );
   };
 
   const exportCsv = () => {
     const csv = toCsv([
       ["اللقب", "الاسم", "رقم الموبايل", "رسالة خاصة", "اللينك", "الحالة"],
-      ...data.guests.map((g) => [g.title, g.name, g.phone, g.message, linkFor(g), statusOf(g).label]),
+      ...data.guests.map((g) => [
+        g.title,
+        g.name,
+        g.phone,
+        g.message,
+        linkFor(g),
+        statusOf(g).label,
+      ]),
     ]);
-    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const url = URL.createObjectURL(
+      new Blob([csv], { type: "text/csv;charset=utf-8" }),
+    );
     const a = document.createElement("a");
     a.href = url;
     a.download = `لينكات-${slug}.csv`;
@@ -133,153 +213,261 @@ export default function ManageEvent({ manageToken, slug, couple, initialTexts, i
   };
 
   return (
-    <main className={styles.page} dir="rtl" lang="ar">
-      <header className={styles.header}>
-        <p className={styles.kicker}>دعوة</p>
-        <h1>{couple}</h1>
-        <a className={styles.linkBtn} href={generalLink} target="_blank" rel="noopener noreferrer">
-          شوف الدعوة ↗
-        </a>
-      </header>
-
-      {children}
-
-      <section className={styles.stats}>
-        <Stat label="معزوم بالاسم" value={stats.total} />
-        <Stat label="فتحوا الدعوة" value={stats.opened} />
-        <Stat label="هيحضروا" value={stats.attending} />
-        <Stat label="اعتذروا" value={stats.declined} />
-      </section>
-
-      <section className={styles.panel}>
-        <h2>اللينك العام</h2>
-        <p className={styles.hint}>لينك واحد لأي حد، من غير اسم. المعزوم بيكتب اسمه وهو بيرد.</p>
-        <div className={styles.copyRow}>
-          <code dir="ltr">{generalLink}</code>
-          <button type="button" className={styles.secondary} onClick={async () => setToast((await copy(generalLink)) ? "اتنسخ" : "مقدرناش ننسخ")}>
-            نسخ
-          </button>
+    <main className={`${styles.page} ${styles.wide}`} dir="rtl" lang="ar">
+      <nav className={styles.clientNav} aria-label="صفحة الدعوة">
+        <strong>{couple}</strong>
+        <div className={styles.clientNavLinks}>
+          <a
+            href={locked ? previewBase : generalLink}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {locked ? "المعاينة" : "الدعوة"}
+          </a>
+          {orderUrl && <a href={orderUrl}>طلبي</a>}
+          {namesLimit > 0 && <a href="#guests">الضيوف</a>}
+          {showRsvp && <a href="#rsvps">الحضور</a>}
+          {showWishes && <a href="#wishes">التهاني</a>}
         </div>
-      </section>
+      </nav>
 
-      <TextsEditor api={api} initial={initialTexts} onSaved={() => setToast("اتحفظ")} />
+      <div className={styles.layout}>
+        <aside className={styles.sideCol}>
+          {children}
+        </aside>
 
-      {namesLimit > 0 ? (
-        <>
-      <AddGuestForm onAdd={(g) => saveGuests([g])} existingKeys={existingKeys} />
+        <div className={styles.mainCol}>
+          <section className={styles.stats}>
+            {showRsvp && <Stat label="فرد جايين" value={stats.people} />}
+            {namesLimit > 0 && <Stat label="ضيف بالاسم" value={stats.total} />}
+            {namesLimit > 0 && <Stat label="فتحوا الدعوة" value={stats.opened} />}
+            {showWishes && <Stat label="تهاني" value={stats.wishes} />}
+          </section>
 
-      <GuestImport existingKeys={existingKeys} onSave={saveGuests} />
+          <section className={styles.panel}>
+            <h2>اللينك العام</h2>
+            {locked ? (
+              <p className={styles.locked}>
+                لينك الدعوة بيتفتح بعد الدفع. لحد كده تقدر تشوف المعاينة بس.
+              </p>
+            ) : (
+              <>
+                <p className={styles.hint}>لينك واحد لأي حد، من غير اسم.</p>
+                <div className={styles.copyRow}>
+                  <code dir="ltr">{generalLink}</code>
+                  <button
+                    type="button"
+                    className={styles.secondary}
+                    onClick={async () =>
+                      setToast(
+                        (await copy(generalLink)) ? "اتنسخ" : "مقدرناش ننسخ",
+                      )
+                    }
+                  >
+                    نسخ
+                  </button>
+                </div>
+              </>
+            )}
+          </section>
 
-      <section className={styles.panel}>
-        <div className={styles.panelHead}>
-          <h2>المعازيم ({data.guests.length})</h2>
-          {data.guests.length > 0 && (
-            <div className={styles.inlineActions}>
-              <button type="button" className={styles.secondary} onClick={copyAll}>
-                نسخ كل اللينكات
-              </button>
-              <button type="button" className={styles.secondary} onClick={exportCsv}>
-                تصدير Excel
-              </button>
-            </div>
+          {namesLimit > 0 ? (
+            <>
+              <AddGuestForm
+                onAdd={(g) => saveGuests([g])}
+                existingKeys={existingKeys}
+              />
+
+              <GuestImport existingKeys={existingKeys} onSave={saveGuests} />
+
+              <section className={styles.panel} id="guests">
+                <div className={styles.panelHead}>
+                  <h2>الضيوف ({data.guests.length})</h2>
+                  {data.guests.length > 0 && !locked && (
+                    <div className={styles.inlineActions}>
+                      <button
+                        type="button"
+                        className={styles.secondary}
+                        onClick={copyAll}
+                      >
+                        نسخ كل اللينكات
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.secondary}
+                        onClick={exportCsv}
+                      >
+                        تصدير Excel
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {locked && data.guests.length > 0 && (
+                  <p className={styles.locked}>
+                    لينكات الضيوف ونسخها وتصديرها بيتفتحوا بعد الدفع. تقدر
+                    تشوف معاينة أي ضيف.
+                  </p>
+                )}
+                {data.guests.length === 0 ? (
+                  <p className={styles.empty}>
+                    لسه مفيش ضيوف بالاسم. ضيف بإيدك أو ارفع شيت.
+                  </p>
+                ) : (
+                  <>
+                    <div className={styles.filters}>
+                      <input
+                        className={styles.input}
+                        placeholder="بحث بالاسم أو الرقم"
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                      />
+                      <select
+                        className={styles.input}
+                        value={filter}
+                        onChange={(e) => setFilter(e.target.value as Filter)}
+                      >
+                        <option value="all">الكل</option>
+                        <option value="opened">فتحوا الدعوة</option>
+                        <option value="notOpened">لسه مفتحوش</option>
+                      </select>
+                    </div>
+                    <ul className={styles.guestList}>
+                      {visible.map((g) => {
+                        const st = statusOf(g);
+                        return (
+                          <li key={g.id} className={styles.guest}>
+                            <div className={styles.guestMain}>
+                              <strong>{displayName(g)}</strong>
+                              {g.phone && (
+                                <span dir="ltr" className={styles.phone}>
+                                  {g.phone}
+                                </span>
+                              )}
+                              <GuestMessage
+                                api={api}
+                                guest={g}
+                                onSaved={async (msg) => {
+                                  setToast(
+                                    msg ? "الرسالة اتحفظت" : "الرسالة اتشالت",
+                                  );
+                                  await refresh();
+                                }}
+                              />
+                            </div>
+                            <span className={`${styles.badge} ${st.cls}`}>
+                              {st.label}
+                            </span>
+                            <div className={styles.guestActions}>
+                              {locked ? (
+                                <a
+                                  className={styles.secondary}
+                                  href={previewFor(g)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  <Icon name="eye" size={16} /> معاينة
+                                </a>
+                              ) : (
+                                <>
+                                  <button
+                                    type="button"
+                                    className={styles.secondary}
+                                    onClick={async () =>
+                                      setToast(
+                                        (await copy(linkFor(g)))
+                                          ? "اتنسخ اللينك"
+                                          : "مقدرناش ننسخ",
+                                      )
+                                    }
+                                  >
+                                    نسخ اللينك
+                                  </button>
+                                  <a
+                                    className={styles.iconBtn}
+                                    href={linkFor(g)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    aria-label="فتح الدعوة"
+                                  >
+                                    <Icon name="external" size={16} />
+                                  </a>
+                                </>
+                              )}
+                              <button
+                                type="button"
+                                className={styles.iconBtn}
+                                onClick={() => removeGuest(g)}
+                                aria-label="مسح"
+                              >
+                                <Icon name="x" />
+                              </button>
+                            </div>
+                          </li>
+                        );
+                      })}
+                      {visible.length === 0 && (
+                        <li className={styles.empty}>مفيش نتايج</li>
+                      )}
+                    </ul>
+                  </>
+                )}
+              </section>
+            </>
+        ) : null}
+
+          {showRsvp && (
+            <section className={styles.panel} id="rsvps">
+              <h2>الحضور ({data.rsvps?.length ?? 0} رد)</h2>
+              <p className={styles.hint}>
+                {stats.people} فرد جايين من {stats.attending} رد · {stats.maybe} يمكن · {stats.declined} مش جايين
+              </p>
+              {(data.rsvps ?? []).length === 0 ? (
+                <p className={styles.empty}>لسه محدش رد.</p>
+              ) : (
+                <ul className={styles.wishes}>
+                  {data.rsvps.map((r) => (
+                    <li key={`${r.guestId ?? r.name}-${r.createdAt}`}>
+                      <strong>{r.name}</strong>{" "}
+                      <span
+                        className={`${styles.badge} ${r.status === "attending" ? styles.badgeOk : r.status === "maybe" ? styles.badgeInfo : styles.badgeBad}`}
+                      >
+                        {RSVP_LABELS[r.status]}
+                        {r.status !== "declined" && (r.count ?? 1) > 1 ? ` · ${r.count} أفراد` : ""}
+                      </span>
+                      {r.note && <p>{r.note}</p>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          )}
+
+          {showWishes && (
+            <section className={styles.panel} id="wishes">
+              <h2>التهاني ({data.wishes.length})</h2>
+              {data.wishes.length === 0 ? (
+                <p className={styles.empty}>لسه مفيش تهاني.</p>
+              ) : (
+                <ul className={styles.wishes}>
+                  {data.wishes.map((w) => (
+                    <li key={w.id}>
+                      <strong>{w.name}</strong>
+                      <p>{w.body}</p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
           )}
         </div>
+      </div>
 
-        {data.guests.length === 0 ? (
-          <p className={styles.empty}>لسه مفيش معازيم بالاسم. ضيف بإيدك أو ارفع شيت.</p>
-        ) : (
-          <>
-            <div className={styles.filters}>
-              <input className={styles.input} placeholder="بحث بالاسم أو الرقم" value={query} onChange={(e) => setQuery(e.target.value)} />
-              <select className={styles.input} value={filter} onChange={(e) => setFilter(e.target.value as Filter)}>
-                <option value="all">الكل</option>
-                <option value="opened">فتحوا الدعوة</option>
-                <option value="notOpened">لسه مفتحوش</option>
-                <option value="attending">هيحضروا</option>
-                <option value="declined">اعتذروا</option>
-              </select>
-            </div>
-            <ul className={styles.guestList}>
-              {visible.map((g) => {
-                const st = statusOf(g);
-                return (
-                  <li key={g.id} className={styles.guest}>
-                    <div className={styles.guestMain}>
-                      <strong>{displayName(g)}</strong>
-                      {g.phone && <span dir="ltr" className={styles.phone}>{g.phone}</span>}
-                      <GuestMessage
-                        api={api}
-                        guest={g}
-                        onSaved={async (msg) => {
-                          setToast(msg ? "الرسالة اتحفظت" : "الرسالة اتشالت");
-                          await refresh();
-                        }}
-                      />
-                    </div>
-                    <span className={`${styles.badge} ${st.cls}`}>{st.label}</span>
-                    <div className={styles.guestActions}>
-                      <button type="button" className={styles.secondary} onClick={async () => setToast((await copy(linkFor(g))) ? "اتنسخ اللينك" : "مقدرناش ننسخ")}>
-                        نسخ اللينك
-                      </button>
-                      <a className={styles.iconBtn} href={linkFor(g)} target="_blank" rel="noopener noreferrer" aria-label="فتح الدعوة">
-                        ↗
-                      </a>
-                      <button type="button" className={styles.iconBtn} onClick={() => removeGuest(g)} aria-label="مسح">
-                        ✕
-                      </button>
-                    </div>
-                  </li>
-                );
-              })}
-              {visible.length === 0 && <li className={styles.empty}>مفيش نتايج</li>}
-            </ul>
-          </>
-        )}
-      </section>
-        </>
-      ) : (
-        <section className={styles.panel}>
-          <h2>دعوة باسم كل معزوم</h2>
-          <p className={styles.hint}>
-            باقتك فيها لينك عام واحد لكل الناس. الدعوة باسم كل معزوم (ورسالة خاصة لأي حد) موجودة في باقة &quot;على
-            ذوقك&quot; والباقة الخاصة. كلمنا لو حابب تغيّر.
-          </p>
-        </section>
+      {toast && (
+        <div className={styles.toast} role="status">
+          {toast}
+        </div>
       )}
-
-      {data.generalRsvps.length > 0 && (
-        <section className={styles.panel}>
-          <h2>ردود من اللينك العام ({data.generalRsvps.length})</h2>
-          <ul className={styles.simpleList}>
-            {data.generalRsvps.map((r, i) => (
-              <li key={i}>
-                <span>{r.name}</span>
-                <span className={`${styles.badge} ${r.status === "attending" ? styles.badgeOk : styles.badgeBad}`}>
-                  {r.status === "attending" ? "هيحضر" : "اعتذر"}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {showWishes && <section className={styles.panel}>
-        <h2>التهاني ({data.wishes.length})</h2>
-        {data.wishes.length === 0 ? (
-          <p className={styles.empty}>لسه مفيش تهاني.</p>
-        ) : (
-          <ul className={styles.wishes}>
-            {data.wishes.map((w) => (
-              <li key={w.id}>
-                <strong>{w.name}</strong>
-                <p>{w.body}</p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>}
-
-      {toast && <div className={styles.toast} role="status">{toast}</div>}
     </main>
   );
 }
@@ -293,61 +481,13 @@ function Stat({ label, value }: { label: string; value: number }) {
   );
 }
 
-function TextsEditor({ api, initial, onSaved }: { api: string; initial: Props["initialTexts"]; onSaved: () => void }) {
-  const [generalText, setGeneralText] = useState(initial.generalText);
-  const [personalText, setPersonalText] = useState(initial.personalText);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const insert = (token: string) => setPersonalText((t) => `${t.trimEnd()} ${token}`);
-
-  const save = async (e: FormEvent) => {
-    e.preventDefault();
-    setBusy(true);
-    setError(null);
-    const res = await fetch(`${api}/texts`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ generalText, personalText }),
-    });
-    setBusy(false);
-    if (res.ok) onSaved();
-    else {
-      const body = (await res.json().catch(() => ({}))) as { error?: string };
-      setError(body.error === "name_placeholder_missing" ? "لازم الصيغة يكون فيها {name}" : "الكلام فاضي أو طويل أوي");
-    }
-  };
-
-  return (
-    <form className={styles.panel} onSubmit={save}>
-      <h2>صيغة الدعوة</h2>
-      <label className={styles.field}>
-        <span>الدعوة العامة (من غير اسم)</span>
-        <input className={styles.input} value={generalText} maxLength={200} onChange={(e) => setGeneralText(e.target.value)} />
-      </label>
-      <label className={styles.field}>
-        <span>الدعوة بالاسم</span>
-        <input className={styles.input} value={personalText} maxLength={200} onChange={(e) => setPersonalText(e.target.value)} />
-      </label>
-      <div className={styles.inlineActions}>
-        <button type="button" className={styles.chip} onClick={() => insert("{title}")}>+ اللقب</button>
-        <button type="button" className={styles.chip} onClick={() => insert("{name}")}>+ الاسم</button>
-        <button type="button" className={styles.chip} onClick={() => setPersonalText("تشرفنا بحضورك أنت والأسرة الكريمة يا {title} {name}")}>
-          صيغة &quot;أنت والأسرة الكريمة&quot;
-        </button>
-      </div>
-      <p className={styles.preview}>
-        <span>معاينة:</span> {fillPersonalText(personalText, { title: "أستاذ", name: "أحمد" })}
-      </p>
-      {error && <p className={styles.error}>{error}</p>}
-      <button type="submit" className={styles.primary} disabled={busy}>
-        حفظ الصيغة
-      </button>
-    </form>
-  );
-}
-
-function AddGuestForm({ onAdd, existingKeys }: { onAdd: (g: ParsedGuest) => Promise<void>; existingKeys: Set<string> }) {
+function AddGuestForm({
+  onAdd,
+  existingKeys,
+}: {
+  onAdd: (g: ParsedGuest) => Promise<void>;
+  existingKeys: Set<string>;
+}) {
   const [title, setTitle] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -360,12 +500,16 @@ function AddGuestForm({ onAdd, existingKeys }: { onAdd: (g: ParsedGuest) => Prom
     const g = validateGuest({ title, name, phone, message });
     if (g.error) {
       setError(
-        g.error === "phone_invalid" ? "الرقم مش صحيح" : g.error === "message_too_long" ? "الرسالة طويلة (300 حرف بحد أقصى)" : "اكتب الاسم",
+        g.error === "phone_invalid"
+          ? "الرقم مش صحيح"
+          : g.error === "message_too_long"
+            ? "الرسالة طويلة (300 حرف بحد أقصى)"
+            : "اكتب الاسم",
       );
       return;
     }
     if (existingKeys.has(guestKey(g))) {
-      setError("المعزوم ده متضاف قبل كده");
+      setError("الضيف ده متضاف قبل كده");
       return;
     }
     setBusy(true);
@@ -384,16 +528,38 @@ function AddGuestForm({ onAdd, existingKeys }: { onAdd: (g: ParsedGuest) => Prom
 
   return (
     <form className={styles.panel} onSubmit={submit}>
-      <h2>إضافة معزوم</h2>
+      <h2>إضافة ضيف</h2>
       <div className={styles.addRow}>
-        <input className={styles.input} list="titles" placeholder="اللقب" value={title} maxLength={30} onChange={(e) => setTitle(e.target.value)} />
+        <input
+          className={styles.input}
+          list="titles"
+          placeholder="اللقب (اختياري)"
+          autoComplete="off"
+          value={title}
+          maxLength={30}
+          onChange={(e) => setTitle(e.target.value)}
+        />
         <datalist id="titles">
           {TITLES.map((t) => (
             <option key={t} value={t} />
           ))}
         </datalist>
-        <input className={styles.input} placeholder="الاسم" value={name} maxLength={80} onChange={(e) => setName(e.target.value)} required />
-        <input className={styles.input} placeholder="رقم الموبايل (اختياري)" value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" dir="ltr" />
+        <input
+          className={styles.input}
+          placeholder="الاسم"
+          value={name}
+          maxLength={80}
+          onChange={(e) => setName(e.target.value)}
+          required
+        />
+        <input
+          className={styles.input}
+          placeholder="رقم الموبايل (اختياري)"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          inputMode="tel"
+          dir="ltr"
+        />
         <button type="submit" className={styles.primary} disabled={busy}>
           إضافة
         </button>
@@ -412,7 +578,15 @@ function AddGuestForm({ onAdd, existingKeys }: { onAdd: (g: ParsedGuest) => Prom
 }
 
 /** A guest's personal message: shown under their name, editable in place. */
-function GuestMessage({ api, guest, onSaved }: { api: string; guest: GuestWithStatus; onSaved: (msg: string | null) => Promise<void> }) {
+function GuestMessage({
+  api,
+  guest,
+  onSaved,
+}: {
+  api: string;
+  guest: GuestWithStatus;
+  onSaved: (msg: string | null) => Promise<void>;
+}) {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(guest.message ?? "");
   const [busy, setBusy] = useState(false);
@@ -440,7 +614,11 @@ function GuestMessage({ api, guest, onSaved }: { api: string; guest: GuestWithSt
   if (!editing) {
     return (
       <span className={styles.guestMessage}>
-        {guest.message && <em>✉ {guest.message}</em>}
+        {guest.message && (
+          <em>
+            <Icon name="mail" size={14} /> {guest.message}
+          </em>
+        )}
         <button
           type="button"
           className={styles.linkBtn}
@@ -466,15 +644,29 @@ function GuestMessage({ api, guest, onSaved }: { api: string; guest: GuestWithSt
         onChange={(e) => setText(e.target.value)}
       />
       <span className={styles.inlineActions}>
-        <button type="button" className={styles.primary} disabled={busy} onClick={() => save(text)}>
+        <button
+          type="button"
+          className={styles.primary}
+          disabled={busy}
+          onClick={() => save(text)}
+        >
           حفظ
         </button>
         {guest.message && (
-          <button type="button" className={styles.secondary} disabled={busy} onClick={() => save("")}>
+          <button
+            type="button"
+            className={styles.secondary}
+            disabled={busy}
+            onClick={() => save("")}
+          >
             شيل الرسالة
           </button>
         )}
-        <button type="button" className={styles.linkBtn} onClick={() => setEditing(false)}>
+        <button
+          type="button"
+          className={styles.linkBtn}
+          onClick={() => setEditing(false)}
+        >
           إلغاء
         </button>
       </span>

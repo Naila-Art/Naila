@@ -41,6 +41,7 @@ export function sniff(data: Uint8Array): "mp4" | "mp3" | "jpg" | "png" | "webp" 
 
 export const CONTENT_TYPES: Record<string, string> = {
   mp4: "video/mp4",
+  mov: "video/quicktime",
   mp3: "audio/mpeg",
   m4a: "audio/mp4",
   jpg: "image/jpeg",

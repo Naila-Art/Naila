@@ -5,6 +5,7 @@ import { builtInTemplates } from "./templates";
 import { withDefaults, type Pricing } from "./pricing";
 import { SAMPLES, isSampleSlug } from "./samples";
 import type {
+  AdminUser,
   ChangeRequest,
   EventData,
   Guest,
@@ -13,19 +14,27 @@ import type {
   GuestWithStatus,
   MusicTrack,
   Order,
+  PaymentMethodConfig,
   Rsvp,
   RsvpStatus,
+  ArtSlot,
   Template,
   Wish,
 } from "./types";
 
 /**
  * Data access for the whole app. Pages and API routes only call these functions.
- * Storage is Supabase in production and a local JSON file in development (see ./db.ts).
+ * Storage is Postgres (Neon) in production and a local JSON file in development (see ./db.ts).
  */
 
 async function one<T>(c: Collection, field: string, value: string): Promise<T | null> {
   return (await db().where<T>(c, field, value))[0] ?? null;
+}
+
+export interface StoredSiteSettings {
+  brand?: string;
+  whatsapp?: string;
+  socials?: { facebook?: string; instagram?: string; tiktok?: string };
 }
 
 function put(c: Collection, id: string, data: object): Promise<void> {
@@ -35,6 +44,7 @@ function put(c: Collection, id: string, data: object): Promise<void> {
 const byNewest = <T extends { createdAt?: string }>(a: T, b: T) => (b.createdAt ?? "").localeCompare(a.createdAt ?? "");
 
 export async function getEventBySlug(slug: string): Promise<EventData | null> {
+  slug = slug.toLowerCase();
   const found = await one<EventData>("events", "slug", slug);
   if (found || !isSampleSlug(slug)) return found;
   // Sample invitations are created the first time someone opens one.
@@ -89,10 +99,22 @@ export function recordView(view: Omit<GuestView, "openedAt">): Promise<void> {
 }
 
 /** One reply per named guest (updates on change). General-link replies are appended. */
-export async function upsertRsvp(input: { eventId: string; guestId?: string; name: string; status: RsvpStatus }): Promise<Rsvp> {
+export async function upsertRsvp(input: {
+  eventId: string;
+  guestId?: string;
+  name: string;
+  status: RsvpStatus;
+  count?: number;
+  note?: string;
+}): Promise<Rsvp> {
   const rsvp: Rsvp = { ...input, createdAt: new Date().toISOString() };
   await put("rsvps", input.guestId ? `${input.eventId}:${input.guestId}` : randomUUID(), rsvp);
   return rsvp;
+}
+
+/** Whether a link the client picked is still free (shape is checked separately). */
+export async function isSlugFree(slug: string): Promise<boolean> {
+  return !isSampleSlug(slug) && !(await one<EventData>("events", "slug", slug));
 }
 
 // ---------------------------------------------------------------------------
@@ -124,14 +146,17 @@ export async function getEventDashboard(eventId: string) {
   for (const v of views) {
     if (v.guestId && !firstOpen.has(v.guestId)) firstOpen.set(v.guestId, v.openedAt);
   }
-  const rsvpByGuest = new Map(rsvps.filter((r) => r.guestId).map((r) => [r.guestId!, r.status]));
+  const rsvpByGuest = new Map(rsvps.filter((r) => r.guestId).map((r) => [r.guestId!, r]));
 
-  const guests: GuestWithStatus[] = allGuests.map((g) => ({ ...g, openedAt: firstOpen.get(g.id), rsvp: rsvpByGuest.get(g.id) }));
+  const guests: GuestWithStatus[] = allGuests.map((g) => {
+    const r = rsvpByGuest.get(g.id);
+    return { ...g, openedAt: firstOpen.get(g.id), rsvp: r?.status, rsvpCount: r?.count };
+  });
 
   return {
     guests,
-    /** Replies that came through the general link (guest typed their own name). */
-    generalRsvps: rsvps.filter((r) => !r.guestId).sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
+    /** Every attendance reply (named guests and the general link), newest first. */
+    rsvps: [...rsvps].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
     /** Opens of the general link (not tied to a guest). */
     generalOpens: views.filter((v) => !v.guestId).length,
     wishes: wishes.sort(byNewest),
@@ -215,6 +240,35 @@ export async function addTemplate(template: Template): Promise<Template> {
 }
 
 /** Removes an uploaded template. Returns how many events were using it (they fall back to the built-in one). */
+/** Renames / recolours an uploaded template. Returns null if it doesn't exist. */
+export async function updateTemplateDetails(
+  id: string,
+  details: Pick<Template, "name" | "category" | "theme" | "badge">,
+): Promise<Template | null> {
+  const tpl = await one<Template>("templates", "id", id);
+  if (!tpl) return null;
+  tpl.name = details.name;
+  tpl.category = details.category;
+  tpl.theme = details.theme;
+  if (details.badge) tpl.badge = details.badge;
+  else delete tpl.badge;
+  await put("templates", tpl.id, tpl);
+  return tpl;
+}
+
+/** Sets (or clears, with undefined) one artwork slot of an uploaded template. Returns the old URL. */
+export async function setTemplateArt(id: string, slot: ArtSlot, url: string | undefined): Promise<{ found: boolean; oldUrl?: string }> {
+  const tpl = await one<Template>("templates", "id", id);
+  if (!tpl) return { found: false };
+  const oldUrl = tpl.art?.[slot];
+  const art = { ...(tpl.art ?? {}) };
+  if (url) art[slot] = url;
+  else delete art[slot];
+  tpl.art = Object.keys(art).length ? art : undefined;
+  await put("templates", tpl.id, tpl);
+  return { found: true, oldUrl };
+}
+
 export async function deleteTemplate(id: string): Promise<{ deleted: boolean; eventsUsing: number }> {
   const deleted = (await db().remove("templates", "id", id)) > 0;
   const eventsUsing = (await db().where<EventData>("events", "templateId", id)).length;
@@ -250,11 +304,15 @@ async function freeSlug(): Promise<string> {
 export async function createDraft(
   event: Omit<EventData, "id" | "slug" | "manageToken" | "orderId" | "status" | "createdAt">,
   order: Omit<Order, "id" | "eventId" | "kind" | "payment" | "createdAt">,
-): Promise<{ event: EventData; order: Order }> {
+  /** The link the client picked (already validated); taken = null result. */
+  wantedSlug?: string,
+): Promise<{ event: EventData; order: Order } | null> {
+  if (wantedSlug && !(await isSlugFree(wantedSlug))) return null;
   const now = new Date().toISOString();
   const eventId = newId("evt");
   const orderId = newId("ord");
-  const e: EventData = { ...event, id: eventId, slug: await freeSlug(), manageToken: randomToken(20), orderId, status: "draft", createdAt: now };
+  const slug = wantedSlug || (await freeSlug());
+  const e: EventData = { ...event, id: eventId, slug, manageToken: randomToken(20), orderId, status: "draft", createdAt: now };
   const o: Order = { ...order, id: orderId, eventId, kind: "self", payment: "unpaid", createdAt: now };
   await put("orders", o.id, o);
   await put("events", e.id, e);
@@ -349,7 +407,10 @@ export async function restoreOrder(id: string): Promise<Order | null> {
 }
 
 export type EventDetailsPatch = Partial<
-  Pick<EventData, "partnerA" | "partnerB" | "date" | "venueName" | "venueAddress" | "mapsUrl" | "lang" | "templateId" | "musicTrackId" | "musicUrl">
+  Pick<
+    EventData,
+    "partnerA" | "partnerB" | "date" | "venueName" | "venueAddress" | "mapsUrl" | "lang" | "templateId" | "musicTrackId" | "musicUrl" | "generalText" | "rsvp"
+  >
 >;
 
 export async function updateEventDetails(eventId: string, patch: EventDetailsPatch): Promise<EventData | null> {
@@ -443,4 +504,123 @@ export async function getPricing(): Promise<Pricing> {
 export async function savePricing(pricing: Pricing): Promise<Pricing> {
   await put("settings", "pricing", pricing);
   return pricing;
+}
+
+// ---------------------------------------------------------------------------
+// Dashboard accounts
+// ---------------------------------------------------------------------------
+
+export async function listAdminUsers(): Promise<AdminUser[]> {
+  return (await db().list<AdminUser>("admins")).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+}
+
+export function getAdminUser(id: string): Promise<AdminUser | null> {
+  return one<AdminUser>("admins", "id", id);
+}
+
+export function findAdminByEmail(email: string): Promise<AdminUser | null> {
+  return one<AdminUser>("admins", "email", email.trim().toLowerCase());
+}
+
+/** Adds an account; returns null if the email is taken (also enforced by a unique index). */
+export async function addAdminUser(user: Omit<AdminUser, "id" | "createdAt">): Promise<AdminUser | null> {
+  const email = user.email.trim().toLowerCase();
+  if (await findAdminByEmail(email)) return null;
+  const created: AdminUser = { ...user, email, id: newId("adm"), createdAt: new Date().toISOString() };
+  await put("admins", created.id, created);
+  return created;
+}
+
+export async function updateAdminPassword(id: string, passwordHash: string): Promise<boolean> {
+  const a = await getAdminUser(id);
+  if (!a) return false;
+  await put("admins", a.id, { ...a, passwordHash });
+  return true;
+}
+
+/** Removes an account, but never the last one. */
+export async function deleteAdminUser(id: string): Promise<"ok" | "not_found" | "last"> {
+  const list = await db().list<AdminUser>("admins");
+  if (!list.some((a) => a.id === id)) return "not_found";
+  if (list.length <= 1) return "last";
+  await db().remove("admins", "id", id);
+  return "ok";
+}
+
+// ---------------------------------------------------------------------------
+// Finance page password
+// ---------------------------------------------------------------------------
+
+export async function getFinancePasswordHash(): Promise<string | null> {
+  return (await one<{ hash?: string }>("settings", "id", "financePassword"))?.hash ?? null;
+}
+
+export function setFinancePasswordHash(hash: string): Promise<void> {
+  return put("settings", "financePassword", { hash });
+}
+
+// ---------------------------------------------------------------------------
+// Package 3+: client references and brief
+// ---------------------------------------------------------------------------
+
+export async function addOrderReference(orderId: string, ref: NonNullable<Order["references"]>[number]): Promise<Order | null> {
+  const order = await getOrder(orderId);
+  if (!order) return null;
+  (order.references ??= []).push(ref);
+  await put("orders", order.id, order);
+  return order;
+}
+
+export async function removeOrderReference(orderId: string, url: string): Promise<boolean> {
+  const order = await getOrder(orderId);
+  if (!order?.references) return false;
+  const before = order.references.length;
+  order.references = order.references.filter((r) => r.url !== url);
+  if (order.references.length === before) return false;
+  await put("orders", order.id, order);
+  return true;
+}
+
+export async function updateOrderBrief(orderId: string, notes: string, link?: string): Promise<boolean> {
+  const order = await getOrder(orderId);
+  if (!order) return false;
+  order.brief = { category: order.brief?.category ?? "wedding", date: order.brief?.date, notes, link: link || undefined };
+  await put("orders", order.id, order);
+  return true;
+}
+
+// ---------------------------------------------------------------------------
+// Payment methods (dashboard)
+// ---------------------------------------------------------------------------
+
+/** Starting set: Instapay (from INSTAPAY_HANDLE if set), wallets off, card on (shown only once Paymob keys exist). */
+function defaultPaymentMethods(): PaymentMethodConfig[] {
+  const instapay = process.env.INSTAPAY_HANDLE?.trim() ?? "";
+  return [
+    { id: "instapay", name: "إنستاباي", kind: "transfer", account: instapay, active: Boolean(instapay) },
+    { id: "vodafone_cash", name: "فودافون كاش", kind: "transfer", account: "", active: false },
+    { id: "card", name: "فيزا / ميزة / أبل باي", kind: "card", account: "", active: true },
+  ];
+}
+
+export async function listPaymentMethods(): Promise<PaymentMethodConfig[]> {
+  return (await one<{ value?: PaymentMethodConfig[] }>("settings", "id", "paymentMethods"))?.value ?? defaultPaymentMethods();
+}
+
+export async function savePaymentMethods(methods: PaymentMethodConfig[]): Promise<PaymentMethodConfig[]> {
+  await put("settings", "paymentMethods", { value: methods });
+  return methods;
+}
+
+// ---------------------------------------------------------------------------
+// Site settings (dashboard)
+// ---------------------------------------------------------------------------
+
+export function getStoredSiteSettings(): Promise<StoredSiteSettings | null> {
+  return one<StoredSiteSettings>("settings", "id", "siteSettings");
+}
+
+export async function saveSiteSettings(settings: StoredSiteSettings): Promise<StoredSiteSettings> {
+  await put("settings", "siteSettings", settings);
+  return settings;
 }

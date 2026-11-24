@@ -5,15 +5,26 @@ import { useState, type FormEvent } from "react";
 import styles from "./manage.module.css";
 import store from "../store/store.module.css";
 import OrderOptions from "../store/OrderOptions";
+import DateTimePicker from "../DateTimePicker";
+import Icon from "../Icon";
+import WhatsApp from "../WhatsApp";
 import { DETAIL_ERRORS } from "../store/Builder";
 import { formatEgp, getPackage, type Pricing } from "@/lib/pricing";
 import { UPLOAD_ERRORS, UploadError, contentTypeOf, postJson, putFile } from "@/lib/upload-client";
 import type { ChangeRequest, Lang, MusicTrack, Order, PackageId, Template } from "@/lib/types";
 
+export interface ClientPaymentMethod {
+  id: string;
+  name: string;
+  kind: "transfer" | "card";
+  account: string;
+  instructions?: string;
+}
+
 export interface EventDetails {
   partnerA: string;
   partnerB: string;
-  /** Cairo wall-clock time for <input type="datetime-local"> */
+  /** Cairo wall-clock time, "YYYY-MM-DDTHH:mm" (DateTimePicker) */
   date: string;
   venueName: string;
   venueAddress: string;
@@ -21,6 +32,10 @@ export interface EventDetails {
   lang: Lang;
   templateId: string;
   musicTrackId: string;
+  /** The invitation's opening line. */
+  generalText: string;
+  /** Guests confirm attendance (package 2+). */
+  rsvp: boolean;
 }
 
 interface Props {
@@ -29,65 +44,81 @@ interface Props {
   slug: string;
   order: Order;
   details: EventDetails;
-  features: { music: boolean; maps: boolean };
+  features: { music: boolean; maps: boolean; rsvp: boolean };
   templates: Pick<Template, "id" | "name">[];
   music: MusicTrack[];
   changeRequests: ChangeRequest[];
-  paymobEnabled: boolean;
-  instapay: string;
+  /** Payment methods the client can use right now (switched on, and usable). */
+  methods: ClientPaymentMethod[];
   whatsappUrl: string;
   isNew: boolean;
   returnedFromPayment: boolean;
+  /** Absolute base for the links we show after payment, e.g. https://example.com */
+  origin: string;
 }
 
 const ERRORS: Record<string, string> = {
   ...DETAIL_ERRORS,
   ...UPLOAD_ERRORS,
   already_paid: "الطلب ده اتدفع خلاص.",
-  paymob_unavailable: "الدفع بالفيزا مش متاح دلوقتي، استخدم إنستاباي.",
-  paymob_failed: "مقدرناش نفتح صفحة الدفع. جرب تاني أو استخدم إنستاباي.",
+  paymob_unavailable: "الدفع بالفيزا مش متاح دلوقتي، اختار طريقة تانية.",
+  paymob_failed: "مقدرناش نفتح صفحة الدفع. جرب تاني أو اختار طريقة تانية.",
+  invalid_method: "طريقة الدفع دي مش متاحة دلوقتي، اختار غيرها.",
+  locked: "الطلب اتدفع، والتعديل دلوقتي من عندنا بس. كلمنا على واتساب.",
+  link_invalid: "اللينك لازم يبدأ بـ https://",
   invalid_message: "اكتب التعديل اللي عايزه.",
-  not_included: "الإضافة دي مش في طلبك.",
+  not_included: "ده مش في باقتك.",
+  reference_wrong_type: "الملف لازم يكون صورة (JPG/PNG) أو فيديو (MP4/MOV) أو أغنية (MP3/M4A).",
+  reference_too_large: "الملف أكبر من 50 ميجا.",
+  too_many_files: "وصلت لأقصى عدد ملفات (30).",
 };
 const errorText = (err: unknown) => ERRORS[err instanceof UploadError ? err.code : "failed"] ?? ERRORS.failed;
 
-/** Order status, payment, details, music and change requests on the client's page. */
-export default function OrderPanels(props: Props) {
+/**
+ * The order page (/order/{token}): checkout and payment, separate from the client's page.
+ * Before payment the client can still edit everything; after payment it's read-only (our team edits).
+ */
+export default function OrderCheckout(props: Props) {
   const { order } = props;
   const api = `/api/manage/${encodeURIComponent(props.manageToken)}`;
+  const unpaid = order.payment === "unpaid";
   return (
     <>
-      {props.isNew && order.payment === "unpaid" && (
+      {props.isNew && unpaid && (
         <section className={`${styles.panel} ${styles.notice}`}>
-          <h2>دعوتك جاهزة للمعاينة 🤍</h2>
+          <h2>دعوتك جاهزة للمعاينة</h2>
           <p>
-            دي صفحتك الخاصة. <strong>احفظ اللينك ده عندك</strong> (من غير باسورد، فمتبعتوش لحد). شوف الدعوة، عدّل اللي
-            عايزه، وادفع لما تبقى مبسوط بيها.
+            دي صفحة طلبك. <strong>احفظ اللينك ده عندك</strong>. شوف المعاينة، عدّل اللي عايزه، وادفع لما تبقى مبسوط بيها.
           </p>
         </section>
       )}
       <PaymentPanel {...props} api={api} />
-      {order.payment === "unpaid" && order.kind === "self" && <OrderEditor api={api} order={order} pricing={props.pricing} />}
-      <DetailsEditor {...props} api={api} />
-      <ChangeRequests api={api} initial={props.changeRequests} whatsappUrl={props.whatsappUrl} />
+      {unpaid && order.kind === "self" && <OrderEditor api={api} order={order} pricing={props.pricing} />}
+      {unpaid && <DetailsEditor {...props} api={api} />}
+      {order.packageId >= 3 && <ReferencesPanel api={api} order={order} locked={!unpaid} />}
+      {unpaid && <ChangeRequests api={api} initial={props.changeRequests} whatsappUrl={props.whatsappUrl} />}
     </>
   );
 }
 
 function PaymentPanel(props: Props & { api: string }) {
-  const { order } = props;
+  const { order, methods } = props;
   const router = useRouter();
   const pkg = getPackage(props.pricing, order.packageId)!;
   const [approved, setApproved] = useState(false);
+  const [methodId, setMethodId] = useState(methods[0]?.id ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [proof, setProof] = useState<File | null>(null);
+  const [copied, setCopied] = useState(false);
+  const method = methods.find((m) => m.id === methodId);
+  const previewUrl = `/order/${encodeURIComponent(props.manageToken)}/preview`;
 
   async function payWithCard() {
     setError("");
     setBusy(true);
     try {
-      const { redirectUrl } = await postJson<{ redirectUrl: string }>(`${props.api}/payment`, { method: "paymob" });
+      const { redirectUrl } = await postJson<{ redirectUrl: string }>(`${props.api}/payment`, { method: methodId });
       window.location.href = redirectUrl;
     } catch (err) {
       setError(errorText(err));
@@ -108,7 +139,7 @@ function PaymentPanel(props: Props & { api: string }) {
         size: proof.size,
       });
       await putFile(slot.uploadUrl, proof, contentType);
-      await postJson(`${props.api}/payment`, { method: "instapay", objectKey: slot.objectKey });
+      await postJson(`${props.api}/payment`, { method: methodId, objectKey: slot.objectKey });
       router.refresh();
     } catch (err) {
       setError(errorText(err));
@@ -117,27 +148,45 @@ function PaymentPanel(props: Props & { api: string }) {
     }
   }
 
+  async function copyAccount() {
+    if (!method) return;
+    try {
+      await navigator.clipboard.writeText(method.account);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {}
+  }
+
   return (
-    <section className={styles.panel}>
+    <section className={styles.panel} id="payment">
       <div className={styles.panelHead}>
-        <h2>الطلب</h2>
-        <span
-          className={`${styles.badge} ${
-            order.payment === "paid" ? styles.badgeOk : order.payment === "pending_review" ? styles.badgeInfo : styles.badgeMuted
-          }`}
-        >
-          {order.payment === "paid" ? "مدفوع · الدعوة شغالة" : order.payment === "pending_review" ? "بنراجع التحويل" : "معاينة · مش مدفوع"}
-        </span>
+        <h2>الطلب والدفع</h2>
+        <PayStatus payment={order.payment} />
       </div>
 
       <p>
         باقة <strong>{pkg.name}</strong> · {formatEgp(order.total)}
       </p>
 
-      {order.payment === "paid" && <p className={styles.ok}>تم الدفع. ابعت اللينكات للمعازيم من تحت.</p>}
+      {order.payment === "paid" && <PaidLinks {...props} />}
 
       {order.payment === "pending_review" && (
-        <p className={styles.hint}>استلمنا صورة التحويل وبنراجعها. أول ما نأكدها الدعوة هتشتغل والصفحة دي هتتحدث.</p>
+        <>
+          <p className={styles.hint}>
+            استلمنا صورة التحويل ({order.paymentMethodName}) وبنراجعها. أول ما نأكدها هتلاقي لينكاتك هنا، وهتوصلك على{" "}
+            <WhatsApp /> كمان.
+          </p>
+          {order.proofUrl && (
+            // eslint-disable-next-line @next/next/no-img-element -- storage URL
+            <img className={styles.proofThumb} src={order.proofUrl} alt="صورة التحويل" />
+          )}
+        </>
+      )}
+
+      {order.payment !== "paid" && (
+        <a className={styles.secondary} href={previewUrl} target="_blank" rel="noopener noreferrer">
+          <Icon name="eye" /> شوف المعاينة
+        </a>
       )}
 
       {order.payment === "unpaid" && (
@@ -153,46 +202,15 @@ function PaymentPanel(props: Props & { api: string }) {
             </p>
           )}
           <p className={styles.hint}>
-            الدعوة دلوقتي معاينة: عليها شريط &quot;معاينة&quot; والمعازيم مش هيقدروا يردوا. بعد الدفع بتشتغل على طول.
+            اللي فوق معاينة عليها علامة &quot;معاينة&quot;. لينك الدعوة ولينكات الضيوف بيتفتحوا بعد الدفع على طول.
           </p>
-          <a className={styles.secondary} href={`/i/${props.slug}`} target="_blank" rel="noopener noreferrer">
-            شوف الدعوة ↗
-          </a>
 
           <label className={styles.checkRow}>
             <input type="checkbox" checked={approved} onChange={(e) => setApproved(e.target.checked)} />
-            <span>شفت الدعوة والبيانات مظبوطة، وموافق عليها</span>
+            <span>شفت المعاينة والبيانات مظبوطة، وموافق عليها</span>
           </label>
 
-          {props.paymobEnabled && (
-            <button type="button" className={styles.primary} disabled={!approved || busy} onClick={payWithCard}>
-              ادفع {formatEgp(order.total)} بالفيزا / أبل باي / المحفظة
-            </button>
-          )}
-
-          {props.instapay && (
-            <form className={styles.instapay} onSubmit={sendProof}>
-              <h3>أو حوّل على إنستاباي</h3>
-              <p>
-                حوّل <strong>{formatEgp(order.total)}</strong> على{" "}
-                <bdi dir="ltr" className={styles.mono}>
-                  {props.instapay}
-                </bdi>{" "}
-                وارفع صورة التحويل.
-              </p>
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={(e) => setProof(e.target.files?.[0] ?? null)}
-                disabled={!approved || busy}
-              />
-              <button type="submit" className={styles.secondary} disabled={!approved || !proof || busy}>
-                {busy ? "بيترفع..." : "ابعت صورة التحويل"}
-              </button>
-            </form>
-          )}
-
-          {!props.paymobEnabled && !props.instapay && (
+          {methods.length === 0 ? (
             <p className={styles.hint}>
               كلمنا على واتساب عشان تدفع.{" "}
               {props.whatsappUrl && (
@@ -201,7 +219,48 @@ function PaymentPanel(props: Props & { api: string }) {
                 </a>
               )}
             </p>
+          ) : (
+            <fieldset className={styles.methods} disabled={!approved || busy}>
+              <legend>اختار طريقة الدفع</legend>
+              <div className={styles.methodList} role="radiogroup">
+                {methods.map((pm) => (
+                  <label key={pm.id} className={styles.method} data-checked={pm.id === methodId}>
+                    <input type="radio" name="method" checked={pm.id === methodId} onChange={() => setMethodId(pm.id)} />
+                    <span>{pm.name}</span>
+                  </label>
+                ))}
+              </div>
+
+              {method?.kind === "card" && (
+                <button type="button" className={styles.primary} onClick={payWithCard}>
+                  ادفع {formatEgp(order.total)}
+                </button>
+              )}
+
+              {method?.kind === "transfer" && (
+                <form className={styles.instapay} onSubmit={sendProof}>
+                  <p>
+                    حوّل <strong>{formatEgp(order.total)}</strong> {method.name} على:
+                  </p>
+                  <div className={styles.copyRow}>
+                    <code dir="ltr">{method.account}</code>
+                    <button type="button" className={styles.secondary} onClick={copyAccount}>
+                      {copied ? "اتنسخ" : "نسخ"}
+                    </button>
+                  </div>
+                  {method.instructions && <p className={styles.hint}>{method.instructions}</p>}
+                  <label className={styles.field}>
+                    <span>صورة التحويل</span>
+                    <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => setProof(e.target.files?.[0] ?? null)} />
+                  </label>
+                  <button type="submit" className={styles.primary} disabled={!proof}>
+                    {busy ? "بيترفع..." : "ابعت صورة التحويل"}
+                  </button>
+                </form>
+              )}
+            </fieldset>
           )}
+          {!approved && methods.length > 0 && <p className={styles.hint}>علّم على الموافقة الأول عشان تقدر تدفع.</p>}
         </>
       )}
 
@@ -253,7 +312,7 @@ function DetailsEditor(props: Props & { api: string }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const set = (patch: Partial<EventDetails>) => setD((x) => ({ ...x, ...patch }));
-  const langLocked = props.order.payment !== "unpaid";
+  const langLocked = false;
 
   async function save(e: FormEvent) {
     e.preventDefault();
@@ -274,6 +333,10 @@ function DetailsEditor(props: Props & { api: string }) {
     <details className={styles.panel}>
       <summary className={styles.summary}>تعديل بيانات الدعوة</summary>
       <form className={styles.detailsForm} onSubmit={save}>
+        <label className={styles.field}>
+          <span>الجملة اللي في أول الدعوة</span>
+          <input className={styles.input} value={d.generalText} maxLength={200} onChange={(e) => set({ generalText: e.target.value })} />
+        </label>
         <div className={styles.twoCols}>
           <label className={styles.field}>
             <span>الاسم الأول</span>
@@ -284,10 +347,10 @@ function DetailsEditor(props: Props & { api: string }) {
             <input className={styles.input} value={d.partnerB} onChange={(e) => set({ partnerB: e.target.value })} maxLength={40} />
           </label>
         </div>
-        <label className={styles.field}>
+        <div className={styles.field}>
           <span>التاريخ والساعة (بتوقيت مصر)</span>
-          <input className={styles.input} type="datetime-local" value={d.date} onChange={(e) => set({ date: e.target.value })} />
-        </label>
+          <DateTimePicker value={d.date} onChange={(date) => set({ date })} />
+        </div>
         <div className={styles.twoCols}>
           <label className={styles.field}>
             <span>المكان</span>
@@ -300,7 +363,7 @@ function DetailsEditor(props: Props & { api: string }) {
         </div>
         {props.features.maps && (
           <label className={styles.field}>
-            <span>لينك جوجل ماب</span>
+            <span>لينك جوجل ماب أو آبل ماب</span>
             <input className={styles.input} type="url" dir="ltr" value={d.mapsUrl} onChange={(e) => set({ mapsUrl: e.target.value })} />
           </label>
         )}
@@ -316,7 +379,7 @@ function DetailsEditor(props: Props & { api: string }) {
             </select>
           </label>
           <label className={styles.field}>
-            <span>اللغة{langLocked ? " (ثابتة بعد الدفع)" : ""}</span>
+            <span>اللغة</span>
             <select className={styles.input} value={d.lang} disabled={langLocked} onChange={(e) => set({ lang: e.target.value as Lang })}>
               <option value="ar">عربي</option>
               <option value="en">English</option>
@@ -336,6 +399,12 @@ function DetailsEditor(props: Props & { api: string }) {
             </select>
           </label>
         )}
+        {props.features.rsvp && (
+          <label className={styles.checkRow}>
+            <input type="checkbox" checked={d.rsvp} onChange={(e) => set({ rsvp: e.target.checked })} />
+            <span>الضيوف يأكدوا حضورهم ويقولوا جايين كام فرد</span>
+          </label>
+        )}
         {msg && <p className={msg.ok ? styles.ok : styles.error}>{msg.text}</p>}
         <button type="submit" className={styles.primary} disabled={busy}>
           حفظ
@@ -345,7 +414,7 @@ function DetailsEditor(props: Props & { api: string }) {
   );
 }
 
-function ChangeRequests({ api, initial, whatsappUrl }: { api: string; initial: ChangeRequest[]; whatsappUrl: string }) {
+export function ChangeRequests({ api, initial, whatsappUrl }: { api: string; initial: ChangeRequest[]; whatsappUrl: string }) {
   const [list, setList] = useState(initial);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -403,5 +472,228 @@ function ChangeRequests({ api, initial, whatsappUrl }: { api: string; initial: C
         </ul>
       )}
     </details>
+  );
+}
+
+/**
+ * Package 3+: what the client wants, plus their photos / videos / songs for our team.
+ * Editable before payment only; after that it's what the client sent, read-only.
+ */
+export function ReferencesPanel({ api, order, locked = false }: { api: string; order: Order; locked?: boolean }) {
+  const router = useRouter();
+  const [notes, setNotes] = useState(order.brief?.notes ?? "");
+  const [link, setLink] = useState(order.brief?.link ?? "");
+  const [saved, setSaved] = useState({ notes: order.brief?.notes ?? "", link: order.brief?.link ?? "" });
+  const dirty = notes !== saved.notes || link !== saved.link;
+  const [progress, setProgress] = useState<string | null>(null);
+  const [error, setError] = useState("");
+
+  async function saveNotes() {
+    setError("");
+    try {
+      await postJson(`${api}/references`, { notes, link }, "PUT");
+      setSaved({ notes, link });
+    } catch (err) {
+      setError(errorText(err));
+    }
+  }
+
+  async function upload(files: FileList | null) {
+    if (!files?.length) return;
+    setError("");
+    const list = Array.from(files);
+    try {
+      for (const [i, file] of list.entries()) {
+        setProgress(`بيترفع ${i + 1} من ${list.length}...`);
+        const contentType = contentTypeOf(file);
+        const slot = await postJson<{ objectKey: string; uploadUrl: string }>(`${api}/uploads`, {
+          kind: "reference",
+          contentType,
+          size: file.size,
+        });
+        await putFile(slot.uploadUrl, file, contentType);
+        await postJson(`${api}/references`, { objectKey: slot.objectKey, name: file.name });
+      }
+      router.refresh();
+    } catch (err) {
+      setError(errorText(err));
+    } finally {
+      setProgress(null);
+    }
+  }
+
+  async function remove(url: string) {
+    if (!confirm("تمسح الملف ده؟")) return;
+    await fetch(`${api}/references?url=${encodeURIComponent(url)}`, { method: "DELETE" });
+    router.refresh();
+  }
+
+  const files = order.references ?? [];
+
+  if (locked) {
+    return (
+      <section className={styles.panel}>
+        <h2>اللي بعتهولنا</h2>
+        <p className={styles.hint}>فريقنا شغال عليه. لو محتاج تضيف حاجة كلمنا على واتساب.</p>
+        {order.brief?.notes && <p className={styles.briefText}>{order.brief.notes}</p>}
+        {order.brief?.link && (
+          <a href={order.brief.link} target="_blank" rel="noopener noreferrer" dir="ltr" className={styles.briefLink}>
+            {order.brief.link}
+          </a>
+        )}
+        {files.length > 0 ? (
+          <ReferenceList files={files} />
+        ) : (
+          !order.brief?.notes && !order.brief?.link && <p className={styles.empty}>مابعتش ملفات.</p>
+        )}
+      </section>
+    );
+  }
+
+  return (
+    <section className={styles.panel}>
+      <h2>صورك وفيديوهاتك وطلباتك</h2>
+      <p className={styles.hint}>
+        اكتب الستايل اللي عايزه وارفع صورك وفيديوهاتك والأغاني وأي ريفرنسات، أو حط لينك درايف. تقدر تعدّل لحد ما تدفع.
+      </p>
+      <textarea
+        className={styles.input}
+        rows={4}
+        maxLength={2000}
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        placeholder="الألوان، الستايل، لينكات ريفرنسات..."
+      />
+      <input
+        className={styles.input}
+        type="url"
+        dir="ltr"
+        inputMode="url"
+        value={link}
+        onChange={(e) => setLink(e.target.value)}
+        placeholder="لينك درايف أو أي لينك فيه ملفاتك (اختياري)"
+      />
+      <div className={styles.inlineActions}>
+        <button type="button" className={styles.secondary} disabled={!dirty} onClick={saveNotes}>
+          {!dirty && (saved.notes || saved.link) ? "اتحفظ" : "حفظ"}
+        </button>
+      </div>
+      <label className={styles.dropzone}>
+        <input
+          type="file"
+          multiple
+          accept={REFERENCE_ACCEPT}
+          disabled={progress !== null}
+          onChange={(e) => upload(e.target.files)}
+        />
+        <span>{progress ?? "ارفع صور أو فيديوهات أو أغاني (لحد 50 ميجا للملف)"}</span>
+      </label>
+      {error && <p className={styles.error}>{error}</p>}
+      {files.length > 0 && <ReferenceList files={files} onRemove={remove} />}
+    </section>
+  );
+}
+
+/** Photos and videos as thumbnails, songs as players. */
+function ReferenceList({ files, onRemove }: { files: NonNullable<Order["references"]>; onRemove?: (url: string) => void }) {
+  return (
+    <ul className={styles.refGrid}>
+      {files.map((r) => (
+        <li key={r.url} data-type={r.type}>
+          {r.type === "image" ? (
+            // eslint-disable-next-line @next/next/no-img-element -- storage URLs
+            <img src={r.url} alt={r.name} loading="lazy" />
+          ) : r.type === "audio" ? (
+            <div className={styles.refAudio}>
+              <Icon name="music" size={18} />
+              <span>{r.name}</span>
+              <audio src={r.url} controls preload="none" />
+            </div>
+          ) : (
+            <video src={r.url} muted playsInline preload="metadata" controls />
+          )}
+          {onRemove && (
+            <button type="button" className={styles.iconBtn} onClick={() => onRemove(r.url)} aria-label={`مسح ${r.name}`}>
+              <Icon name="x" size={16} />
+            </button>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** What the reference picker accepts (same list as the server). */
+export const REFERENCE_ACCEPT = "image/jpeg,image/png,image/webp,video/mp4,video/quicktime,audio/mpeg,audio/mp4,audio/x-m4a,.mp3,.m4a,.mov";
+
+/** Payment state, large and unmistakable (status colour + icon + words). */
+export function PayStatus({ payment, cancelled }: { payment: Order["payment"]; cancelled?: boolean }) {
+  if (cancelled)
+    return (
+      <span className={`${styles.payStatus} ${styles.payCancelled}`}>
+        <Icon name="xCircle" size={16} /> ملغي
+      </span>
+    );
+  if (payment === "paid")
+    return (
+      <span className={`${styles.payStatus} ${styles.payPaid}`}>
+        <Icon name="checkCircle" size={16} /> مدفوع
+      </span>
+    );
+  if (payment === "pending_review")
+    return (
+      <span className={`${styles.payStatus} ${styles.payPending}`}>
+        <Icon name="clock" size={16} /> مستني تأكيد
+      </span>
+    );
+  return (
+    <span className={`${styles.payStatus} ${styles.payUnpaid}`}>
+      <Icon name="alert" size={16} /> مش مدفوع
+    </span>
+  );
+}
+
+/** After payment: the invitation link (everyone) and the client's page (packages 2+). */
+function PaidLinks(props: Props) {
+  const { order } = props;
+  const invitation = `${props.origin}/i/${props.slug}`;
+  const page = `${props.origin}/c/${props.manageToken}`;
+  const [copied, setCopied] = useState("");
+  async function copyText(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(text);
+      setTimeout(() => setCopied(""), 1800);
+    } catch {}
+  }
+  return (
+    <div className={styles.paidBox}>
+      <p className={styles.ok}>
+        <Icon name="checkCircle" /> تم الدفع{order.paymentMethodName ? ` (${order.paymentMethodName})` : ""}. دعوتك شغالة.
+      </p>
+      <div className={styles.linkCard}>
+        <strong>لينك الدعوة</strong>
+        <p className={styles.hint}>ابعته لأي حد، في أي مكان.</p>
+        <div className={styles.copyRow}>
+          <code dir="ltr">{invitation}</code>
+          <button type="button" className={styles.secondary} onClick={() => copyText(invitation)}>
+            <Icon name={copied === invitation ? "check" : "copy"} /> {copied === invitation ? "اتنسخ" : "نسخ"}
+          </button>
+        </div>
+      </div>
+      {order.packageId >= 2 && (
+        <div className={styles.linkCard}>
+          <strong>صفحتك</strong>
+          <p className={styles.hint}>
+            {order.packageId >= 3
+              ? "منها تضيف ضيوفك بالاسم ورسالة خاصة لكل واحد، وتشوف مين فتح الدعوة والتهاني."
+              : "منها تشوف مين فتح الدعوة والتهاني اللي اتكتبت."}
+          </p>
+          <a className={styles.primary} href={page}>
+            <Icon name="external" /> افتح صفحتك
+          </a>
+        </div>
+      )}
+    </div>
   );
 }

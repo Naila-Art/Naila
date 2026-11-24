@@ -11,7 +11,7 @@ do $$
 declare t text;
 begin
   foreach t in array array['events', 'guests', 'rsvps', 'wishes', 'views', 'templates',
-                           'orders', 'change_requests', 'music', 'settings'] loop
+                           'orders', 'change_requests', 'music', 'admins', 'settings'] loop
     execute format(
       'create table if not exists public.%I (
          id         text primary key,
@@ -40,3 +40,5 @@ create index if not exists views_guest on public.views ((data->>'guestId'));
 create index if not exists change_requests_event on public.change_requests ((data->>'eventId'));
 
 -- Data retention (one year after the event) runs daily through /api/cron/retention (Vercel Cron).
+
+create unique index if not exists admins_email on public.admins ((data->>'email'));

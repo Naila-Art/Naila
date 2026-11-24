@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import RequestForm from "@/components/store/RequestForm";
 import styles from "@/components/store/store.module.css";
-import { siteSettings, whatsappLink } from "@/lib/site";
+import { getSiteSettings, whatsappLink } from "@/lib/site";
 import { getPackage } from "@/lib/pricing";
 import { getPricing } from "@/lib/store";
 
@@ -15,11 +15,10 @@ type Props = { searchParams: Promise<{ p?: string }> };
 
 export default async function RequestPage({ searchParams }: Props) {
   const pricing = await getPricing();
-  const wanted = (await searchParams).p === "4" ? 4 : 3;
-  const pkg = [wanted, wanted === 4 ? 3 : 4]
-    .map((id) => getPackage(pricing, id))
-    .find((p) => p?.active);
-  const site = siteSettings();
+  await searchParams;
+  // Only the open-ended package is a request now; packages 1-3 are ordered from /create.
+  const pkg = [getPackage(pricing, 4)].find((p) => p?.active);
+  const site = await getSiteSettings();
   const wa = whatsappLink(
     site.whatsapp,
     "Hello! I'd like to commission a bespoke digital invitation suite."

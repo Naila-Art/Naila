@@ -3,17 +3,16 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import m from "../manage/manage.module.css";
 import a from "./admin.module.css";
-import { CATEGORY_LABELS, type Category, type Template } from "@/lib/types";
+import { BADGE_LABELS, CATEGORY_LABELS, type Category, type Template, type TemplateBadge } from "@/lib/types";
 import { UPLOAD_ERRORS, UploadError, postJson, putFile } from "@/lib/upload-client";
+import Icon from "../Icon";
+import TemplateArt from "./TemplateArt";
 
 interface Props {
-  adminKey: string;
   initialTemplates: Template[];
   initialUsage: Record<string, number>;
 }
 
-/** Launch target agreed with Ziad: 6 templates per category, 18 in total. */
-const TARGET_PER_CATEGORY = 6;
 const MAX_VIDEO_MB = 20;
 const IDEAL_VIDEO_MB = 4;
 
@@ -37,6 +36,7 @@ const ERRORS: Record<string, string> = {
   name_required: "اكتب اسم التيمبليت.",
   invalid_category: "اختار النوع.",
   invalid_colour: "في لون مش مظبوط.",
+  invalid_badge: "اختار علامة من القايمة.",
   video_required: "ارفع الفيديو.",
   video_too_large: `الفيديو أكبر من ${MAX_VIDEO_MB} ميجا.`,
   video_not_mp4: "الفيديو لازم يكون MP4.",
@@ -59,9 +59,8 @@ interface Slot {
 }
 
 const requestSlot = (
-  adminKey: string,
   body: { kind: "video" | "poster"; contentType: string; size: number; templateId?: string },
-) => postJson<Slot>(`/api/admin/${adminKey}/templates/uploads`, body);
+) => postJson<Slot>(`/api/admin/templates/uploads`, body);
 
 /** Grabs a frame near the start of the video as a JPEG, used as the poster when none is uploaded. */
 function captureFrame(video: HTMLVideoElement): Promise<Blob | null> {
@@ -77,11 +76,93 @@ function captureFrame(video: HTMLVideoElement): Promise<Blob | null> {
   });
 }
 
-export default function TemplatesAdmin({ adminKey, initialTemplates, initialUsage }: Props) {
+/** Rename, change type or recolour a template that's already uploaded. */
+function TemplateDetailsForm({ template, onSaved }: { template: Template; onSaved: (t: Template) => void }) {
+  const [name, setName] = useState(template.name);
+  const [category, setCategory] = useState<Category>(template.category);
+  const [theme, setTheme] = useState(template.theme);
+  const [badge, setBadge] = useState<TemplateBadge | "">(template.badge ?? "");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; t: string } | null>(null);
+  const changed =
+    name.trim() !== template.name ||
+    category !== template.category ||
+    badge !== (template.badge ?? "") ||
+    COLOUR_FIELDS.some(({ key }) => theme[key] !== template.theme[key]);
+
+  async function save(e: FormEvent) {
+    e.preventDefault();
+    setMsg(null);
+    if (!name.trim()) return setMsg({ ok: false, t: ERRORS.name_required });
+    setBusy(true);
+    try {
+      const res = await postJson<{ template: Template }>(`/api/admin/templates`, { id: template.id, name: name.trim(), category, theme, badge }, "PATCH");
+      onSaved(res.template);
+      setMsg({ ok: true, t: "اتحفظ. أي دعوة بالتيمبليت ده هتتغير على طول." });
+    } catch (err) {
+      setMsg({ ok: false, t: err instanceof UploadError ? (ERRORS[err.code] ?? ERRORS.upload_failed) : ERRORS.upload_failed });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form className={a.form} onSubmit={save}>
+      <div className={a.twoCols}>
+        <label className={m.field}>
+          <span>اسم التيمبليت</span>
+          <input className={m.input} value={name} maxLength={60} onChange={(e) => setName(e.target.value)} />
+        </label>
+        <label className={m.field}>
+          <span>النوع (للبحث بس)</span>
+          <select className={m.input} value={category} onChange={(e) => setCategory(e.target.value as Category)}>
+            {(Object.keys(CATEGORY_LABELS) as Category[]).map((c) => (
+              <option key={c} value={c}>
+                {CATEGORY_LABELS[c]}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <label className={m.field}>
+        <span>علامة على الكارت في الموقع</span>
+        <select className={m.input} value={badge} onChange={(e) => setBadge(e.target.value as TemplateBadge | "")}>
+          <option value="">من غير علامة</option>
+          {(Object.keys(BADGE_LABELS) as TemplateBadge[]).map((b) => (
+            <option key={b} value={b}>
+              {BADGE_LABELS[b]}
+            </option>
+          ))}
+        </select>
+        <small className={m.hint}>التيمبليتس اللي عليها علامة بتظهر الأول في الموقع.</small>
+      </label>
+      <fieldset className={a.colours}>
+        <legend>الألوان</legend>
+        {COLOUR_FIELDS.map(({ key, label, hint }) => (
+          <label key={key} className={a.colour}>
+            <input type="color" value={theme[key]} onChange={(e) => setTheme((th) => ({ ...th, [key]: e.target.value }))} />
+            <span>
+              {label}
+              {hint && <small>{hint}</small>}
+            </span>
+          </label>
+        ))}
+      </fieldset>
+      {msg && <p className={msg.ok ? m.ok : m.error}>{msg.t}</p>}
+      <button className={m.primary} type="submit" disabled={busy || !changed}>
+        {busy ? "بيتحفظ..." : "حفظ التعديلات"}
+      </button>
+    </form>
+  );
+}
+
+export default function TemplatesAdmin({ initialTemplates, initialUsage }: Props) {
   const [templates, setTemplates] = useState(initialTemplates);
   const [usage] = useState(initialUsage);
   const [filter, setFilter] = useState<Category | "all">("all");
   const [toast, setToast] = useState("");
+  const [artForId, setArtForId] = useState<string | null>(null);
+  const artFor = templates.find((t) => t.id === artForId) ?? null;
 
   const [name, setName] = useState("");
   const [category, setCategory] = useState<Category>("wedding");
@@ -104,12 +185,6 @@ export default function TemplatesAdmin({ adminKey, initialTemplates, initialUsag
     return () => clearTimeout(id);
   }, [toast]);
 
-  const uploaded = templates.filter((t) => t.createdAt);
-  const counts = useMemo(() => {
-    const c: Record<Category, number> = { wedding: 0, engagement: 0, katb_kitab: 0 };
-    for (const t of uploaded) c[t.category]++;
-    return c;
-  }, [uploaded]);
   const shown = filter === "all" ? templates : templates.filter((t) => t.category === filter);
 
   function pickVideo(file: File | undefined) {
@@ -146,14 +221,14 @@ export default function TemplatesAdmin({ adminKey, initialTemplates, initialUsag
         const track = (loaded: number) => setProgress(Math.min(99, Math.round(((done + loaded) / total) * 100)));
 
         // 1. Video: ask for an upload slot (this also creates the template id), then send it straight to storage.
-        const slot = await requestSlot(adminKey, { kind: "video", contentType: "video/mp4", size: video.size });
+        const slot = await requestSlot({ kind: "video", contentType: "video/mp4", size: video.size });
         await putFile(slot.uploadUrl, video, "video/mp4", track);
         done += video.size;
 
         // 2. Poster, same template id.
         let posterKey: string | undefined;
         if (posterBlob) {
-          const p = await requestSlot(adminKey, {
+          const p = await requestSlot({
             kind: "poster",
             contentType: posterBlob.type,
             size: posterBlob.size,
@@ -165,7 +240,7 @@ export default function TemplatesAdmin({ adminKey, initialTemplates, initialUsag
 
         // 3. Save the template; the server checks the files before accepting it.
         setProgress(100);
-        const body = await postJson<{ template: Template }>(`/api/admin/${adminKey}/templates`, {
+        const body = await postJson<{ template: Template }>(`/api/admin/templates`, {
           templateId: slot.templateId,
           name: name.trim(),
           category,
@@ -193,7 +268,7 @@ export default function TemplatesAdmin({ adminKey, initialTemplates, initialUsag
       ? `في ${used} دعوة شغالة بالتيمبليت ده، وهيرجعوا للظرف العادي. تمسحه؟`
       : `تمسح "${t.name}"؟`;
     if (!confirm(warning)) return;
-    const res = await fetch(`/api/admin/${adminKey}/templates?id=${encodeURIComponent(t.id)}`, { method: "DELETE" });
+    const res = await fetch(`/api/admin/templates?id=${encodeURIComponent(t.id)}`, { method: "DELETE" });
     if (res.ok) {
       setTemplates((list) => list.filter((x) => x.id !== t.id));
       setToast("اتمسح");
@@ -201,20 +276,9 @@ export default function TemplatesAdmin({ adminKey, initialTemplates, initialUsag
   }
 
   return (
-    <main className={m.page} dir="rtl" lang="ar">
-      <header className={m.header}>
-        <div className={m.kicker}>داشبورد الإدارة</div>
+    <main className={`${m.page} ${a.wide}`} dir="rtl" lang="ar">
+      <header className={a.pageHead}>
         <h1>التيمبليتس</h1>
-        <div className={a.targets}>
-          {(Object.keys(CATEGORY_LABELS) as Category[]).map((c) => (
-            <div key={c} className={a.target} data-done={counts[c] >= TARGET_PER_CATEGORY}>
-              <span>{CATEGORY_LABELS[c]}</span>
-              <strong>
-                {counts[c]} / {TARGET_PER_CATEGORY}
-              </strong>
-            </div>
-          ))}
-        </div>
       </header>
 
       <section className={m.panel}>
@@ -281,7 +345,7 @@ export default function TemplatesAdmin({ adminKey, initialTemplates, initialUsag
               <input className={m.input} value={name} maxLength={60} onChange={(e) => setName(e.target.value)} />
             </label>
             <label className={m.field}>
-              <span>النوع</span>
+              <span>النوع (للبحث بس، العميل يقدر يختار أي تيمبليت)</span>
               <select className={m.input} value={category} onChange={(e) => setCategory(e.target.value as Category)}>
                 {(Object.keys(CATEGORY_LABELS) as Category[]).map((c) => (
                   <option key={c} value={c}>
@@ -362,7 +426,14 @@ export default function TemplatesAdmin({ adminKey, initialTemplates, initialUsag
                   )}
                 </div>
                 <div className={a.cardBody}>
-                  <strong>{t.name}</strong>
+                  <strong>
+                    {t.name}
+                    {t.badge && (
+                      <span className={a.badgeTag} data-badge={t.badge}>
+                        {BADGE_LABELS[t.badge]}
+                      </span>
+                    )}
+                  </strong>
                   <span className={m.hint}>
                     {CATEGORY_LABELS[t.category]}
                     {!t.createdAt && " · الظرف الافتراضي"}
@@ -374,9 +445,15 @@ export default function TemplatesAdmin({ adminKey, initialTemplates, initialUsag
                     ))}
                   </div>
                   <div className={m.inlineActions}>
-                    <a className={m.secondary} href={`/admin/${adminKey}/templates/${t.id}`} target="_blank" rel="noreferrer">
-                      معاينة ↗
+                    <a className={m.secondary} href={`/admin/templates/${t.id}`} target="_blank" rel="noreferrer">
+                      <Icon name="eye" size={16} /> معاينة
                     </a>
+                    {t.createdAt && (
+                      <button type="button" className={m.secondary} onClick={() => setArtForId(t.id)}>
+                        <Icon name="edit" size={16} /> تعديل
+                        {t.art && Object.keys(t.art).length > 0 && <span className={a.artCount}>{Object.keys(t.art).length}</span>}
+                      </button>
+                    )}
                     {t.createdAt && (
                       <button type="button" className={m.linkBtn} onClick={() => remove(t)}>
                         مسح
@@ -389,6 +466,29 @@ export default function TemplatesAdmin({ adminKey, initialTemplates, initialUsag
           </ul>
         )}
       </section>
+
+      {artFor && (
+        <div className={a.artBackdrop} onClick={(e) => e.target === e.currentTarget && setArtForId(null)}>
+          <div className={a.artDialog} role="dialog" aria-modal="true" aria-label={`تعديل ${artFor.name}`}>
+            <header className={a.artHead}>
+              <h2>تعديل: {artFor.name}</h2>
+              <button type="button" className={m.linkBtn} onClick={() => setArtForId(null)} aria-label="اقفل">
+                <Icon name="x" />
+              </button>
+            </header>
+            <TemplateDetailsForm
+              key={artFor.id}
+              template={artFor}
+              onSaved={(t) => setTemplates((list) => list.map((x) => (x.id === t.id ? t : x)))}
+            />
+            <h3 className={a.artSection}>رسومات الصفحة (اختياري)</h3>
+            <TemplateArt template={artFor} onChange={(t) => setTemplates((list) => list.map((x) => (x.id === t.id ? t : x)))} />
+            <a className={m.primary} href={`/admin/templates/${artFor.id}`} target="_blank" rel="noreferrer">
+              <Icon name="eye" size={16} /> شوف الشكل في المعاينة
+            </a>
+          </div>
+        </div>
+      )}
 
       {toast && <div className={m.toast}>{toast}</div>}
     </main>

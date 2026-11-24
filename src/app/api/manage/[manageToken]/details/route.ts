@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { bad, manageContext, readJson } from "@/lib/api";
+import { bad, cleanText, manageContext, readJson } from "@/lib/api";
 import { eventContext, parseEventDetails } from "@/lib/event-context";
 import { findTemplate, getMusic, updateEventDetails } from "@/lib/store";
 
@@ -9,7 +9,9 @@ type Ctx = { params: Promise<{ manageToken: string }> };
 export async function PUT(req: Request, ctx: Ctx) {
   const found = await manageContext((await ctx.params).manageToken);
   if (!found) return bad("not_found", 404);
-  const { event } = found;
+  const { event, order } = found;
+  // After payment the invitation is fixed for the client; our team edits it from the dashboard.
+  if (order && order.payment !== "unpaid") return bad("locked", 409);
   const body = await readJson(req);
   if (!body) return bad("invalid_body");
 
@@ -32,9 +34,13 @@ export async function PUT(req: Request, ctx: Ctx) {
     else return bad("invalid_music");
   }
 
+  const generalText = body.generalText === undefined ? undefined : cleanText(body.generalText, 200);
+  if (body.generalText !== undefined && !generalText) return bad("text_invalid");
   const updated = await updateEventDetails(event.id, {
     ...details.value,
+    ...(generalText ? { generalText } : {}),
     mapsUrl: features.maps ? details.value.mapsUrl : undefined,
+    ...(details.value.rsvp !== undefined ? { rsvp: features.rsvp && details.value.rsvp } : {}),
     templateId,
     musicTrackId,
   });

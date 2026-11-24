@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import Invitation from "./Invitation";
-import { getEventBySlug, getGuestByToken, getRsvpForGuest, getTemplate, listTemplates } from "@/lib/store";
+import { getEventBySlug, getGuestByToken, getTemplate, listTemplates } from "@/lib/store";
 import { eventContext } from "@/lib/event-context";
 import ClosedInvitation from "./ClosedInvitation";
+import NotYetInvitation from "./NotYetInvitation";
 import { displayName, fillPersonalText } from "@/lib/text";
 import { t } from "@/lib/i18n";
-import type { Category, EventData, Template } from "@/lib/types";
+import type { Category, EventData, Guest, Template } from "@/lib/types";
 import { cairoLocalToIso } from "@/lib/time";
 
 const TIME_ZONE = "Africa/Cairo";
@@ -60,7 +61,9 @@ function calendarUrl(event: EventData) {
 export async function invitationMetadata(slug: string, token?: string): Promise<Metadata> {
   const { event, guest } = await load(slug, token);
   const couple = `${event.partnerA} ${t(event.lang).and} ${event.partnerB}`;
-  if (event.status === "cancelled") return { title: event.lang === "ar" ? "الدعوة غير متاحة" : "Invitation unavailable", robots: { index: false, follow: false } };
+  if (event.status === "cancelled" || event.status === "draft") {
+    return { title: event.lang === "ar" ? "الدعوة غير متاحة" : "Invitation unavailable", robots: { index: false, follow: false } };
+  }
   const title = guest
     ? event.lang === "ar"
       ? `دعوة خاصة لـ ${displayName(guest)}`
@@ -78,9 +81,18 @@ export async function invitationMetadata(slug: string, token?: string): Promise<
 export default async function InvitationPage({ slug, token }: { slug: string; token?: string }) {
   const { event, guest } = await load(slug, token);
   if (event.status === "cancelled") return <ClosedInvitation lang={event.lang} />;
+  // Not paid yet: the public link shows nothing (the client previews from their own page).
+  if (event.status === "draft") return <NotYetInvitation lang={event.lang} />;
+  return <InvitationView event={event} guest={guest} />;
+}
+
+/**
+ * Renders an invitation. `preview` adds the full-screen "معاينة" watermark and turns replies off;
+ * it's used for the client's own preview before payment (/c/{manageToken}/preview).
+ */
+export async function InvitationView({ event, guest, preview }: { event: EventData; guest: Guest | null; preview?: boolean }) {
   const template = event.samplePackage ? await sampleTemplate(event.category) : await getTemplate(event.templateId);
   const ctx = await eventContext(event);
-  const rsvp = guest ? await getRsvpForGuest(event.id, guest.id) : null;
   const { date, time } = formatDate(event);
 
   return (
@@ -102,10 +114,10 @@ export default async function InvitationPage({ slug, token }: { slug: string; to
       mapsUrl={ctx.features.maps ? event.mapsUrl : undefined}
       musicUrl={ctx.musicUrl}
       showWishes={ctx.features.wishes}
+      showRsvp={ctx.showRsvp}
       personalMessage={guest && ctx.features.namesLimit > 0 ? guest.message : undefined}
-      isPreview={ctx.isDraft}
+      isPreview={preview || ctx.isDraft}
       calendarUrl={calendarUrl(event)}
-      initialRsvp={rsvp?.status ?? null}
       schedule={event.schedule}
       dressCode={event.dressCode}
       notes={event.notes}

@@ -1,0 +1,63 @@
+.picker {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr 1.2fr;
+  gap: 8px;
+}
+
+.cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: #7d6f66;
+  min-width: 0;
+}
+
+.cell select {
+  font: inherit;
+  font-size: 1rem;
+  color: #2e231d;
+  min-height: 46px;
+  padding: 0 10px;
+  border-radius: 12px;
+  border: 1px solid #e8dfd2;
+  background: #fff;
+  width: 100%;
+  cursor: pointer;
+}
+
+.cell select:focus-visible,
+.period button:focus-visible {
+  outline: 2px solid #9a6b34;
+  outline-offset: 1px;
+}
+
+.period {
+  display: flex;
+  min-height: 46px;
+  border: 1px solid #e8dfd2;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.period button {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 0.95rem;
+  color: #2e231d;
+  cursor: pointer;
+}
+
+.period button[aria-checked="true"] {
+  background: #2e231d;
+  color: #fff;
+}

@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import styles from "./manage.module.css";
 import { guestKey, parseCsv, parseSheet, toCsv, type ParsedGuest } from "@/lib/guests";
+import Icon from "../Icon";
 
 const ERROR_LABEL: Record<NonNullable<ParsedGuest["error"]>, string> = {
   name_missing: "الاسم فاضي",
@@ -35,7 +36,7 @@ export default function GuestImport({ existingKeys, onSave }: Props) {
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
     const a = document.createElement("a");
     a.href = url;
-    a.download = "نموذج-المعازيم.csv";
+    a.download = "نموذج-الضيوف.csv";
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -136,8 +137,8 @@ export default function GuestImport({ existingKeys, onSave }: Props) {
                     <td>{r.title}</td>
                     <td>{r.name}</td>
                     <td dir="ltr">{r.phone}</td>
-                    <td>{r.message ? "✉" : ""}</td>
-                    <td>{r.error ? ERROR_LABEL[r.error] : r.duplicate ? "مكرر" : "✓"}</td>
+                    <td>{r.message ? <Icon name="mail" size={16} label="فيه رسالة" /> : ""}</td>
+                    <td>{r.error ? ERROR_LABEL[r.error] : r.duplicate ? "مكرر" : <Icon name="check" size={16} label="تمام" />}</td>
                   </tr>
                 ))}
               </tbody>
@@ -146,7 +147,7 @@ export default function GuestImport({ existingKeys, onSave }: Props) {
 
           <div className={styles.actions}>
             <button type="button" className={styles.primary} disabled={busy || good.length === 0} onClick={save}>
-              حفظ {good.length} معزوم
+              حفظ {good.length} ضيف
             </button>
             <button type="button" className={styles.secondary} onClick={reset}>
               إلغاء

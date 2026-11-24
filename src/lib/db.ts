@@ -22,6 +22,7 @@ export type Collection =
   | "orders"
   | "change_requests"
   | "music"
+  | "admins"
   | "settings";
 
 export interface Backend {
@@ -41,7 +42,7 @@ const asList = (v: string | string[]) => (Array.isArray(v) ? v : [v]);
 // ---------------------------------------------------------------------------
 
 const COLLECTIONS: readonly Collection[] = [
-  "events", "guests", "rsvps", "wishes", "views", "templates", "orders", "change_requests", "music", "settings",
+  "events", "guests", "rsvps", "wishes", "views", "templates", "orders", "change_requests", "music", "admins", "settings",
 ];
 
 function postgres(url: string): Backend {
@@ -109,12 +110,16 @@ export function fromLegacy(old: Record<string, unknown>): FileDb {
     ["orders", "orders"],
     ["changeRequests", "change_requests"],
     ["music", "music"],
+    ["admins", "admins"],
   ] as const) {
     for (const row of arr(k)) add(c, row.id, row);
   }
   for (const r of arr("rsvps")) add("rsvps", r.guestId ? `${r.eventId}:${r.guestId}` : randomUUID(), r);
   for (const v of arr("views")) add("views", randomUUID(), v);
   if (old.pricing) add("settings", "pricing", old.pricing as object);
+  if (old.paymentMethods) add("settings", "paymentMethods", { value: old.paymentMethods });
+  if (old.siteSettings) add("settings", "siteSettings", old.siteSettings as object);
+  if (typeof old.financePasswordHash === "string") add("settings", "financePassword", { hash: old.financePasswordHash });
   return db;
 }
 

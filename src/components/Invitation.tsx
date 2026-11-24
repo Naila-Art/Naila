@@ -1,13 +1,15 @@
 "use client";
+/* eslint-disable @next/next/no-img-element -- decorative template artwork straight from storage, no optimisation needed */
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import styles from "./invitation.module.css";
 import Countdown from "./Countdown";
-import RsvpForm from "./RsvpForm";
 import WishForm from "./WishForm";
+import RsvpForm from "./RsvpForm";
 import type { Strings } from "@/lib/i18n";
-import type { Lang, RsvpStatus, ScheduleItem, Template } from "@/lib/types";
+import type { Lang, ScheduleItem, Template } from "@/lib/types";
 import DoorsInvitation from "./families/DoorsInvitation";
+import Icon from "./Icon";
 
 export interface InvitationProps {
   slug: string;
@@ -27,9 +29,10 @@ export interface InvitationProps {
   mapsUrl?: string;
   musicUrl?: string;
   calendarUrl: string;
-  initialRsvp: RsvpStatus | null;
   /** Package 2+ only. */
   showWishes?: boolean;
+  /** Attendance replies (package 2+, when the client turned them on). */
+  showRsvp?: boolean;
   /** A personal note written for this guest only (packages 3-4). */
   personalMessage?: string;
   /** Draft (not paid yet): ribbon on top, replies off. */
@@ -115,6 +118,15 @@ function EnvelopeInvitation(props: InvitationProps) {
     "--seal": template.theme.seal,
   } as CSSProperties;
 
+  const art = template.art ?? {};
+  // Decorative only: empty alt, and they never catch taps.
+  const corners = art.corner ? (
+    <>
+      <img className={`${styles.artCorner} ${styles.artCornerStart}`} src={art.corner} alt="" aria-hidden />
+      <img className={`${styles.artCorner} ${styles.artCornerEnd}`} src={art.corner} alt="" aria-hidden />
+    </>
+  ) : null;
+
   const couple = (
     <h1 className={styles.couple}>
       <span>{props.partnerA}</span>
@@ -125,7 +137,13 @@ function EnvelopeInvitation(props: InvitationProps) {
 
   return (
     <main className={styles.page} style={themeVars} dir={lang === "ar" ? "rtl" : "ltr"} lang={lang}>
-      {props.isPreview && <div className={styles.previewRibbon}>{s.previewRibbon}</div>}
+      {props.isPreview && (
+        <>
+          <div className={styles.previewRibbon}>{s.previewRibbon}</div>
+          {/* Covers the whole screen (video, names, everything) so screenshots and screen recordings can't pass for the real thing. */}
+          <div className={styles.watermark} aria-hidden />
+        </>
+      )}
       <div className={styles.column}>
         {/* ---------- Opening (fades away once the letter takes over) ---------- */}
         <section className={styles.hero} data-stage={stage} aria-hidden={stage === "open"}>
@@ -172,6 +190,7 @@ function EnvelopeInvitation(props: InvitationProps) {
         {stage === "open" && (
           <article className={styles.letter}>
             <header className={styles.letterHead}>
+              {art.top && <img className={styles.artTop} src={art.top} alt="" aria-hidden />}
               <p className={props.isNamed ? styles.greetingNamed : styles.greeting}>{props.greeting}</p>
               {props.personalMessage && <p className={styles.personalMessage}>{props.personalMessage}</p>}
               <div className={styles.divider} />
@@ -185,7 +204,8 @@ function EnvelopeInvitation(props: InvitationProps) {
               <p className={styles.where}>{props.venueName}</p>
             </header>
 
-            <section className={`${styles.card} ${styles.reveal}`}>
+            <section className={`${styles.card} ${styles.reveal}`} data-art={art.corner ? "corner" : undefined}>
+              {corners}
               <h2 className={styles.sectionTitle}>{s.countdown}</h2>
               <Countdown dateIso={props.dateIso} strings={s} />
               <a className={styles.linkButton} href={props.calendarUrl} target="_blank" rel="noopener noreferrer">
@@ -193,17 +213,21 @@ function EnvelopeInvitation(props: InvitationProps) {
               </a>
             </section>
 
-            <section className={`${styles.card} ${styles.reveal}`}>
-              <h2 className={styles.sectionTitle}>{s.rsvpTitle}</h2>
-              {props.isPreview ? (
-                <p className={styles.muted}>{s.previewNoReplies}</p>
-              ) : (
-                <RsvpForm slug={props.slug} token={props.token} strings={s} initial={props.initialRsvp} />
-              )}
-            </section>
+            {props.showRsvp && (
+              <section className={`${styles.card} ${styles.reveal}`} data-art={art.corner ? "corner" : undefined}>
+                {corners}
+                <h2 className={styles.sectionTitle}>{s.rsvpTitle}</h2>
+                {props.isPreview ? (
+                  <p className={styles.muted}>{s.previewNoReplies}</p>
+                ) : (
+                  <RsvpForm slug={props.slug} token={props.token} strings={s} />
+                )}
+              </section>
+            )}
 
             {props.showWishes !== false && (
-              <section className={`${styles.card} ${styles.reveal}`}>
+              <section className={`${styles.card} ${styles.reveal}`} data-art={art.corner ? "corner" : undefined}>
+              {corners}
                 <h2 className={styles.sectionTitle}>{s.wishesTitle}</h2>
                 {props.isPreview ? (
                   <p className={styles.muted}>{s.previewNoReplies}</p>
@@ -214,7 +238,8 @@ function EnvelopeInvitation(props: InvitationProps) {
             )}
 
             {/* Location comes last, per the design rules. */}
-            <section className={`${styles.card} ${styles.reveal}`}>
+            <section className={`${styles.card} ${styles.reveal}`} data-art={art.corner ? "corner" : undefined}>
+              {corners}
               <h2 className={styles.sectionTitle}>{s.location}</h2>
               <p className={styles.where}>{props.venueName}</p>
               {props.venueAddress && <p className={styles.muted}>{props.venueAddress}</p>}
@@ -224,6 +249,7 @@ function EnvelopeInvitation(props: InvitationProps) {
                 </a>
               )}
             </section>
+            {art.bottom && <img className={styles.artBottom} src={art.bottom} alt="" aria-hidden />}
           </article>
         )}
       </div>
@@ -233,7 +259,7 @@ function EnvelopeInvitation(props: InvitationProps) {
           <audio ref={audioRef} src={props.musicUrl} loop preload="auto" />
           {stage !== "sealed" && (
             <button type="button" className={styles.mute} onClick={toggleMute} aria-label={muted ? s.unmute : s.mute}>
-              {muted ? "🔇" : "🔊"}
+              <Icon name={muted ? "volumeOff" : "volume"} size={20} />
             </button>
           )}
         </>

@@ -10,7 +10,7 @@ export default function Dev() {
     { href: "/i/demo/w8t4z6n1re", label: "دعوة بالاسم من غير لقب: منى" },
     { href: "/i/demo-en", label: "General invitation (English)" },
     { href: "/i/demo-en/p5d2h8v3kc", label: "Named invitation: Mr. Karim" },
-    { href: "/c/m7q2x9k4t8w3z6p1", label: "صفحة العميل (إدارة المعازيم)" },
+    { href: "/c/m7q2x9k4t8w3z6p1", label: "صفحة العميل (إدارة الضيوف)" },
     { href: "/create", label: "اعمل دعوة (الموقع)" },
   ];
   return (
@@ -23,7 +23,7 @@ export default function Dev() {
           </li>
         ))}
       </ul>
-      <p>داشبورد الإدارة: /admin/(ADMIN_TOKEN من .env.local)</p>
+      <p>داشبورد الإدارة: /admin (تسجيل دخول)</p>
     </main>
   );
 }

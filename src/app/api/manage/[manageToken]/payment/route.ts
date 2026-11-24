@@ -2,13 +2,14 @@ import { NextResponse } from "next/server";
 import { bad, manageContext, readJson, siteUrl } from "@/lib/api";
 import { createCheckout, paymobEnabled } from "@/lib/paymob";
 import { deleteObject, keyFromPublicUrl, kindOfKey, publicUrl, verifyUpload } from "@/lib/storage";
-import { updateOrder } from "@/lib/store";
+import { listPaymentMethods, updateOrder } from "@/lib/store";
 
 type Ctx = { params: Promise<{ manageToken: string }> };
 
 /**
- * { method: "paymob" }               → { redirectUrl } to Paymob's checkout
- * { method: "instapay", objectKey }  → saves the transfer screenshot; we confirm it from the admin dashboard
+ * { method: "<card method id>" }                → { redirectUrl } to Paymob's checkout
+ * { method: "<transfer method id>", objectKey } → saves the transfer screenshot; we confirm it from the dashboard
+ * Only methods switched on in the dashboard are accepted.
  */
 export async function POST(req: Request, ctx: Ctx) {
   const found = await manageContext((await ctx.params).manageToken);
@@ -17,7 +18,10 @@ export async function POST(req: Request, ctx: Ctx) {
   if (order.payment === "paid") return bad("already_paid", 409);
   const body = await readJson(req);
 
-  if (body?.method === "paymob") {
+  const method = (await listPaymentMethods()).find((m) => m.active && m.id === body?.method);
+  if (!method) return bad("invalid_method");
+
+  if (method.kind === "card") {
     if (!paymobEnabled()) return bad("paymob_unavailable", 503);
     try {
       return NextResponse.json({ redirectUrl: await createCheckout(order, event, siteUrl(req)) });
@@ -27,8 +31,9 @@ export async function POST(req: Request, ctx: Ctx) {
     }
   }
 
-  if (body?.method === "instapay") {
-    const objectKey = String(body.objectKey ?? "");
+  if (method.kind === "transfer") {
+    if (!method.account) return bad("invalid_method");
+    const objectKey = String(body?.objectKey ?? "");
     if (kindOfKey(objectKey) !== "proof" || !objectKey.startsWith(`payments/${order.id}/`)) return bad("invalid_key");
     const check = await verifyUpload(objectKey, "proof");
     if (check !== "ok") {
@@ -38,7 +43,8 @@ export async function POST(req: Request, ctx: Ctx) {
     const oldKey = order.proofUrl ? keyFromPublicUrl(order.proofUrl) : null;
     const updated = await updateOrder(order.id, {
       payment: "pending_review",
-      paymentMethod: "instapay",
+      paymentMethod: method.id,
+      paymentMethodName: method.name,
       proofUrl: publicUrl(objectKey),
       rejectReason: undefined,
     });

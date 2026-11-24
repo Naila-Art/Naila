@@ -44,7 +44,7 @@ export default function TemplatePreview({ template }: { template: Template }) {
       venueAddress={isAr ? "القاهرة الجديدة" : "New Cairo"}
       mapsUrl="https://maps.google.com/?q=30.0074,31.4913"
       calendarUrl="#"
-      initialRsvp={null}
+      showRsvp
       isPreview
       schedule={
         isAr

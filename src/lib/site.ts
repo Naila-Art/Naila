@@ -1,18 +1,31 @@
+import "server-only";
+import { getStoredSiteSettings } from "./store";
+
 /**
- * Business settings that come from environment variables (.env.local / Vercel → Settings → Environment Variables).
- * Safe to show to clients; secrets never go here.
+ * Public business settings, edited from the dashboard (/admin/settings).
+ * Environment variables (BRAND_NAME, WHATSAPP_NUMBER) are the fallback until someone saves.
  */
-export function siteSettings() {
-  return {
-    brand: process.env.BRAND_NAME?.trim() || "Naila",
-    /** Our WhatsApp, international digits only, e.g. 201001234567. */
-    whatsapp: (process.env.WHATSAPP_NUMBER ?? "").replace(/\D/g, ""),
-    /** Instapay address shown to clients, e.g. name@instapay. */
-    instapay: process.env.INSTAPAY_HANDLE?.trim() || "",
-  };
+export interface Socials {
+  facebook: string;
+  instagram: string;
+  tiktok: string;
 }
 
-export type SiteSettings = ReturnType<typeof siteSettings>;
+export interface SiteSettings {
+  brand: string;
+  /** International digits only, e.g. 201001234567. */
+  whatsapp: string;
+  socials: Socials;
+}
+
+export async function getSiteSettings(): Promise<SiteSettings> {
+  const saved = await getStoredSiteSettings();
+  return {
+    brand: saved?.brand?.trim() || process.env.BRAND_NAME?.trim() || "Naila",
+    whatsapp: (saved?.whatsapp || process.env.WHATSAPP_NUMBER || "").replace(/\D/g, ""),
+    socials: { facebook: "", instagram: "", tiktok: "", ...(saved?.socials ?? {}) },
+  };
+}
 
 export const whatsappLink = (number: string, text: string) =>
   number ? `https://wa.me/${number}?text=${encodeURIComponent(text)}` : "";

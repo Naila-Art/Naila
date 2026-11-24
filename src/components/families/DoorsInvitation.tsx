@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { CalendarPlus, MapPin, Volume2, VolumeX } from "lucide-react";
 import styles from "./doors.module.css";
+import baseStyles from "../invitation.module.css";
 import Countdown from "../Countdown";
 import RsvpForm from "../RsvpForm";
 import WishForm from "../WishForm";
@@ -278,7 +279,13 @@ export default function DoorsInvitation(props: InvitationProps) {
       data-end={(scene.light ?? paper) ? "light" : undefined}
       data-family={paper ? "paper" : "doors"}
     >
-      {props.isPreview && <div className={styles.previewRibbon}>{s.previewRibbon}</div>}
+      {props.isPreview && (
+        <>
+          <div className={styles.previewRibbon}>{s.previewRibbon}</div>
+          {/* Covers everything so screenshots and recordings of a preview can't pass for the real thing. */}
+          <div className={baseStyles.watermark} aria-hidden />
+        </>
+      )}
 
       <div className={styles.column}>
         {/* ---------------- The scene: stays behind the letter for the whole read ---------------- */}
@@ -421,16 +428,19 @@ export default function DoorsInvitation(props: InvitationProps) {
               </>
             )}
 
-            <Rule paper={paper} />
-
-            <section className={styles.block}>
-              <h2 className={styles.heading}>{s.rsvpTitle}</h2>
-              {props.isPreview ? (
-                <p className={styles.muted}>{s.previewNoReplies}</p>
-              ) : (
-                <RsvpForm slug={props.slug} token={props.token} strings={s} initial={props.initialRsvp} ui={formUi} />
-              )}
-            </section>
+            {props.showRsvp && (
+              <>
+                <Rule paper={paper} />
+                <section className={styles.block}>
+                  <h2 className={styles.heading}>{s.rsvpTitle}</h2>
+                  {props.isPreview ? (
+                    <p className={styles.muted}>{s.previewNoReplies}</p>
+                  ) : (
+                    <RsvpForm slug={props.slug} token={props.token} strings={s} ui={formUi} />
+                  )}
+                </section>
+              </>
+            )}
 
             {props.showWishes !== false && (
               <>

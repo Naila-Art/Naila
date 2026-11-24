@@ -11,6 +11,8 @@ export interface EventContext {
   /** Draft = built but not paid yet: the invitation shows a preview ribbon and replies are off. */
   isDraft: boolean;
   musicUrl?: string;
+  /** Attendance replies are on: the package allows it and the client asked for it (samples and demos always show it). */
+  showRsvp: boolean;
 }
 
 export async function eventContext(event: EventData): Promise<EventContext> {
@@ -23,11 +25,12 @@ export async function eventContext(event: EventData): Promise<EventContext> {
     else if (!order && event.musicUrl) musicUrl = event.musicUrl;
     else if (event.samplePackage) musicUrl = (await listMusic())[0]?.url;
   }
-  return { order, features, isDraft: event.status === "draft", musicUrl };
+  const showRsvp = features.rsvp && (event.rsvp ?? (Boolean(event.samplePackage) || !order));
+  return { order, features, isDraft: event.status === "draft", musicUrl, showRsvp };
 }
 
 const ALLOWED_MAP_HOSTS =
-  /^(www\.)?(google\.[a-z.]+|maps\.google\.[a-z.]+|maps\.app\.goo\.gl|goo\.gl|g\.co|share\.google|maps\.apple\.com|waze\.com|ul\.waze\.com)$/i;
+  /^(www\.)?(google\.[a-z.]+|maps\.google\.[a-z.]+|maps\.app\.goo\.gl|goo\.gl|g\.co|share\.google|maps\.apple\.com|maps\.apple|waze\.com|ul\.waze\.com)$/i;
 
 /**
  * Extracts & normalizes an optional map share URL (e.g. Google Maps mobile share text,
@@ -90,5 +93,7 @@ export function parseEventDetails(
     if (normalized === null) return { ok: false, error: "maps_invalid" };
     if (normalized) mapsUrl = normalized;
   }
-  return { ok: true, value: { partnerA, partnerB, date, venueName, lang, venueAddress: venueAddress ?? undefined, mapsUrl } };
+  // Only touched when sent, so forms without the question keep the client's choice.
+  const rsvp = typeof body.rsvp === "boolean" ? { rsvp: body.rsvp } : {};
+  return { ok: true, value: { partnerA, partnerB, date, venueName, lang, venueAddress: venueAddress ?? undefined, mapsUrl, ...rsvp } };
 }

@@ -39,6 +39,209 @@
   background-color: var(--ink-primary);
   color: var(--bg-cream);
 }
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.twoCols {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.previewRow {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.phone {
+  width: 160px;
+  aspect-ratio: 9 / 16;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--m-line);
+  flex: none;
+}
+
+.phone video,
+.thumb video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.previewInfo {
+  flex: 1 1 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 0.9rem;
+}
+
+.colours {
+  border: 1px solid var(--m-line);
+  border-radius: 12px;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.colours legend {
+  padding: 0 6px;
+  font-size: 0.9rem;
+  color: var(--m-muted);
+}
+
+.colour {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.colour input {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--m-line);
+  border-radius: 10px;
+  background: none;
+  cursor: pointer;
+  flex: none;
+}
+
+.colour small {
+  display: block;
+  color: var(--m-muted);
+  font-size: 0.75rem;
+}
+
+.sample {
+  position: relative;
+  border: 1px solid;
+  border-radius: 12px;
+  padding: 20px 16px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: "Amiri", serif;
+}
+
+.sample strong {
+  font-family: "El Messiri", "Amiri", serif;
+  font-weight: 400;
+  font-size: 1.5rem;
+}
+
+.sampleSeal {
+  position: absolute;
+  top: 10px;
+  inset-inline-start: 10px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+}
+
+.progress {
+  position: relative;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--m-bg);
+  border: 1px solid var(--m-line);
+  overflow: hidden;
+}
+
+.progress div {
+  height: 100%;
+  background: color-mix(in srgb, var(--m-accent) 30%, transparent);
+  transition: width 0.2s;
+}
+
+.progress span {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 0.85rem;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.tabs button[aria-pressed="true"] {
+  background: var(--m-accent);
+  border-color: var(--m-accent);
+  color: #fff;
+}
+
+.grid {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  padding: 0;
+  margin: 0;
+}
+
+.card {
+  border: 1px solid var(--m-line);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--m-surface);
+  display: flex;
+  flex-direction: column;
+}
+
+.thumb {
+  aspect-ratio: 9 / 16;
+  display: grid;
+  place-items: center;
+}
+
+.noVideo {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 4px rgba(255, 255, 255, 0.25);
+}
+
+.cardBody {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.swatches {
+  display: flex;
+  gap: 4px;
+}
+
+.swatches span {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid var(--m-line);
+}
+
+@media (min-width: 560px) {
+  .twoCols {
+    grid-template-columns: 2fr 1fr;
+  }
+}
+
 
 .kpis {
   display: grid;
@@ -383,4 +586,290 @@
   padding: 0.35rem 0.85rem;
   font-size: 0.78rem;
   color: var(--ink-body);
+}
+
+/* ---------- wide dashboard layout (note 8) ---------- */
+.wide {
+  max-width: 1280px;
+  width: 100%;
+  padding: 24px clamp(16px, 3vw, 40px) 80px;
+}
+
+.pageHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pageHead h1 {
+  font-family: "El Messiri", "Amiri", serif;
+  font-weight: 400;
+  font-size: 2rem;
+  margin: 0;
+}
+
+.twoPanels {
+  display: grid;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (min-width: 900px) {
+  .twoPanels {
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  }
+
+  .orders {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+    align-items: start;
+  }
+
+  .pricingForm {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+    align-items: start;
+  }
+
+  .pricingForm > .saveBar {
+    grid-column: 1 / -1;
+  }
+
+  .uploadLayout {
+    display: grid;
+    grid-template-columns: minmax(380px, 1fr) 2fr;
+    gap: 16px;
+    align-items: start;
+  }
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.toolbar input {
+  flex: 1 1 240px;
+}
+
+/* ---------- login / finance gate ---------- */
+.loginPage {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+  background: #f6f3ee;
+  font-family: "Tajawal", system-ui, sans-serif;
+}
+
+.loginCard,
+.gate {
+  width: min(440px, 100%);
+  margin: 0 auto;
+  --m-surface: #fff;
+  --m-line: #e7e0d7;
+  --m-text: #2b2420;
+  --m-muted: #7a6f68;
+  --m-accent: #8a5a2b;
+  --m-bad: #b3261e;
+  --m-ok: #2e7d4f;
+  --m-bg: #f6f3ee;
+}
+
+.loginCard h1 {
+  font-family: "El Messiri", "Amiri", serif;
+  font-weight: 400;
+  margin: 0;
+}
+
+.gateIcon {
+  font-size: 2rem;
+  text-align: center;
+}
+
+.gate h2 {
+  text-align: center;
+}
+
+.financeTools {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.inlineForm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.inlineForm input {
+  width: 220px;
+}
+
+.refs {
+  background: var(--m-bg);
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 0.9rem;
+}
+
+.refs ul {
+  margin: 6px 0 0;
+  padding-inline-start: 18px;
+}
+
+/* ---------- payment methods ---------- */
+.methods {
+  display: grid;
+  gap: 16px;
+  padding-bottom: 90px;
+}
+
+.methods section[data-off="true"] {
+  opacity: 0.65;
+}
+
+@media (min-width: 900px) {
+  .methods {
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    align-items: start;
+  }
+}
+
+.gateIcon {
+  display: grid;
+  place-items: center;
+  color: var(--m-accent);
+}
+
+.gateNote {
+  text-align: center;
+  color: var(--m-muted);
+  font-size: 0.85rem;
+}
+
+/* ---------- Template artwork dialog ---------- */
+.artCount {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--m-accent, #8a5a2b);
+  color: #fff;
+  font-size: 0.75rem;
+}
+
+.artBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.artDialog {
+  width: min(560px, 100%);
+  max-height: calc(100svh - 32px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  border-radius: 16px;
+  background: var(--m-surface, #fff);
+}
+
+.artHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.artHead h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.artPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.artSlot {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px;
+  border: 1px solid var(--m-line);
+  border-radius: 12px;
+}
+
+.artThumb {
+  flex: none;
+  width: 88px;
+  height: 88px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--m-line);
+  border-radius: 10px;
+  color: #a2958a;
+  overflow: hidden;
+}
+
+.artThumb img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.artInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.artInfo label {
+  cursor: pointer;
+}
+
+.artSection {
+  margin: 8px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--m-line);
+  font-size: 1.05rem;
+}
+
+/* Template badge ("مميز" / "الأكثر طلباً" / "جديد"), same colours as on the site. */
+.badgeTag {
+  display: inline-block;
+  margin-inline-start: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  vertical-align: middle;
+  background: #8a5a2b;
+  color: #fff;
+}
+
+.badgeTag[data-badge="popular"] {
+  background: #a1251c;
+}
+
+.badgeTag[data-badge="new"] {
+  background: #1f7a45;
 }

@@ -1,6 +1,6 @@
 export type Category = "wedding" | "engagement" | "katb_kitab";
 export type Lang = "ar" | "en";
-export type RsvpStatus = "attending" | "declined";
+export type RsvpStatus = "attending" | "maybe" | "declined";
 
 /**
  * A visual template. Each one wraps a Google Flow video (made by Ziad).
@@ -22,6 +22,10 @@ export interface Template {
     /** Wax-seal colour for the CSS fallback envelope. */
     seal: string;
   };
+  /** Optional label on the shop card ("مميز", "الأكثر طلباً", "جديد"); badged templates are listed first. */
+  badge?: TemplateBadge;
+  /** Optional artwork drawn in the video's style, placed on the page after the opening. */
+  art?: TemplateArt;
   /** Set for templates uploaded from the admin dashboard (not the built-in fallback). */
   createdAt?: string;
   /**
@@ -102,6 +106,19 @@ export interface ScheduleItem {
   label: string;
 }
 
+export type TemplateBadge = "featured" | "popular" | "new";
+/** In the order they're listed on the site. */
+export const BADGE_LABELS: Record<TemplateBadge, string> = {
+  featured: "مميز",
+  popular: "الأكثر طلباً",
+  new: "جديد",
+};
+
+/** Where each optional artwork image goes on the invitation page. */
+export type ArtSlot = "top" | "corner" | "bottom";
+export const ART_SLOTS: ArtSlot[] = ["top", "corner", "bottom"];
+export type TemplateArt = Partial<Record<ArtSlot, string>>;
+
 export const CATEGORY_LABELS: Record<Category, string> = {
   wedding: "فرح",
   engagement: "خطوبة",
@@ -144,6 +161,8 @@ export interface EventData {
   dressCode?: string;
   /** Short practical notes for guests (parking, children, gifts…). Optional. */
   notes?: string;
+  /** The client wants guests to confirm attendance (package 2+). */
+  rsvp?: boolean;
   createdAt?: string;
   /**
    * Set on the storefront's sample invitations (one per package). They show that package's
@@ -155,7 +174,22 @@ export interface EventData {
 export type PackageId = 1 | 2 | 3 | 4;
 
 export type PaymentState = "unpaid" | "pending_review" | "paid";
-export type PaymentMethod = "paymob" | "instapay" | "manual";
+/** "paymob", "manual" (marked paid by us), or the id of a payment method from the dashboard. */
+export type PaymentMethod = string;
+
+/** A way to pay, managed from the dashboard (Instapay, wallets, bank transfer, card). */
+export interface PaymentMethodConfig {
+  id: string;
+  /** Shown to the client, e.g. "إنستاباي", "فودافون كاش". */
+  name: string;
+  /** "transfer" = the client transfers and uploads a screenshot; "card" = Paymob checkout. */
+  kind: "transfer" | "card";
+  /** Where to transfer: an Instapay address, a wallet number, an IBAN… (transfer only). */
+  account: string;
+  /** Optional short instructions shown under the account. */
+  instructions?: string;
+  active: boolean;
+}
 /** Packages 3–4 are made by our team, so those orders move through stages. */
 export type CustomStage = "new" | "contacted" | "in_design" | "delivered";
 
@@ -172,6 +206,10 @@ export interface Order {
   total: number;
   payment: PaymentState;
   paymentMethod?: PaymentMethod;
+  /** Display name of the method the client used (kept even if the method is later renamed or removed). */
+  paymentMethodName?: string;
+  /** Our note on a manual confirmation (transaction number, sender's name…). */
+  paymentNote?: string;
   /** Instapay transfer screenshot. */
   proofUrl?: string;
   rejectReason?: string;
@@ -183,7 +221,20 @@ export interface Order {
   cancelReason?: string;
   /** Money returned to the client (a refund), as opposed to a cancellation before payment. */
   refunded?: boolean;
-  brief?: { category: Category; date?: string; notes: string };
+  /** Package 3+: what the client wants, and a link to their files (e.g. Google Drive). */
+  brief?: { category: Category; date?: string; notes: string; link?: string };
+  /** Package 3+: the client's photos, videos and references for our team. */
+  references?: { url: string; name: string; type: "image" | "video" | "audio"; addedAt: string }[];
+  createdAt: string;
+}
+
+/** A team member who can sign in to the dashboard. */
+export interface AdminUser {
+  id: string;
+  email: string;
+  name: string;
+  /** scrypt$salt$hash */
+  passwordHash: string;
   createdAt: string;
 }
 
@@ -207,6 +258,8 @@ export interface Features {
   wishes: boolean;
   music: boolean;
   maps: boolean;
+  /** Guests can confirm attendance, if the client turned it on. */
+  rsvp: boolean;
   /** Max named guests; 0 = general link only. */
   namesLimit: number;
 }
@@ -229,6 +282,10 @@ export interface Rsvp {
   /** For general links the guest types their own name. */
   name: string;
   status: RsvpStatus;
+  /** How many people are coming, the guest included (attending / maybe only). */
+  count?: number;
+  /** Optional note to the hosts. */
+  note?: string;
   createdAt: string;
 }
 
@@ -245,6 +302,7 @@ export interface Wish {
 export interface GuestWithStatus extends Guest {
   openedAt?: string;
   rsvp?: RsvpStatus;
+  rsvpCount?: number;
 }
 
 export interface GuestInput {
