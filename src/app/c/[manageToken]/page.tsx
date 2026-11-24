@@ -3,7 +3,9 @@ import { notFound, redirect } from "next/navigation";
 import ClosedInvitation from "@/components/ClosedInvitation";
 import ManageEvent from "@/components/manage/ManageEvent";
 import { eventContext } from "@/lib/event-context";
-import { getEventByManageToken, getEventDashboard } from "@/lib/store";
+import { getSiteSettings } from "@/lib/site";
+import { findTemplate, getEventByManageToken, getEventDashboard } from "@/lib/store";
+import { formatEventDateAr } from "@/lib/time";
 
 type Props = { params: Promise<{ manageToken: string }> };
 
@@ -29,7 +31,7 @@ export default async function Page({ params }: Props) {
   const ctx = await eventContext(event);
   if (ctx.order && (ctx.order.payment !== "paid" || ctx.order.packageId < 2)) redirect(`/order/${manageToken}`);
 
-  const dashboard = await getEventDashboard(event.id);
+  const [dashboard, site, template] = await Promise.all([getEventDashboard(event.id), getSiteSettings(), findTemplate(event.templateId)]);
   const couple = `${event.partnerA} و ${event.partnerB}`;
 
   return (
@@ -37,6 +39,10 @@ export default async function Page({ params }: Props) {
       manageToken={manageToken}
       slug={event.slug}
       couple={couple}
+      brand={site.brand}
+      dateLabel={formatEventDateAr(event.date)}
+      venue={event.venueName}
+      photo={template?.posterUrl}
       initial={dashboard}
       namesLimit={ctx.features.namesLimit}
       showWishes={ctx.features.wishes}

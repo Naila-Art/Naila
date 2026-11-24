@@ -45,3 +45,12 @@ export function isoToCairoLocal(iso: string): string {
   const p = cairoParts(new Date(iso));
   return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`;
 }
+
+/** An event's date for people, in Arabic and Cairo time: "١٤ فبراير ٢٠٢٧ · ٨:٠٠ م". */
+export function formatEventDateAr(iso: string): string {
+  const at = new Date(iso);
+  if (Number.isNaN(at.getTime())) return "";
+  const day = new Intl.DateTimeFormat("ar-EG", { timeZone: TIME_ZONE, day: "numeric", month: "long", year: "numeric" }).format(at);
+  const time = new Intl.DateTimeFormat("ar-EG", { timeZone: TIME_ZONE, hour: "numeric", minute: "2-digit" }).format(at);
+  return `${day} · ${time}`;
+}

@@ -1,9 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
-import styles from "./manage.module.css";
+import { Check, CircleAlert, Download, FileSpreadsheet, Mail, X } from "lucide-react";
+import s from "./studio.module.css";
 import { guestKey, parseCsv, parseSheet, toCsv, type ParsedGuest } from "@/lib/guests";
-import Icon from "../Icon";
 
 const ERROR_LABEL: Record<NonNullable<ParsedGuest["error"]>, string> = {
   name_missing: "الاسم فاضي",
@@ -89,37 +89,46 @@ export default function GuestImport({ existingKeys, onSave }: Props) {
   };
 
   return (
-    <div className={styles.panel}>
-      <div className={styles.panelHead}>
-        <h2>رفع شيت إكسل</h2>
-        <button type="button" className={styles.linkBtn} onClick={downloadTemplate}>
-          تحميل نموذج
-        </button>
-      </div>
-      <p className={styles.hint}>الأعمدة: اللقب (اختياري) · الاسم · رقم الموبايل (اختياري) · رسالة خاصة (اختياري). أول صف ممكن يكون عناوين.</p>
-
-      <label className={styles.dropzone}>
+    <div className={s.importBox}>
+      <label className={`${s.dropzone} ${s.dropzoneCompact}`}>
         <input
           ref={fileRef}
           type="file"
           accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
           onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
         />
-        <span>{fileName || "اختار ملف ‎.xlsx أو ‎.csv"}</span>
+        <span className={s.dropIcon} aria-hidden="true">
+          <FileSpreadsheet size={17} />
+        </span>
+        <span>
+          <strong>{fileName || "عندك شيت Excel؟ ارفعه مرة واحدة"}</strong>
+          <small>اللقب (اختياري) · الاسم · رقم الموبايل (اختياري) · رسالة خاصة (اختياري). ملف ‎.xlsx أو ‎.csv</small>
+        </span>
       </label>
+      <div className={s.actions}>
+        <button type="button" className={s.quiet} onClick={downloadTemplate}>
+          <Download size={15} aria-hidden="true" /> تحميل نموذج الشيت
+        </button>
+      </div>
 
-      {error && <p className={styles.error}>{error}</p>}
+      {error && (
+        <p className={s.error}>
+          <CircleAlert size={16} aria-hidden="true" /> {error}
+        </p>
+      )}
 
       {rows && rows.length > 0 && (
         <>
-          <div className={styles.importSummary}>
-            <span className={styles.ok}>{good.length} جاهزين</span>
-            {dups.length > 0 && <span className={styles.warn}>{dups.length} مكرر (هيتشالوا)</span>}
-            {bad.length > 0 && <span className={styles.bad}>{bad.length} فيهم مشكلة (هيتشالوا)</span>}
+          <div className={s.importSummary}>
+            <span className={`${s.badge} ${s.toneOk}`}>
+              <Check size={12} aria-hidden="true" /> {good.length} جاهزين
+            </span>
+            {dups.length > 0 && <span className={`${s.badge} ${s.toneMaybe}`}>{dups.length} مكرر (هيتشالوا)</span>}
+            {bad.length > 0 && <span className={`${s.badge} ${s.toneBad}`}>{bad.length} فيهم مشكلة (هيتشالوا)</span>}
           </div>
 
-          <div className={styles.tableWrap}>
-            <table className={styles.table}>
+          <div className={s.tableWrap}>
+            <table className={s.table}>
               <thead>
                 <tr>
                   <th>صف</th>
@@ -132,25 +141,25 @@ export default function GuestImport({ existingKeys, onSave }: Props) {
               </thead>
               <tbody>
                 {rows.map((r) => (
-                  <tr key={r.row} className={r.error ? styles.rowBad : r.duplicate ? styles.rowWarn : undefined}>
+                  <tr key={r.row} data-tone={r.error ? "bad" : r.duplicate ? "warn" : undefined}>
                     <td>{r.row}</td>
                     <td>{r.title}</td>
                     <td>{r.name}</td>
                     <td dir="ltr">{r.phone}</td>
-                    <td>{r.message ? <Icon name="mail" size={16} label="فيه رسالة" /> : ""}</td>
-                    <td>{r.error ? ERROR_LABEL[r.error] : r.duplicate ? "مكرر" : <Icon name="check" size={16} label="تمام" />}</td>
+                    <td>{r.message ? <Mail size={15} aria-label="فيه رسالة" /> : ""}</td>
+                    <td>{r.error ? ERROR_LABEL[r.error] : r.duplicate ? "مكرر" : <Check size={15} aria-label="تمام" />}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
 
-          <div className={styles.actions}>
-            <button type="button" className={styles.primary} disabled={busy || good.length === 0} onClick={save}>
-              حفظ {good.length} ضيف
+          <div className={s.actions}>
+            <button type="button" className={s.cta} disabled={busy || good.length === 0} onClick={save}>
+              <Check size={16} aria-hidden="true" /> حفظ {good.length} ضيف
             </button>
-            <button type="button" className={styles.secondary} onClick={reset}>
-              إلغاء
+            <button type="button" className={s.ghost} onClick={reset}>
+              <X size={16} aria-hidden="true" /> إلغاء
             </button>
           </div>
         </>
