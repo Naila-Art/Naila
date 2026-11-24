@@ -1,0 +1,214 @@
+/* Three occasion rows (Katb Kitab / Wedding / Engagement), each with its own style chips. */
+
+.rows {
+  --ink: #2f241b;
+  --muted: rgba(47, 36, 27, 0.58);
+  --line: rgba(47, 36, 27, 0.14);
+  --bronze: #8a5a2b;
+
+  margin-top: 3rem;
+  display: grid;
+  gap: 4rem;
+}
+
+@media (min-width: 640px) {
+  .rows {
+    margin-top: 3.5rem;
+    gap: 5rem;
+  }
+}
+
+.row {
+  min-width: 0;
+  padding-top: 1.75rem;
+  border-top: 1px solid var(--line);
+}
+
+.rowHead {
+  display: grid;
+  gap: 1.25rem;
+}
+
+@media (min-width: 1024px) {
+  .rowHead {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+    align-items: end;
+    gap: 2.5rem;
+  }
+}
+
+.rowTitle {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 3.6vw, 3rem);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+
+.rowCount {
+  font-family: inherit;
+  font-size: 0.4em;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--bronze);
+  font-variant-numeric: tabular-nums;
+}
+
+.rowBlurb {
+  margin: 0.6rem 0 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.1rem;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+@media (min-width: 1024px) {
+  .chips {
+    justify-content: flex-end;
+  }
+}
+
+/* Phones: chips scroll sideways instead of stacking several lines. */
+@media (max-width: 639px) {
+  .chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-inline: -1rem;
+    padding-inline: 1rem;
+    padding-bottom: 2px;
+  }
+
+  .chips::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.chip {
+  display: inline-flex;
+  flex: none;
+  align-items: baseline;
+  gap: 0.4rem;
+  min-height: 2.25rem;
+  padding: 0.45rem 0.95rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 252, 246, 0.6);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    background-color 200ms ease,
+    border-color 200ms ease,
+    color 200ms ease;
+}
+
+.chip:hover {
+  border-color: rgba(47, 36, 27, 0.32);
+}
+
+.chip[aria-pressed="true"] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: #fbf6ec;
+}
+
+.chipCount {
+  color: var(--bronze);
+  font-size: 0.62rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.chip[aria-pressed="true"] .chipCount {
+  color: #e6c99a;
+}
+
+.grid {
+  margin-top: 1.75rem;
+}
+
+/* Phones: each occasion is a swipeable strip, so three rows stay short. */
+@media (max-width: 639px) {
+  .row .grid {
+    display: flex;
+    gap: 1rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    margin-inline: -1rem;
+    padding-inline: 1rem;
+    scroll-padding-inline: 1rem;
+  }
+
+  .row .grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .row .grid > * {
+    flex: 0 0 78%;
+    scroll-snap-align: start;
+  }
+}
+
+.more {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 1.75rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 1.4rem;
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color 200ms ease,
+    color 200ms ease;
+}
+
+.more:hover {
+  background: var(--ink);
+  color: #fbf6ec;
+}
+
+.chip:focus-visible,
+.more:focus-visible {
+  outline: 2px solid var(--bronze);
+  outline-offset: 2px;
+}
+
+/* Arabic: larger text, no tracking (keeps letters joined). */
+.rows[data-lang="ar"] .rowTitle {
+  letter-spacing: 0;
+  line-height: 1.2;
+}
+
+.rows[data-lang="ar"] .chip,
+.rows[data-lang="ar"] .more {
+  font-size: 0.9rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chip,
+  .more {
+    transition: none;
+  }
+}

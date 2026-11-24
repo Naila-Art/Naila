@@ -67,11 +67,11 @@ export interface LandingCopy {
   templates: {
     title: string;
     subtitle: string;
-    carousel: string;
-    grid: string;
     liveDemo: string;
-    prevAria: string;
-    nextAria: string;
+    allStyles: string;
+    showAll: string;
+    showLess: string;
+    occasions: Record<"katb_kitab" | "wedding" | "engagement", { title: string; blurb: string }>;
   };
   samples: {
     title: string;
@@ -183,11 +183,15 @@ export const LANDING_COPY: Record<Lang, LandingCopy> = {
       title: "Designs that reflect your taste from the first tap.",
       subtitle:
         "Editorial wedding openings crafted for brides who care about every detail—graceful motion, couture typography, and a first impression guests talk about.",
-      carousel: "Carousel",
-      grid: "Grid",
       liveDemo: "Live demo",
-      prevAria: "Previous design",
-      nextAria: "Next design",
+      allStyles: "All styles",
+      showAll: "Show all {n} designs",
+      showLess: "Show fewer",
+      occasions: {
+        katb_kitab: { title: "Katb Kitab", blurb: "Quiet, sacred openings for the signing of the contract." },
+        wedding: { title: "Wedding", blurb: "Grand reveals for the night itself." },
+        engagement: { title: "Engagement", blurb: "Light, joyful invitations for the first celebration." },
+      },
     },
     samples: {
       title: "Feel the moment your guests will open.",
@@ -446,11 +450,15 @@ export const LANDING_COPY: Record<Lang, LandingCopy> = {
       title: "تصميمات راقية تليق بفرحك.",
       subtitle:
         "كل تصميم معمول بتفاصيل هادية وشياكة حقيقية — فتحة ظرف ناعمة، خطوط عربية وإنجليزية فخمة، وإحساس مختلف من أول ما الضيف يفتحه.",
-      carousel: "عرض سينمائي",
-      grid: "كل التصميمات",
       liveDemo: "معاينة حيّة",
-      prevAria: "التصميم السابق",
-      nextAria: "التصميم التالي",
+      allStyles: "كل الأنماط",
+      showAll: "اعرضي كل التصميمات ({n})",
+      showLess: "عرض أقل",
+      occasions: {
+        katb_kitab: { title: "كتب كتاب", blurb: "دعوات هادية وروحانية لليلة كتب الكتاب." },
+        wedding: { title: "زفاف", blurb: "افتتاحيات فخمة تليق بليلة العمر." },
+        engagement: { title: "خطوبة", blurb: "دعوات خفيفة ومبهجة لأول فرحة." },
+      },
     },
     samples: {
       title: "جرّبي الدعوة بنفسك قبل ما تختاري.",

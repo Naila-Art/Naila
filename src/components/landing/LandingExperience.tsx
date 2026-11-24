@@ -7,7 +7,7 @@ import LandingHeader, { type FooterHandoffState } from "./LandingHeader";
 import HeroSection from "./HeroSection";
 import SwitchNarrative from "./SwitchNarrative";
 import EditorialShowcase, { type ShowcaseCardItem } from "./EditorialShowcase";
-import TemplateFilterBar, { useTemplateFilter } from "@/components/TemplateFilterBar";
+import OccasionRows from "./OccasionRows";
 import EditorialManifesto from "./EditorialManifesto";
 import FeaturesBento from "./FeaturesBento";
 import PricingReviewsSplit from "./PricingReviewsSplit";
@@ -293,10 +293,8 @@ export default function LandingExperience({
     return selfPkg?.price ?? 1500;
   }, [activePackages]);
 
-  const templateFilter = useTemplateFilter(templates);
-  const filteredTemplates = templateFilter.shown;
-  const templateCards = useMemo<ShowcaseCardItem[]>(() => {
-    return filteredTemplates.map((tpl) => {
+  const templateToCard = useCallback(
+    (tpl: Template): ShowcaseCardItem => {
       const meta = TEMPLATE_EDITORIAL_META[tpl.id];
       return {
         id: tpl.id,
@@ -320,8 +318,9 @@ export default function LandingExperience({
         videoUrl: tpl.videoUrl,
         frameBg: meta?.cardFrame ?? tpl.theme.background,
       };
-    });
-  }, [filteredTemplates, lang]);
+    },
+    [lang]
+  );
 
   const sampleCards = useMemo<ShowcaseCardItem[]>(() => {
     return SAMPLES.map((sample, idx) => {
@@ -412,23 +411,20 @@ export default function LandingExperience({
             id="templates"
             title={copy.templates.title}
             subtitle={copy.templates.subtitle}
-            carouselLabel={copy.templates.carousel}
-            gridLabel={copy.templates.grid}
-            prevAria={copy.templates.prevAria}
-            nextAria={copy.templates.nextAria}
             aspect="landscape"
-            items={templateCards}
-            toolbar={<TemplateFilterBar filter={templateFilter} lang={lang} />}
-          />
+          >
+            <OccasionRows
+              templates={templates}
+              toCard={templateToCard}
+              copy={copy.templates}
+              lang={lang}
+            />
+          </EditorialShowcase>
 
           <EditorialShowcase
             id="save-the-dates"
             title={copy.samples.title}
             subtitle={copy.samples.subtitle}
-            carouselLabel={copy.templates.carousel}
-            gridLabel={copy.templates.grid}
-            prevAria={copy.templates.prevAria}
-            nextAria={copy.templates.nextAria}
             aspect="portrait"
             items={sampleCards}
           />

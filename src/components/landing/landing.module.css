@@ -1583,108 +1583,7 @@
   }
 }
 
-/* Architectural Editorial Hairline View Switcher */
-.viewToggleLedger {
-  position: relative;
-  display: inline-grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  width: fit-content;
-  border-top: 1px solid rgba(47, 36, 27, 0.14);
-  border-bottom: 1px solid rgba(47, 36, 27, 0.14);
-  background: linear-gradient(
-    180deg,
-    rgba(255, 250, 241, 0.7),
-    rgba(252, 247, 237, 0.25)
-  );
-}
-
-.viewToggleBar {
-  position: absolute;
-  bottom: -1px;
-  inset-inline-start: 0;
-  width: 50%;
-  height: 2px;
-  pointer-events: none;
-  background: linear-gradient(
-    90deg,
-    rgba(138, 90, 43, 0.45),
-    var(--ink-primary) 50%,
-    rgba(138, 90, 43, 0.45)
-  );
-  transition: transform 0.42s var(--ease-editorial);
-}
-
-.viewToggleLedger[data-active="grid"] .viewToggleBar {
-  transform: translateX(100%);
-}
-
-.landingMain[dir="rtl"] .viewToggleLedger[data-active="grid"] .viewToggleBar {
-  transform: translateX(-100%);
-}
-
-.viewToggleTab {
-  position: relative;
-  display: inline-flex;
-  min-height: 2.75rem;
-  min-width: 7.4rem;
-  cursor: pointer;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  border: 0;
-  border-inline-end: 1px solid rgba(47, 36, 27, 0.1);
-  background: transparent;
-  padding: 0.5rem 1.15rem;
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--ink-muted);
-  transition: color 0.25s ease, background-color 0.25s ease;
-}
-
-.viewToggleTab:last-child {
-  border-inline-end: 0;
-}
-
-.viewToggleTab:hover {
-  background-color: rgba(138, 90, 43, 0.045);
-  color: var(--ink-primary);
-}
-
-.viewToggleTabActive,
-.viewToggleTabActive:hover {
-  background: linear-gradient(
-    180deg,
-    rgba(138, 90, 43, 0.075),
-    rgba(138, 90, 43, 0.02)
-  );
-  color: var(--ink-primary);
-}
-
-.viewToggleIcon {
-  flex-shrink: 0;
-  color: var(--ink-muted);
-  transition: color 0.25s ease, transform 0.35s var(--ease-editorial);
-}
-
-.viewToggleTabActive .viewToggleIcon {
-  color: var(--accent-bronze);
-  transform: scale(1.06);
-}
-
-.landingMain[dir="rtl"] .viewToggleTab {
-  letter-spacing: 0;
-  text-transform: none;
-  font-size: 0.84rem;
-}
-
-.showcaseToolbar {
-  margin-top: 2.25rem;
-}
-
-.showcaseToolbar + .showcaseCarousel,
-.showcaseToolbar + .showcaseGrid {
+.showcaseGrid {
   margin-top: 1.75rem;
 }
 
@@ -1953,37 +1852,6 @@
   font-size: 0.875rem;
   line-height: 1.5;
   color: var(--ink-muted);
-}
-
-.carouselControls {
-  margin-top: 0.75rem;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.5rem;
-}
-
-.carouselArrowBtn {
-  display: inline-flex;
-  height: 3rem;
-  width: 3rem;
-  cursor: pointer;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--border-subtle);
-  background-color: var(--bg-ivory);
-  color: var(--ink-primary);
-  transition: background-color 0.2s ease, opacity 0.2s ease;
-}
-
-.carouselArrowBtn:hover:not(:disabled) {
-  background-color: var(--bg-sand);
-}
-
-.carouselArrowBtn:disabled {
-  cursor: not-allowed;
-  opacity: 0.35;
 }
 
 /* ============================================================================
@@ -3781,7 +3649,6 @@
 }
 
 /* RTL: chevrons point in reading direction ("next" = left in Arabic). */
-.landingMain[dir="rtl"] .carouselArrowBtn svg,
 .landingMain[dir="rtl"] .cardArrowBadge svg {
   transform: scaleX(-1);
 }
