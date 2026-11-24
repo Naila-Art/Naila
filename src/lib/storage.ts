@@ -1,6 +1,7 @@
 import "server-only";
 import { DeleteObjectsCommand, GetObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { del as blobDel, issueSignedToken, list as blobList, presignUrl } from "@vercel/blob";
 import { createHmac, randomBytes, timingSafeEqual } from "crypto";
 import { promises as fs } from "fs";
 import { deleteMediaDir, mediaPath, sniff } from "./media";
@@ -8,7 +9,8 @@ import { deleteMediaDir, mediaPath, sniff } from "./media";
 /**
  * File storage for template videos and posters.
  *
- * Production: Cloudflare R2. The browser uploads straight to R2 with a short-lived signed URL,
+ * Production: Cloudflare R2 when its R2_* variables are set, otherwise Vercel Blob
+ * (BLOB_READ_WRITE_TOKEN). Both work the same way for the browser. The browser uploads straight to R2 with a short-lived signed URL,
  * so files never pass through our server (Vercel caps request bodies at 4.5 MB). Guests load
  * them from R2's public domain (R2_PUBLIC_URL), which supports Range requests for iPhone video.
  *
@@ -58,11 +60,34 @@ function r2Config(): R2Config | null {
     publicUrl: (process.env.R2_PUBLIC_URL?.trim() ?? "").replace(/\/+$/, ""),
   };
   if (Object.values(c).every(Boolean)) return c;
+  if (blobConfig()) return null; // Vercel Blob handles storage
   // ALLOW_LOCAL_STORAGE=1 lets a production build on this computer (e.g. a demo through a tunnel) store files locally.
   if (process.env.NODE_ENV === "production" && process.env.ALLOW_LOCAL_STORAGE !== "1") {
-    throw new Error("R2 is not configured: set R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET, R2_PUBLIC_URL");
+    throw new Error("No file storage configured: set BLOB_READ_WRITE_TOKEN (Vercel Blob) or the R2_* variables");
   }
   return null; // development: store on local disk
+}
+
+interface BlobConfig {
+  token: string;
+  /** e.g. https://abc123.public.blob.vercel-storage.com */
+  publicUrl: string;
+}
+
+/**
+ * Vercel Blob (public store), used when R2 isn't configured. Uploads work like R2: the browser PUTs
+ * straight to a short-lived presigned URL, so files never pass through our server.
+ * Local development keeps using the disk unless NAILA_STORAGE=blob.
+ */
+function blobConfig(): BlobConfig | null {
+  const token = process.env.BLOB_READ_WRITE_TOKEN?.trim();
+  if (!token) return null;
+  if (process.env.NODE_ENV !== "production" && process.env.NAILA_STORAGE !== "blob") return null;
+  // Read-write tokens look like vercel_blob_rw_<storeId>_<secret>.
+  const storeId = token.split("_")[3]?.toLowerCase();
+  if (!storeId) return null;
+  const publicUrl = (process.env.BLOB_PUBLIC_URL?.trim() || `https://${storeId}.public.blob.vercel-storage.com`).replace(/\/+$/, "");
+  return { token, publicUrl };
 }
 
 let client: S3Client | null = null;
@@ -75,8 +100,16 @@ function s3(c: R2Config): S3Client {
   return client;
 }
 
-export function storageMode(): "r2" | "local" {
-  return r2Config() ? "r2" : "local";
+export function storageMode(): "r2" | "blob" | "local" {
+  return r2Config() ? "r2" : blobConfig() ? "blob" : "local";
+}
+
+/** Public base URL for stored files, by storage mode. */
+function publicBase(): string {
+  const c = r2Config();
+  if (c) return c.publicUrl;
+  const b = blobConfig();
+  return b ? b.publicUrl : "/media";
 }
 
 export const TEMPLATE_ID = /^tpl_[0-9a-f]{10}$/;
@@ -135,8 +168,7 @@ export function artObjectKey(templateId: string, slot: string, contentType: stri
 
 /** Turns a public URL we issued back into its object key (null if it isn't one of ours). */
 export function keyFromPublicUrl(url: string): string | null {
-  const c = r2Config();
-  const prefix = c ? `${c.publicUrl}/` : "/media/";
+  const prefix = `${publicBase()}/`;
   if (!url.startsWith(prefix)) return null;
   const key = url.slice(prefix.length);
   return kindOfKey(key) ? key : null;
@@ -156,13 +188,32 @@ export function verifyLocalUpload(key: string, exp: number, sig: string): boolea
 }
 
 export function publicUrl(objectKey: string): string {
-  const c = r2Config();
-  return c ? `${c.publicUrl}/${objectKey}` : `/media/${objectKey}`;
+  return `${publicBase()}/${objectKey}`;
 }
 
 /** Where the browser should PUT the file. */
 export async function createUploadUrl(objectKey: string, contentType: string): Promise<string> {
   const c = r2Config();
+  const b = c ? null : blobConfig();
+  if (b) {
+    const kind = kindOfKey(objectKey);
+    if (!kind) throw new Error(`not an upload key: ${objectKey}`);
+    const validUntil = Date.now() + UPLOAD_URL_TTL_SECONDS * 1000;
+    const limits = { allowedContentTypes: [contentType], maximumSizeInBytes: UPLOAD_RULES[kind].maxBytes };
+    const signed = await issueSignedToken({ token: b.token, pathname: objectKey, operations: ["put"], validUntil, ...limits });
+    const { presignedUrl } = await presignUrl(signed, {
+      operation: "put",
+      pathname: objectKey,
+      access: "public",
+      validUntil,
+      ...limits,
+      // Template videos/posters keep fixed names, so re-uploading must be allowed to replace them.
+      allowOverwrite: true,
+      addRandomSuffix: false,
+      cacheControlMaxAge: 31536000,
+    });
+    return presignedUrl;
+  }
   if (!c) {
     const exp = Date.now() + UPLOAD_URL_TTL_SECONDS * 1000;
     return `/api/uploads/local?key=${encodeURIComponent(objectKey)}&exp=${exp}&sig=${localSig(objectKey, exp)}`;
@@ -186,10 +237,21 @@ export async function createUploadUrl(objectKey: string, contentType: string): P
  */
 export async function verifyUpload(objectKey: string, kind: UploadKind): Promise<"ok" | "missing" | "too_large" | "wrong_type"> {
   const c = r2Config();
+  const b = c ? null : blobConfig();
   let head: Uint8Array;
   let size: number;
 
-  if (c) {
+  if (b) {
+    try {
+      const res = await fetch(`${b.publicUrl}/${objectKey}`, { headers: { Range: "bytes=0-15" }, cache: "no-store" });
+      if (!res.ok) return "missing";
+      head = new Uint8Array(await res.arrayBuffer()).slice(0, 16);
+      // Content-Range looks like "bytes 0-15/123456"
+      size = Number(res.headers.get("content-range")?.split("/")[1] ?? res.headers.get("content-length") ?? 0);
+    } catch {
+      return "missing";
+    }
+  } else if (c) {
     try {
       const res = await s3(c).send(new GetObjectCommand({ Bucket: c.bucket, Key: objectKey, Range: "bytes=0-15" }));
       head = await res.Body!.transformToByteArray();
@@ -232,7 +294,12 @@ export async function verifyUpload(objectKey: string, kind: UploadKind): Promise
 export async function deleteObject(objectKey: string): Promise<void> {
   if (!kindOfKey(objectKey)) return;
   const c = r2Config();
+  const b = c ? null : blobConfig();
   try {
+    if (b) {
+      await blobDel(`${b.publicUrl}/${objectKey}`, { token: b.token });
+      return;
+    }
     if (!c) {
       const full = mediaPath(objectKey.split("/"));
       if (full) await fs.rm(full, { force: true });
@@ -248,6 +315,12 @@ export async function deleteObject(objectKey: string): Promise<void> {
 export async function deleteTemplateFiles(templateId: string): Promise<void> {
   if (!TEMPLATE_ID.test(templateId)) return;
   const c = r2Config();
+  const b = c ? null : blobConfig();
+  if (b) {
+    const { blobs } = await blobList({ prefix: `templates/${templateId}/`, token: b.token });
+    if (blobs.length) await blobDel(blobs.map((x) => x.url), { token: b.token });
+    return;
+  }
   if (!c) return deleteMediaDir(["templates", templateId]);
 
   const listed = await s3(c).send(new ListObjectsV2Command({ Bucket: c.bucket, Prefix: `templates/${templateId}/` }));
