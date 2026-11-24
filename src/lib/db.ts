@@ -2,14 +2,14 @@ import "server-only";
 import { promises as fs } from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
+import { neon } from "@neondatabase/serverless";
 
 /**
  * Document storage behind src/lib/store.ts.
  *
- * Every collection is a table of `(id, data jsonb)` rows (see supabase/schema.sql).
- * - Production / Vercel: Supabase, through its REST API with the service-role key
- *   (SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY).
- * - Local development without those variables: a JSON file at data/store.json.
+ * Every collection is a table of `(id, data jsonb)` rows (see db/schema.sql).
+ * - Production / Vercel: Postgres on Neon (DATABASE_URL, set by the Vercel Marketplace integration).
+ * - Local development: a JSON file at data/store.json, unless NAILA_DB=postgres.
  */
 
 export type Collection =
@@ -37,69 +37,52 @@ export interface Backend {
 const asList = (v: string | string[]) => (Array.isArray(v) ? v : [v]);
 
 // ---------------------------------------------------------------------------
-// Supabase (PostgREST)
+// Postgres (Neon, over HTTP — no connection pool to manage on Vercel)
 // ---------------------------------------------------------------------------
 
-const PAGE = 1000; // Supabase's default max rows per request
+const COLLECTIONS: readonly Collection[] = [
+  "events", "guests", "rsvps", "wishes", "views", "templates", "orders", "change_requests", "music", "settings",
+];
 
-function supabase(url: string, key: string): Backend {
-  const base = `${url.replace(/\/+$/, "")}/rest/v1`;
+function postgres(url: string): Backend {
+  const sql = neon(url);
 
-  async function req(query: string, init: RequestInit = {}): Promise<Response> {
-    const res = await fetch(`${base}/${query}`, {
-      ...init,
-      cache: "no-store",
-      headers: {
-        apikey: key,
-        Authorization: `Bearer ${key}`,
-        "Content-Type": "application/json",
-        ...init.headers,
-      },
-    });
-    if (!res.ok) {
-      throw new Error(`Supabase ${init.method ?? "GET"} ${query.split("?")[0]} failed: ${res.status} ${await res.text()}`);
-    }
-    return res;
-  }
-
-  function filter(field: string, value: string | string[]): string {
-    const col = encodeURIComponent(field === "id" ? "id" : `data->>${field}`);
-    if (!Array.isArray(value)) return `${col}=eq.${encodeURIComponent(value)}`;
-    const quoted = value.map((v) => `"${v.replace(/["\\]/g, "\\$&")}"`).join(",");
-    return `${col}=in.(${encodeURIComponent(quoted)})`;
-  }
-
-  async function select<T>(c: Collection, where?: string): Promise<T[]> {
-    const out: T[] = [];
-    for (let offset = 0; ; offset += PAGE) {
-      const q = `${c}?select=data&order=id${where ? `&${where}` : ""}&limit=${PAGE}&offset=${offset}`;
-      const rows = (await (await req(q)).json()) as { data: T }[];
-      out.push(...rows.map((r) => r.data));
-      if (rows.length < PAGE) return out;
-    }
-  }
+  // Table and field names are interpolated (so the expression indexes are used); both are checked here.
+  const table = (c: Collection) => {
+    if (!COLLECTIONS.includes(c)) throw new Error(`Unknown collection: ${c}`);
+    return `public.${c}`;
+  };
+  const column = (field: string) => {
+    if (field === "id") return "id";
+    if (!/^[A-Za-z]+$/.test(field)) throw new Error(`Invalid field: ${field}`);
+    return `data->>'${field}'`;
+  };
 
   return {
-    list: (c) => select(c),
-    async where(c, field, value) {
-      if (Array.isArray(value) && value.length === 0) return [];
-      return select(c, filter(field, value));
+    async list<T>(c: Collection) {
+      const rows = await sql.query(`select data from ${table(c)} order by id`);
+      return rows.map((r) => r.data as T);
+    },
+    async where<T>(c: Collection, field: string, value: string | string[]) {
+      const values = asList(value);
+      if (values.length === 0) return [];
+      const rows = await sql.query(`select data from ${table(c)} where ${column(field)} = any($1::text[]) order by id`, [values]);
+      return rows.map((r) => r.data as T);
     },
     async put(c, rows) {
       if (rows.length === 0) return;
-      await req(c, {
-        method: "POST",
-        headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
-        body: JSON.stringify(rows),
-      });
+      await sql.query(
+        `insert into ${table(c)} (id, data)
+         select r->>'id', r->'data' from jsonb_array_elements($1::jsonb) r
+         on conflict (id) do update set data = excluded.data`,
+        [JSON.stringify(rows)],
+      );
     },
     async remove(c, field, value) {
-      if (Array.isArray(value) && value.length === 0) return 0;
-      const res = await req(`${c}?select=id&${filter(field, value)}`, {
-        method: "DELETE",
-        headers: { Prefer: "return=representation" },
-      });
-      return ((await res.json()) as unknown[]).length;
+      const values = asList(value);
+      if (values.length === 0) return 0;
+      const rows = await sql.query(`delete from ${table(c)} where ${column(field)} = any($1::text[]) returning id`, [values]);
+      return rows.length;
     },
   };
 }
@@ -256,11 +239,13 @@ function jsonFile(): Backend {
 // ---------------------------------------------------------------------------
 
 function pick(): Backend {
-  const url = process.env.SUPABASE_URL?.trim();
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-  if (url && key) return supabase(url, key);
-  if (process.env.VERCEL) {
-    throw new Error("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set on Vercel (its filesystem is read-only).");
+  const url = process.env.DATABASE_URL?.trim();
+  // `vercel env pull` also puts DATABASE_URL in .env.local, and it is the live database, so local
+  // development only uses it when asked to (NAILA_DB=postgres); otherwise it stays on the local file.
+  const usePostgres = process.env.VERCEL || process.env.NAILA_DB === "postgres";
+  if (usePostgres) {
+    if (!url) throw new Error("DATABASE_URL must be set (Neon via the Vercel Marketplace); Vercel's filesystem is read-only.");
+    return postgres(url);
   }
   return jsonFile();
 }

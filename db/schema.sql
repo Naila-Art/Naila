@@ -1,9 +1,9 @@
--- Naila: Supabase schema.
--- Run once in the Supabase SQL editor (safe to re-run).
+-- Naila: Postgres schema (Neon in production).
+-- Applied by `node --env-file=.env.local scripts/db-setup.mjs` (safe to re-run).
 --
 -- Each collection is a table of documents: `data` holds the object exactly as typed in
 -- src/lib/types.ts, so new fields need no migration. src/lib/db.ts reads and writes these
--- tables through the REST API with the service-role key; uniqueness and lookups are covered
+-- tables over Neon's HTTP driver; uniqueness and lookups are covered
 -- by the expression indexes below.
 -- Files (videos, posters, music, transfer screenshots) live in Cloudflare R2; only their URLs are stored here.
 
@@ -18,8 +18,6 @@ begin
          data       jsonb not null,
          created_at timestamptz not null default now()
        )', t);
-    -- Only our server (service role) talks to the database; RLS with no policies denies everyone else.
-    execute format('alter table public.%I enable row level security', t);
   end loop;
 end $$;
 

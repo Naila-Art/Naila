@@ -1,6 +1,6 @@
 # Digital Invitations: web app
 
-Next.js 15 (App Router) + TypeScript. Deployed to Vercel. Files on Cloudflare R2. Database: Supabase later; see `supabase/schema.sql`.
+Next.js 15 (App Router) + TypeScript. Deployed to Vercel. Files on Cloudflare R2. Database: Postgres on Neon (via the Vercel Marketplace); see `db/schema.sql`.
 
 ## Run locally
 ```bash
@@ -79,7 +79,7 @@ Setup:
 Without R2 settings, development stores files in `data/uploads/`. In production the R2 settings are required.
 
 ## Data
-Development stores data in `data/db.json` (git-ignored, seeded with demo events on first run). All access goes through `src/lib/store.ts`, which is swapped for Supabase before deploying; the JSON file does not persist on Vercel.
+Development stores data in `data/store.json` (git-ignored, seeded with demo events on first run). All access goes through `src/lib/store.ts` → `src/lib/db.ts`, which uses Postgres (`DATABASE_URL`) on Vercel. Create the tables with `node --env-file=.env.local scripts/db-setup.mjs`; add `--import-local` to copy local data in. Set `NAILA_DB=postgres` to run locally against the live database.
 
 To check a production build while `npm run dev` is running, build into another folder: `NEXT_DIST_DIR=.next-prod npx next build && NEXT_DIST_DIR=.next-prod npx next start -p 3124`.
 (In development, Next.js embeds debug copies of server data in pages; production doesn't.)

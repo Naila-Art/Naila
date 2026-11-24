@@ -1,0 +1,8 @@
+# Local-only material: never uploaded to Vercel.
+Video References - ignore
+recordings
+gflow-test
+data
+.next*
+*.tsbuildinfo
+.claude
