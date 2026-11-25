@@ -8,6 +8,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
+  applicationName: "Naila",
   title: "Naila — Editorial Digital Invitations | نايلة للدعوات الرقمية",
   description:
     "Bespoke digital wedding, engagement, and katb kitab invitations with wax-seal openings, music, named guest links, and instant RSVP tracking.",

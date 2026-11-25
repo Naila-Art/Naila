@@ -29,7 +29,18 @@ export default async function Home() {
   const structuredData = {
     "@context": "https://schema.org",
     "@graph": [
-      { "@type": "Organization", "@id": `${url}/#organization`, name: site.brand, url },
+      {
+        "@type": "Organization",
+        "@id": `${url}/#organization`,
+        name: site.brand,
+        url,
+        logo: {
+          "@type": "ImageObject",
+          url: `${url}/icons/icon-512.png`,
+          width: 512,
+          height: 512,
+        },
+      },
       {
         "@type": "WebSite",
         "@id": `${url}/#website`,

@@ -19,10 +19,12 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: "/:dir(assets|templates|videos|showcase|hero)/:path*",
+        source: "/:dir(assets|templates|videos|showcase|hero|icons)/:path*",
         headers: [{ key: "Cache-Control", value: MEDIA_CACHE }],
       },
       { source: "/og.jpg", headers: [{ key: "Cache-Control", value: MEDIA_CACHE }] },
+      { source: "/logo.png", headers: [{ key: "Cache-Control", value: MEDIA_CACHE }] },
+      { source: "/apple-touch-icon.png", headers: [{ key: "Cache-Control", value: MEDIA_CACHE }] },
       {
         // Font files never change under the same name.
         source: "/fonts/:path*",
