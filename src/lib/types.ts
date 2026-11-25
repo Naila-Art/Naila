@@ -193,6 +193,11 @@ export interface PaymentMethodConfig {
 /** Packages 3–4 are made by our team, so those orders move through stages. */
 export type CustomStage = "new" | "contacted" | "in_design" | "delivered";
 
+export interface OrderAddons {
+  /** Lets Package 1 clients pick any track (or silence) from the music library. */
+  customMusic?: boolean;
+}
+
 export interface Order {
   id: string;
   /** "self" = built by the client in the storefront (packages 1–2); "custom" = a request for packages 3–4. */
@@ -202,6 +207,8 @@ export interface Order {
   /** WhatsApp number, +20… */
   clientPhone: string;
   packageId: PackageId;
+  /** Optional paid add-ons chosen at checkout (e.g. custom music picker on Package 1). */
+  addons?: OrderAddons;
   /** EGP, fixed when the order is made or changed; later price edits don't touch it. */
   total: number;
   payment: PaymentState;
@@ -246,17 +253,27 @@ export interface ChangeRequest {
   resolvedAt?: string;
 }
 
+export type MusicMood = "orchestral" | "strings" | "piano" | "waltz" | "oriental";
+
 export interface MusicTrack {
   id: string;
   name: string;
+  /** Optional Arabic display title shown when viewing in Arabic. */
+  nameAr?: string;
+  mood?: MusicMood;
+  /** True for tracks bundled in /public/music (cannot be deleted from admin). */
+  builtIn?: boolean;
   url: string;
   createdAt: string;
 }
 
-/** What an event may use, from its package. */
+/** What an event may use, from its package (plus any add-ons). */
 export interface Features {
   wishes: boolean;
+  /** Every package plays the design's preselected soundtrack unless muted/silenced. */
   music: boolean;
+  /** Unlocks choosing a different track from the library (or silencing music completely). */
+  customMusic: boolean;
   maps: boolean;
   /** Guests can confirm attendance, if the client turned it on. */
   rsvp: boolean;

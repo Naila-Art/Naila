@@ -19,7 +19,7 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: "/:dir(assets|templates|videos|showcase|hero|icons)/:path*",
+        source: "/:dir(assets|templates|videos|showcase|hero|icons|music)/:path*",
         headers: [{ key: "Cache-Control", value: MEDIA_CACHE }],
       },
       { source: "/og.jpg", headers: [{ key: "Cache-Control", value: MEDIA_CACHE }] },

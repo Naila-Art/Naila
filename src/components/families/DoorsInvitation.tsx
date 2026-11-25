@@ -31,8 +31,9 @@ type Stage = "sealed" | "opening" | "revealed";
 const DEFAULT_REVEAL_MS = 3800;
 /** Safety net in case a video never plays or never ends. */
 const VIDEO_MAX_MS = 12000;
-const MUSIC_VOLUME = 0.55;
-const MUSIC_FADE_MS = 2400;
+const MUSIC_VOLUME = 0.58;
+const MUSIC_FADE_MS = 1400;
+const VIDEO_UNDER_MUSIC_VOLUME = 0.24;
 
 function dateParts(iso: string, lang: "ar" | "en") {
   const d = new Date(iso);
@@ -136,7 +137,12 @@ export default function DoorsInvitation(props: InvitationProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const fadeRef = useRef<number>(undefined);
+  const fadeRef = useRef<ReturnType<typeof setInterval>>(undefined);
+  const stageRef = useRef<Stage>(stage);
+  stageRef.current = stage;
+  const mutedRef = useRef(muted);
+  mutedRef.current = muted;
+  const prevMusicUrlRef = useRef(props.musicUrl);
   const revealAt = Math.max(2400, (template.revealAtMs ?? DEFAULT_REVEAL_MS) - 450);
   const parts = useMemo(() => dateParts(props.dateIso, lang), [props.dateIso, lang]);
   const initials = `${props.partnerA.trim().charAt(0)}${isAr ? " " : "·"}${props.partnerB.trim().charAt(0)}`;
@@ -162,50 +168,70 @@ export default function DoorsInvitation(props: InvitationProps) {
   useEffect(
     () => () => {
       clearTimeout(timerRef.current);
-      if (fadeRef.current) cancelAnimationFrame(fadeRef.current);
+      if (fadeRef.current !== undefined) clearInterval(fadeRef.current);
     },
     [],
   );
 
-  const startMusic = useCallback(() => {
+  const startMusic = useCallback((url?: string) => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio || !url) return;
+    if (fadeRef.current !== undefined) clearInterval(fadeRef.current);
+    audio.muted = mutedRef.current;
     audio.volume = 0;
     audio.play().catch(() => undefined);
-    const t0 = performance.now();
-    const step = (now: number) => {
-      const k = Math.min(1, (now - t0) / MUSIC_FADE_MS);
+    const t0 = Date.now();
+    fadeRef.current = setInterval(() => {
+      const k = Math.min(1, (Date.now() - t0) / MUSIC_FADE_MS);
       audio.volume = MUSIC_VOLUME * k * k;
-      if (k < 1) fadeRef.current = requestAnimationFrame(step);
-    };
-    fadeRef.current = requestAnimationFrame(step);
+      if (k >= 1 && fadeRef.current !== undefined) {
+        clearInterval(fadeRef.current);
+        fadeRef.current = undefined;
+      }
+    }, 40);
   }, []);
 
+  // Support live track changes in template previews after the doors are already open.
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.volume = props.musicUrl ? VIDEO_UNDER_MUSIC_VOLUME : 1;
+    }
+    if (prevMusicUrlRef.current === props.musicUrl) return;
+    prevMusicUrlRef.current = props.musicUrl;
+    if (stageRef.current === "sealed") return;
+    if (fadeRef.current !== undefined) {
+      clearInterval(fadeRef.current);
+      fadeRef.current = undefined;
+    }
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (!props.musicUrl) {
+      audio.pause();
+      return;
+    }
+    audio.load();
+    startMusic(props.musicUrl);
+  }, [props.musicUrl, startMusic]);
+
   const reveal = useCallback(() => {
-    setStage((st) => {
-      if (st === "revealed") return st;
-      startMusic();
-      return "revealed";
-    });
-  }, [startMusic]);
+    setStage((st) => (st === "revealed" ? st : "revealed"));
+  }, []);
 
   const open = () => {
     if (stage !== "sealed") return;
     setStage("opening");
 
-    // Music must be unlocked inside the tap itself (iOS); it starts silent and fades in at the reveal.
-    const audio = audioRef.current;
-    if (audio) {
-      audio.volume = 0;
-      audio.play().then(() => audio.pause()).catch(() => undefined);
-    }
+    // Start ceremony music immediately inside the tap gesture so opening doors & music flow as one.
+    if (props.musicUrl) startMusic(props.musicUrl);
 
-    fetch(`/api/invitations/${encodeURIComponent(props.slug)}/open`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token: props.token }),
-      keepalive: true,
-    }).catch(() => undefined);
+    if (!props.isPreview) {
+      fetch(`/api/invitations/${encodeURIComponent(props.slug)}/open`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: props.token }),
+        keepalive: true,
+      }).catch(() => undefined);
+    }
 
     const video = videoRef.current;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -216,6 +242,7 @@ export default function DoorsInvitation(props: InvitationProps) {
       return;
     }
     video.muted = muted;
+    video.volume = props.musicUrl ? VIDEO_UNDER_MUSIC_VOLUME : 1;
     video.play().catch(() => {
       setVideoDone(true);
       reveal();
@@ -510,22 +537,18 @@ export default function DoorsInvitation(props: InvitationProps) {
         </footer>
       </div>
 
-      {(hasMusic || template.videoUrl) && (
-        <>
-          {hasMusic && <audio ref={audioRef} src={props.musicUrl} loop preload="auto" />}
-          {showSound && (
-            <button
-              type="button"
-              className={styles.sound}
-              data-keep-autoscroll="true"
-              onClick={toggleMute}
-              aria-label={muted ? s.unmute : s.mute}
-              aria-pressed={muted}
-            >
-              {muted ? <VolumeX size={18} strokeWidth={1.5} /> : <Volume2 size={18} strokeWidth={1.5} />}
-            </button>
-          )}
-        </>
+      <audio ref={audioRef} src={props.musicUrl || undefined} loop preload="auto" />
+      {showSound && (
+        <button
+          type="button"
+          className={styles.sound}
+          data-keep-autoscroll="true"
+          onClick={toggleMute}
+          aria-label={muted ? s.unmute : s.mute}
+          aria-pressed={muted}
+        >
+          {muted ? <VolumeX size={18} strokeWidth={1.5} /> : <Volume2 size={18} strokeWidth={1.5} />}
+        </button>
       )}
     </main>
   );

@@ -873,3 +873,802 @@
 .badgeTag[data-badge="new"] {
   background: #1f7a45;
 }
+
+/* ============================================================================
+   MUSIC ASSIGNMENT & LIBRARY ADMIN STUDIO (/admin/music) & PRICING ADD-ON
+   ============================================================================ */
+
+@keyframes adminBarPulse {
+  0%,
+  100% {
+    transform: scaleY(0.32);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+.musicStudioHeading {
+  font-family: var(--font-arabic-display);
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  font-weight: 400;
+  line-height: 1.15;
+  color: #2f241b;
+}
+
+.musicLedgerStrip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 1rem;
+  border-top: 1px solid rgba(47, 36, 27, 0.14);
+  border-bottom: 1px solid rgba(47, 36, 27, 0.14);
+  background: linear-gradient(180deg, rgba(255, 253, 248, 0.78), rgba(246, 237, 215, 0.25));
+}
+
+.musicLedgerStat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.72rem 1rem;
+  border-inline-end: 1px solid rgba(47, 36, 27, 0.1);
+}
+
+.musicLedgerStat:last-child {
+  border-inline-end: 0;
+}
+
+.musicLedgerStat strong {
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.05;
+  color: #2f241b;
+}
+
+.musicLedgerStat span {
+  font-size: 0.76rem;
+  color: var(--m-muted);
+}
+
+/* Architectural Hairline Tab Bar */
+.musicTabs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  max-width: 100%;
+  border-top: 1px solid rgba(47, 36, 27, 0.14);
+  border-bottom: 1px solid rgba(47, 36, 27, 0.14);
+  background: linear-gradient(180deg, rgba(255, 253, 248, 0.78), rgba(246, 237, 215, 0.25));
+  margin-bottom: 16px;
+}
+
+.musicTab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 1.15rem;
+  border: 0;
+  border-inline-end: 1px solid rgba(47, 36, 27, 0.1);
+  background: transparent;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--m-muted);
+  cursor: pointer;
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.musicTab:last-child {
+  border-inline-end: 0;
+}
+
+.musicTab:hover {
+  color: #2f241b;
+  background: rgba(138, 90, 43, 0.04);
+}
+
+.musicTab[aria-selected="true"] {
+  background: linear-gradient(180deg, rgba(138, 90, 43, 0.1), rgba(138, 90, 43, 0.02));
+  color: #2f241b;
+  box-shadow: inset 0 -2px 0 #2f241b;
+}
+
+.musicTabCount {
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #8a5a2b;
+  background: rgba(138, 90, 43, 0.1);
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+}
+
+/* Matte Espresso Live Now-Playing Strip */
+.musicNowPlaying {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-bottom: 16px;
+  padding: 0.85rem 1.1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(241, 207, 170, 0.22);
+  background: linear-gradient(180deg, #352b25, #251e1a);
+  color: #fcf7ed;
+  overflow: hidden;
+  box-shadow: 0 14px 34px -12px rgba(41, 35, 31, 0.46),
+    inset 0 1px 0 rgba(241, 207, 170, 0.18);
+}
+
+.musicNowPlayBtn {
+  display: inline-grid;
+  place-items: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 50%;
+  border: 1px solid #f1cfaa;
+  background: #f1cfaa;
+  color: #241c17;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.musicNowPlayInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.musicNowPlayEyebrow {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  color: #f1cfaa;
+}
+
+.musicNowPlayInfo strong {
+  font-family: var(--font-arabic-display);
+  font-size: 1.12rem;
+  font-weight: 400;
+  color: #fcf7ed;
+}
+
+.musicNowPlayEn {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 0.96rem;
+  color: rgba(252, 247, 237, 0.76);
+}
+
+.adminSoundBars {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 11px;
+  color: #f1cfaa;
+}
+
+.adminSoundBars i {
+  display: block;
+  width: 2px;
+  height: 100%;
+  border-radius: 1px;
+  background: currentColor;
+  transform-origin: bottom;
+  animation: adminBarPulse 0.85s ease-in-out infinite;
+}
+
+.adminSoundBars i:nth-child(2) {
+  animation-delay: 0.18s;
+}
+
+.adminSoundBars i:nth-child(3) {
+  animation-delay: 0.36s;
+}
+
+.musicNowProgressTrack {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 2px;
+  background: rgba(241, 207, 170, 0.14);
+}
+
+.musicNowProgressFill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(270deg, rgba(241, 207, 170, 0.55), #f1cfaa);
+  transform-origin: right;
+  transition: transform 180ms linear;
+}
+
+/* Search & Editorial Filter Toolbar */
+.musicToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.musicSearchWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 240px;
+  min-width: 0;
+  max-width: 340px;
+}
+
+.musicSearchGlyph {
+  position: absolute;
+  inset-inline-start: 0.75rem;
+  color: #8a5a2b;
+  pointer-events: none;
+}
+
+.musicSearchField {
+  width: 100%;
+  min-height: 2.55rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(47, 36, 27, 0.14);
+  background: #fffdf8;
+  padding-block: 0.4rem;
+  padding-inline-start: 2.25rem;
+  padding-inline-end: 2rem;
+  font-size: 0.88rem;
+  color: #2f241b;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.musicSearchField::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.musicSearchField:focus {
+  border-color: #8a5a2b;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(138, 90, 43, 0.12);
+}
+
+.musicSearchClearBtn {
+  position: absolute;
+  inset-inline-end: 0.45rem;
+  display: inline-grid;
+  place-items: center;
+  width: 1.55rem;
+  height: 1.55rem;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--m-muted);
+  cursor: pointer;
+}
+
+.musicIndexBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem;
+  border-bottom: 1px solid rgba(47, 36, 27, 0.1);
+}
+
+.musicIndexTab {
+  position: relative;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  padding: 0.42rem 0.78rem;
+  border: 0;
+  background: transparent;
+  font-family: var(--font-arabic-display);
+  font-size: 1rem;
+  color: var(--m-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.18s ease;
+}
+
+.musicIndexTab + .musicIndexTab::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  top: 50%;
+  width: 1px;
+  height: 0.78rem;
+  background: rgba(47, 36, 27, 0.14);
+  transform: translateY(-50%);
+}
+
+.musicIndexTab::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0.78rem;
+  bottom: 0;
+  height: 1.5px;
+  background: #2f241b;
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 0.25s ease;
+}
+
+.musicIndexTab:hover,
+.musicIndexTab[aria-pressed="true"] {
+  color: #2f241b;
+}
+
+.musicIndexTab[aria-pressed="true"]::after {
+  transform: scaleX(1);
+}
+
+.musicIndexCount {
+  font-family: var(--font-sans);
+  font-size: 0.65rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #8a5a2b;
+}
+
+/* Stationery Bulk-Assign Plate */
+.musicBulkBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  padding: 11px 14px;
+  border-radius: 0.95rem;
+  border: 1px solid rgba(138, 90, 43, 0.22);
+  background: linear-gradient(180deg, rgba(255, 252, 246, 0.9), rgba(246, 237, 215, 0.42));
+  margin-bottom: 14px;
+}
+
+.musicBulkLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #2f241b;
+}
+
+.musicBulkLabel svg {
+  color: #8a5a2b;
+}
+
+.musicBulkBar .selectWrap {
+  flex: 1 1 230px;
+  min-width: 0;
+}
+
+/* Custom-Chevron Editorial Select Wrapper */
+.selectWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.selectControl {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  min-height: 2.55rem;
+  border-radius: 0.78rem;
+  border: 1px solid rgba(47, 36, 27, 0.16);
+  background: linear-gradient(180deg, #fffdf9, #fffaf1);
+  padding-block: 0.4rem;
+  padding-inline-start: 0.85rem;
+  padding-inline-end: 2.15rem;
+  font-size: 0.86rem;
+  font-weight: 500;
+  color: #2f241b;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.selectControl:hover:not(:disabled) {
+  border-color: rgba(138, 90, 43, 0.42);
+}
+
+.selectControl:focus {
+  border-color: #8a5a2b;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(138, 90, 43, 0.12);
+}
+
+.selectControl:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.selectChevron {
+  position: absolute;
+  inset-inline-end: 0.75rem;
+  color: #8a5a2b;
+  pointer-events: none;
+}
+
+/* Hairline-Divided Template Assignment & Library Ledger */
+.assignList {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid rgba(47, 36, 27, 0.1);
+}
+
+.assignRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 14px;
+  align-items: center;
+  min-width: 0;
+  padding: 12px 6px;
+  border-bottom: 1px solid rgba(47, 36, 27, 0.1);
+  background: transparent;
+  transition: background-color 0.18s ease;
+}
+
+.assignRow:hover {
+  background: rgba(138, 90, 43, 0.035);
+}
+
+.assignRow[data-playing="true"],
+.musicLibRow[data-playing="true"] {
+  background: linear-gradient(270deg, rgba(138, 90, 43, 0.09), rgba(246, 237, 215, 0.4));
+}
+
+.assignThumb {
+  width: 44px;
+  height: 70px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex: none;
+  background: #efe7da;
+  border: 1px solid rgba(47, 36, 27, 0.14);
+  box-shadow: 0 6px 14px -8px rgba(47, 36, 27, 0.35);
+}
+
+.assignThumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.assignInfo {
+  flex: 1 1 200px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.assignTitles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.55rem;
+}
+
+.assignNameAr {
+  font-family: var(--font-arabic-display);
+  font-size: 1.15rem;
+  font-weight: 400;
+  line-height: 1.15;
+  color: #2f241b;
+}
+
+.assignNameEn {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 0.98rem;
+  color: #76614d;
+}
+
+.assignMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  align-items: center;
+  font-size: 0.77rem;
+  color: var(--m-muted);
+}
+
+.assignPreviewLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: #8a5a2b;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.musicCustomBadge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-top: 1px solid rgba(138, 90, 43, 0.32);
+  border-bottom: 1px solid rgba(138, 90, 43, 0.32);
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #8a5a2b;
+}
+
+.assignControls {
+  flex: 1.5 1 290px;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.assignControls .selectWrap {
+  flex: 1 1 215px;
+  min-width: 0;
+}
+
+.musicIconBtn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid rgba(47, 36, 27, 0.18);
+  background: linear-gradient(180deg, #ffffff, #fcf7ed);
+  color: #2f241b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex: none;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.musicIconBtn:hover:not(:disabled) {
+  border-color: #8a5a2b;
+  background: #f6edd7;
+}
+
+.musicIconBtn[data-playing="true"] {
+  background: linear-gradient(180deg, #352b25, #251e1a);
+  border-color: #251e1a;
+  color: #f1cfaa;
+}
+
+.musicIconBtn:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.assignStatus {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #1f7a45;
+}
+
+.assignStatus[data-error="true"] {
+  color: #a1251c;
+}
+
+.musicTagBadge {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(138, 90, 43, 0.24);
+  font-size: 0.73rem;
+  font-weight: 600;
+  background: rgba(138, 90, 43, 0.08);
+  color: #6b441f;
+  white-space: nowrap;
+}
+
+.musicLibRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+  padding: 11px 6px;
+  border-bottom: 1px solid rgba(47, 36, 27, 0.1);
+  background: transparent;
+  transition: background-color 0.18s ease;
+}
+
+.musicLibRow:hover {
+  background: rgba(138, 90, 43, 0.035);
+}
+
+.musicLibTitle {
+  flex: 1 1 220px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.musicLibTitleLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.musicLibTitle strong {
+  font-family: var(--font-arabic-display);
+  font-size: 1.08rem;
+  font-weight: 400;
+  color: #2f241b;
+  overflow-wrap: anywhere;
+}
+
+.musicLibComposer {
+  font-size: 0.82rem;
+  color: #76614d;
+}
+
+.musicLibTitle small {
+  color: var(--m-muted);
+  font-size: 0.77rem;
+  overflow-wrap: anywhere;
+}
+
+.musicDeleteBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.15rem;
+  padding-inline: 0.8rem;
+  border-radius: 999px;
+  border: 1px solid rgba(161, 37, 28, 0.25);
+  background: rgba(161, 37, 28, 0.05);
+  color: #8f241f;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.musicDeleteBtn:hover {
+  background: rgba(161, 37, 28, 0.12);
+}
+
+/* Tactile Upload Dropzone & Panel Heading */
+.musicPanelTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.musicPanelIcon {
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.65rem;
+  background: #f6edd7;
+  color: #8a5a2b;
+}
+
+.uploadDropzone {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1rem 1.15rem;
+  border-radius: 1rem;
+  border: 1px dashed rgba(138, 90, 43, 0.38);
+  background: linear-gradient(180deg, #fffdf9, rgba(246, 237, 215, 0.35));
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.uploadDropzone:hover {
+  border-color: #8a5a2b;
+  background: #fffcf6;
+}
+
+.uploadDropzone[data-has-file="true"] {
+  border-style: solid;
+  border-color: #2f241b;
+  background: #f6edd7;
+}
+
+.uploadDropzone input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.uploadDropIcon {
+  display: grid;
+  place-items: center;
+  width: 2.65rem;
+  height: 2.65rem;
+  border-radius: 0.8rem;
+  background: #ffffff;
+  border: 1px solid rgba(47, 36, 27, 0.12);
+  color: #8a5a2b;
+  flex-shrink: 0;
+}
+
+.uploadDropText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.uploadDropText strong {
+  font-size: 0.9rem;
+  color: #2f241b;
+  overflow-wrap: anywhere;
+}
+
+.uploadDropText small {
+  font-size: 0.77rem;
+  color: var(--m-muted);
+}
+
+.addonInfoNote {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.85rem 1rem;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(138, 90, 43, 0.18);
+  background: linear-gradient(180deg, rgba(255, 253, 248, 0.9), rgba(246, 237, 215, 0.35));
+}
+
+.addonInfoNote strong {
+  font-size: 0.84rem;
+  color: #2f241b;
+}
+
+@media (max-width: 640px) {
+  .musicLedgerStrip {
+    grid-template-columns: 1fr;
+  }
+
+  .musicLedgerStat {
+    border-inline-end: 0;
+    border-bottom: 1px solid rgba(47, 36, 27, 0.08);
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+
+  .musicLedgerStat:last-child {
+    border-bottom: 0;
+  }
+
+  .musicSearchWrap {
+    max-width: 100%;
+    flex-basis: 100%;
+  }
+
+  .assignControls {
+    flex: 1 1 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .musicTabs {
+    width: 100%;
+  }
+
+  .musicTab {
+    flex: 1 1 auto;
+    justify-content: center;
+    padding: 0.5rem 0.65rem;
+    font-size: 0.82rem;
+  }
+}

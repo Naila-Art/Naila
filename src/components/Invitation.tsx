@@ -50,6 +50,8 @@ type Stage = "sealed" | "opening" | "open";
 const CSS_OPEN_MS = 2200;
 /** Safety net in case a video never fires `ended`. */
 const VIDEO_MAX_MS = 15000;
+const MUSIC_VOLUME = 0.58;
+const VIDEO_UNDER_MUSIC_VOLUME = 0.24;
 
 /** Picks the layout family for the template. */
 export default function Invitation(props: InvitationProps) {
@@ -65,6 +67,11 @@ function EnvelopeInvitation(props: InvitationProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const stageRef = useRef<Stage>(stage);
+  stageRef.current = stage;
+  const mutedRef = useRef(muted);
+  mutedRef.current = muted;
+  const prevMusicUrlRef = useRef(props.musicUrl);
 
   const { startAutoScroll } = useInviteAutoScroll(pageRef, {
     locked: stage !== "open",
@@ -84,23 +91,50 @@ function EnvelopeInvitation(props: InvitationProps) {
     }
   }, [stage, startAutoScroll]);
 
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.volume = props.musicUrl ? VIDEO_UNDER_MUSIC_VOLUME : 1;
+    }
+    if (prevMusicUrlRef.current === props.musicUrl) return;
+    prevMusicUrlRef.current = props.musicUrl;
+    if (stageRef.current === "sealed") return;
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (!props.musicUrl) {
+      audio.pause();
+      return;
+    }
+    audio.load();
+    audio.muted = mutedRef.current;
+    audio.volume = MUSIC_VOLUME;
+    audio.play().catch(() => undefined);
+  }, [props.musicUrl]);
+
   const open = () => {
     if (stage !== "sealed") return;
     setStage("opening");
 
     // The tap is the user gesture that lets the browser start music.
-    audioRef.current?.play().catch(() => undefined);
+    if (props.musicUrl && audioRef.current) {
+      audioRef.current.muted = muted;
+      audioRef.current.volume = MUSIC_VOLUME;
+      audioRef.current.play().catch(() => undefined);
+    }
 
     // Count the open only now (not on page load), so link-preview bots don't count as "opened".
-    fetch(`/api/invitations/${encodeURIComponent(props.slug)}/open`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token: props.token }),
-      keepalive: true,
-    }).catch(() => undefined);
+    if (!props.isPreview) {
+      fetch(`/api/invitations/${encodeURIComponent(props.slug)}/open`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: props.token }),
+        keepalive: true,
+      }).catch(() => undefined);
+    }
 
     const video = videoRef.current;
     if (video) {
+      video.muted = muted;
+      video.volume = props.musicUrl ? VIDEO_UNDER_MUSIC_VOLUME : 1;
       video.play().catch(finishOpening);
       timerRef.current = setTimeout(finishOpening, VIDEO_MAX_MS);
     } else {
@@ -109,10 +143,10 @@ function EnvelopeInvitation(props: InvitationProps) {
   };
 
   const toggleMute = () => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    audio.muted = !audio.muted;
-    setMuted(audio.muted);
+    const next = !muted;
+    setMuted(next);
+    if (audioRef.current) audioRef.current.muted = next;
+    if (videoRef.current) videoRef.current.muted = next;
   };
 
   const themeVars = {
@@ -262,21 +296,17 @@ function EnvelopeInvitation(props: InvitationProps) {
         )}
       </div>
 
-      {props.musicUrl && (
-        <>
-          <audio ref={audioRef} src={props.musicUrl} loop preload="auto" />
-          {stage !== "sealed" && (
-            <button
-              type="button"
-              className={styles.mute}
-              data-keep-autoscroll="true"
-              onClick={toggleMute}
-              aria-label={muted ? s.unmute : s.mute}
-            >
-              <Icon name={muted ? "volumeOff" : "volume"} size={20} />
-            </button>
-          )}
-        </>
+      <audio ref={audioRef} src={props.musicUrl || undefined} loop preload="auto" />
+      {(props.musicUrl || template.videoUrl) && stage !== "sealed" && (
+        <button
+          type="button"
+          className={styles.mute}
+          data-keep-autoscroll="true"
+          onClick={toggleMute}
+          aria-label={muted ? s.unmute : s.mute}
+        >
+          <Icon name={muted ? "volumeOff" : "volume"} size={20} />
+        </button>
       )}
     </main>
   );

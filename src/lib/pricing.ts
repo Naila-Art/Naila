@@ -1,4 +1,4 @@
-import type { EventData, Features, Order, PackageId } from "./types";
+import type { EventData, Features, Order, OrderAddons, PackageId } from "./types";
 
 /**
  * Packages and prices. Edited from the admin dashboard (/admin/{key}/pricing) and saved in the
@@ -42,6 +42,8 @@ export interface Pricing {
   packages: PackageInfo[];
   /** Always STEP_COUNT long. */
   steps: PricingStep[];
+  /** Optional add-on price (EGP) letting Package 1 buyers pick/change music from the library. */
+  musicAddonPrice: number;
 }
 
 export const DEFAULT_STEPS: PricingStep[] = [
@@ -79,8 +81,14 @@ export const DEFAULT_STEPS: PricingStep[] = [
 
 export const DEFAULT_PRICING: Pricing = {
   packages: [
-    { id: 1, name: "البسيطة", price: 300, active: true, points: ["فتح الختم بالأنيميشن", "أسامي العروسين والتاريخ", "تأكيد الحضور والعد التنازلي"] },
-    { id: 2, name: "المميزة", price: 600, active: true, points: ["كل اللي في البسيطة", "مزيكا من مكتبتنا", "الضيوف يبعتوا تهاني"] },
+    {
+      id: 1,
+      name: "البسيطة",
+      price: 300,
+      active: true,
+      points: ["فتح الختم بالأنيميشن", "أسامي العروسين والتاريخ", "تأكيد الحضور والعد التنازلي", "موسيقى مختارة مع التصميم"],
+    },
+    { id: 2, name: "المميزة", price: 600, active: true, points: ["كل اللي في البسيطة", "تغيير الموسيقى من المكتبة", "الضيوف يبعتوا تهاني"] },
     {
       id: 3,
       name: "على ذوقك",
@@ -98,6 +106,7 @@ export const DEFAULT_PRICING: Pricing = {
     },
   ],
   steps: DEFAULT_STEPS,
+  musicAddonPrice: 100,
 };
 
 /** What every package includes, shown once on the storefront instead of repeating it per package. */
@@ -117,8 +126,9 @@ export function getPackage(pricing: Pricing, id: number): PackageInfo | undefine
   return pricing.packages.find((p) => p.id === id);
 }
 
-export function priceOf(pricing: Pricing, packageId: PackageId): number {
-  return getPackage(pricing, packageId)?.price ?? 0;
+export function priceOf(pricing: Pricing, packageId: PackageId, addons?: OrderAddons): number {
+  const base = getPackage(pricing, packageId)?.price ?? 0;
+  return base + (packageId === 1 && addons?.customMusic ? pricing.musicAddonPrice : 0);
 }
 
 const isStepText = (t: unknown): t is StepText =>
@@ -144,14 +154,19 @@ export function withDefaults(p: Partial<Pricing> | undefined): Pricing {
         ? p.packages.map((pk) => ({ ...pk, name: toGuestWording(pk.name), points: pk.points.map(toGuestWording) }))
         : DEFAULT_PRICING.packages,
     steps: validSteps(p?.steps) ? p.steps : DEFAULT_STEPS,
+    musicAddonPrice:
+      typeof p?.musicAddonPrice === "number" && Number.isInteger(p.musicAddonPrice) && p.musicAddonPrice >= 0
+        ? p.musicAddonPrice
+        : DEFAULT_PRICING.musicAddonPrice,
   };
 }
 
-/** What a package unlocks. */
-export function packageFeatures(pkg: PackageId): Features {
+/** What a package unlocks (plus optional add-ons). */
+export function packageFeatures(pkg: PackageId, addons?: OrderAddons): Features {
   return {
     wishes: pkg >= 2,
-    music: pkg >= 2,
+    music: true,
+    customMusic: pkg >= 2 || Boolean(addons?.customMusic),
     maps: true,
     rsvp: pkg >= 2,
     namesLimit: hasNamedGuests(pkg) ? NAMES_LIMIT : 0,
@@ -162,7 +177,7 @@ export function featuresOf(event: EventData, order: Order | null): Features {
   if (event.samplePackage) return packageFeatures(event.samplePackage);
   // Demo events (no order) get everything.
   if (!order) return packageFeatures(4);
-  return packageFeatures(order.packageId);
+  return packageFeatures(order.packageId, order.addons);
 }
 
 export const formatEgp = (n: number) => `${n.toLocaleString("en-US")} ج.م`;
@@ -219,5 +234,9 @@ export function parsePricing(input: unknown): { ok: true; value: Pricing } | { o
     }
     steps.push(step);
   }
-  return { ok: true, value: { packages, steps } };
+  const musicAddonPrice =
+    o.musicAddonPrice === undefined ? DEFAULT_PRICING.musicAddonPrice : price(o.musicAddonPrice);
+  if (musicAddonPrice === null) return { ok: false, error: "music_addon_price" };
+
+  return { ok: true, value: { packages, steps, musicAddonPrice } };
 }

@@ -40,12 +40,14 @@ import styles from "./manage.module.css";
 import s from "./studio.module.css";
 import store from "../store/store.module.css";
 import OrderOptions from "../store/OrderOptions";
+import { MusicPicker, TrackPreviewStrip } from "../store/MusicPicker";
 import { EditorialDatePicker, EditorialSelect, type EditorialSelectOption } from "../store/EditorialControls";
 import { CEREMONY_TIMES } from "../store/storeCopy";
 import Icon from "../Icon";
 import { CopyField, StatusSeal, StepRail } from "./Studio";
 import { DETAIL_ERRORS } from "../store/Builder";
 import { formatEgp, getPackage, type Pricing } from "@/lib/pricing";
+import { musicParts } from "@/lib/music-catalog";
 import { SiteLangProvider } from "@/lib/site-lang";
 import { UPLOAD_ERRORS, UploadError, contentTypeOf, postJson, putFile } from "@/lib/upload-client";
 import type { ChangeRequest, Lang, MusicTrack, Order, PackageId } from "@/lib/types";
@@ -92,10 +94,11 @@ interface Props {
   /** The event date, already formatted for people (Arabic, Cairo time). */
   dateLabel: string;
   design: PreviewDesign;
-  features: { music: boolean; maps: boolean; rsvp: boolean };
+  features: { music: boolean; customMusic: boolean; maps: boolean; rsvp: boolean };
   /** Designs to switch to, names already in Arabic. */
   templates: { id: string; name: string }[];
   music: MusicTrack[];
+  templateMusicMap: Record<string, string>;
   changeRequests: ChangeRequest[];
   /** Payment methods the client can use right now (switched on, and usable). */
   methods: ClientPaymentMethod[];
@@ -157,10 +160,16 @@ export default function OrderCheckout(props: Props) {
               <div className={s.drawers}>
                 {order.kind === "self" && (
                   <Drawer icon={Gem} title="تغيير الباقة" sub={pkg ? `دلوقتي: ${pkg.name} · ${formatEgp(order.total)}` : ""}>
-                    <OrderEditor api={api} order={order} pricing={props.pricing} />
+                    <OrderEditor
+                      api={api}
+                      order={order}
+                      pricing={props.pricing}
+                      music={props.music}
+                      defaultTrackId={props.templateMusicMap[props.details.templateId] ?? ""}
+                    />
                   </Drawer>
                 )}
-                <Drawer icon={PenLine} title="بيانات الدعوة" sub="الأسامي، الميعاد، المكان، التصميم والمزيكا">
+                <Drawer icon={PenLine} title="بيانات الدعوة" sub="الأسماء، الموعد، المكان، التصميم والموسيقى">
                   <DetailsEditor {...props} api={api} />
                 </Drawer>
                 {order.packageId >= 3 && (
@@ -371,31 +380,53 @@ function PaymentPanel(props: Props & { api: string }) {
         </div>
       )}
 
-      <div className={s.receipt}>
-        <div className={s.receiptRow}>
-          <span>الباقة</span>
-          <strong>{pkg?.name ?? "—"}</strong>
-        </div>
-        <div className={s.receiptRow}>
-          <span>التصميم</span>
-          <strong>{props.design.name}</strong>
-        </div>
-        <div className={s.receiptRow}>
-          <span>لغة الدعوة</span>
-          <strong>{details.lang === "ar" ? "عربي" : "English"}</strong>
-        </div>
-        {order.payment !== "unpaid" && order.paymentMethodName && (
-          <div className={s.receiptRow}>
-            <span>طريقة الدفع</span>
-            <strong>{order.paymentMethodName}</strong>
+      {(() => {
+        const defaultTrackId = props.templateMusicMap[details.templateId] ?? "";
+        const resolvedMusicId = props.features.customMusic ? (details.musicTrackId || defaultTrackId) : defaultTrackId;
+        const resolvedTrack =
+          resolvedMusicId && resolvedMusicId !== "none" ? props.music.find((m) => m.id === resolvedMusicId) : undefined;
+        const musicLabel =
+          resolvedMusicId === "none"
+            ? "دخول هادئ بدون موسيقى"
+            : resolvedTrack
+              ? musicParts(resolvedTrack, "ar").title
+              : "مختارة مع التصميم";
+
+        return (
+          <div className={s.receipt}>
+            <div className={s.receiptRow}>
+              <span>الباقة</span>
+              <strong>
+                {pkg?.name ?? "—"}
+                {order.addons?.customMusic ? " · مع مكتبة الألحان" : ""}
+              </strong>
+            </div>
+            <div className={s.receiptRow}>
+              <span>التصميم</span>
+              <strong>{props.design.name}</strong>
+            </div>
+            <div className={s.receiptRow}>
+              <span>الموسيقى</span>
+              <strong>{musicLabel}</strong>
+            </div>
+            <div className={s.receiptRow}>
+              <span>لغة الدعوة</span>
+              <strong>{details.lang === "ar" ? "عربي" : "English"}</strong>
+            </div>
+            {order.payment !== "unpaid" && order.paymentMethodName && (
+              <div className={s.receiptRow}>
+                <span>طريقة الدفع</span>
+                <strong>{order.paymentMethodName}</strong>
+              </div>
+            )}
+            <div className={s.receiptTear} aria-hidden="true" />
+            <div className={s.receiptTotal}>
+              <span>{order.payment === "paid" ? "المدفوع" : "الإجمالي"}</span>
+              <strong>{formatEgp(order.total)}</strong>
+            </div>
           </div>
-        )}
-        <div className={s.receiptTear} aria-hidden="true" />
-        <div className={s.receiptTotal}>
-          <span>{order.payment === "paid" ? "المدفوع" : "الإجمالي"}</span>
-          <strong>{formatEgp(order.total)}</strong>
-        </div>
-      </div>
+        );
+      })()}
 
       {order.payment === "paid" && <PaidLinks {...props} />}
 
@@ -547,17 +578,38 @@ function PaymentPanel(props: Props & { api: string }) {
   );
 }
 
-function OrderEditor({ api, order, pricing }: { api: string; order: Order; pricing: Pricing }) {
+function OrderEditor({
+  api,
+  order,
+  pricing,
+  music,
+  defaultTrackId,
+}: {
+  api: string;
+  order: Order;
+  pricing: Pricing;
+  music: MusicTrack[];
+  defaultTrackId: string;
+}) {
   const router = useRouter();
   const [packageId, setPackageId] = useState<PackageId>(order.packageId);
+  const [customMusicAddon, setCustomMusicAddon] = useState(Boolean(order.addons?.customMusic));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+
+  const changed =
+    packageId !== order.packageId ||
+    (packageId === 1 && customMusicAddon !== Boolean(order.addons?.customMusic));
 
   async function save() {
     setBusy(true);
     setError("");
     try {
-      await postJson(`${api}/order`, { packageId }, "PUT");
+      await postJson(
+        `${api}/order`,
+        { packageId, customMusicAddon: packageId === 1 ? customMusicAddon : false },
+        "PUT",
+      );
       router.refresh();
     } catch (err) {
       setError(errorText(err));
@@ -568,14 +620,22 @@ function OrderEditor({ api, order, pricing }: { api: string; order: Order; prici
 
   return (
     <>
-      <OrderOptions pricing={pricing} packageId={packageId} onChange={setPackageId} />
+      <OrderOptions
+        pricing={pricing}
+        packageId={packageId}
+        onChange={setPackageId}
+        music={music}
+        defaultTrackId={defaultTrackId}
+        customMusicAddon={customMusicAddon}
+        onCustomMusicAddonChange={setCustomMusicAddon}
+      />
       {error && (
         <p className={s.error}>
           <CircleAlert size={16} aria-hidden="true" /> {error}
         </p>
       )}
       <div className={s.actions}>
-        <button type="button" className={s.cta} disabled={packageId === order.packageId || busy} onClick={save}>
+        <button type="button" className={s.cta} disabled={!changed || busy} onClick={save}>
           <Check size={16} aria-hidden="true" /> حفظ الباقة
         </button>
       </div>
@@ -603,7 +663,7 @@ function DetailsEditor(props: Props & { api: string }) {
     setBusy(true);
     setMsg(null);
     try {
-      await postJson(`${props.api}/details`, { ...d, musicTrackId: props.features.music ? d.musicTrackId : undefined }, "PUT");
+      await postJson(`${props.api}/details`, { ...d, musicTrackId: props.features.customMusic ? d.musicTrackId : undefined }, "PUT");
       setMsg({ ok: true, text: "اتحفظ، والمعاينة اتحدّثت" });
       router.refresh();
     } catch (err) {
@@ -612,6 +672,10 @@ function DetailsEditor(props: Props & { api: string }) {
       setBusy(false);
     }
   }
+
+  const defaultTrackId = props.templateMusicMap[d.templateId] ?? "";
+  const defaultTrack =
+    defaultTrackId && defaultTrackId !== "none" ? props.music.find((m) => m.id === defaultTrackId) : undefined;
 
   return (
     <form className={s.form} onSubmit={save}>
@@ -690,18 +754,31 @@ function DetailsEditor(props: Props & { api: string }) {
           />
         </div>
       </div>
-      {props.features.music && props.music.length > 0 && (
+      {props.features.customMusic && props.music.length > 0 ? (
         <div className={store.field}>
-          <span>المزيكا</span>
-          <EditorialSelect
+          <span>الموسيقى المصاحبة للدعوة</span>
+          <MusicPicker
+            tracks={props.music}
             value={d.musicTrackId}
             onChange={(musicTrackId) => set({ musicTrackId })}
-            options={[{ value: "", label: "من غير مزيكا" }, ...props.music.map((m) => ({ value: m.id, label: m.name }))]}
-            ariaLabel="المزيكا"
-            dir="rtl"
-            icon={<Music size={15} strokeWidth={1.5} aria-hidden="true" />}
+            defaultTrackId={defaultTrackId}
+            lang="ar"
+            variant="light"
+            defaultValueMode="empty"
           />
         </div>
+      ) : (
+        defaultTrack && (
+          <div className={store.field}>
+            <span>الموسيقى المصاحبة للدعوة</span>
+            <TrackPreviewStrip
+              track={defaultTrack}
+              lang="ar"
+              label="موسيقى هذا التصميم"
+              sublabel="لتغيير المقطوعة، فعّل مكتبة الألحان أو اختار الباقة المميزة من قسم الباقة"
+            />
+          </div>
+        )
       )}
       {props.features.rsvp && (
         <label className={s.switchRow}>

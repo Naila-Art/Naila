@@ -1,6 +1,6 @@
 import "server-only";
 import { featuresOf } from "./pricing";
-import { getMusic, getOrder, listMusic, type EventDetailsPatch } from "./store";
+import { getMusic, getOrder, getTemplateMusic, type EventDetailsPatch } from "./store";
 import { cleanText } from "./api";
 import { cairoLocalToIso } from "./time";
 import type { EventData, Features, Lang, Order } from "./types";
@@ -20,10 +20,15 @@ export async function eventContext(event: EventData): Promise<EventContext> {
   const features = featuresOf(event, order);
   let musicUrl: string | undefined;
   if (features.music) {
-    if (event.musicTrackId) musicUrl = (await getMusic(event.musicTrackId))?.url;
-    // Demo events may carry a direct URL; samples play the newest library track.
-    else if (!order && event.musicUrl) musicUrl = event.musicUrl;
-    else if (event.samplePackage) musicUrl = (await listMusic())[0]?.url;
+    if (features.customMusic && event.musicTrackId === "none") {
+      musicUrl = undefined;
+    } else if (features.customMusic && event.musicTrackId) {
+      musicUrl = (await getMusic(event.musicTrackId))?.url ?? (await getTemplateMusic(event.templateId))?.url;
+    } else if (!order && event.musicUrl) {
+      musicUrl = event.musicUrl;
+    } else {
+      musicUrl = (await getTemplateMusic(event.templateId))?.url;
+    }
   }
   const showRsvp = features.rsvp && (event.rsvp ?? (Boolean(event.samplePackage) || !order));
   return { order, features, isDraft: event.status === "draft", musicUrl, showRsvp };

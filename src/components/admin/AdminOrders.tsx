@@ -290,7 +290,14 @@ export default function AdminOrders({ rows, initialFilter, pricing, origin, meth
                           {open && <span className={o.flag}>طلب تعديل</span>}
                         </small>
                       </td>
-                      <td data-label="الباقة">{getPackage(pricing, ord.packageId)?.name ?? ord.packageId}</td>
+                      <td data-label="الباقة">
+                        <span>{getPackage(pricing, ord.packageId)?.name ?? ord.packageId}</span>
+                        {ord.addons?.customMusic && (
+                          <span className={a.musicTagBadge} style={{ marginInlineStart: 6 }}>
+                            + مكتبة الألحان
+                          </span>
+                        )}
+                      </td>
                       <td data-label="المبلغ" className={o.amount}>
                         {formatEgp(ord.total)}
                       </td>
@@ -434,7 +441,8 @@ function OrderDetail({
             </dd>
             <dt>الباقة</dt>
             <dd>
-              {pkg?.name} · <strong>{formatEgp(ord.total)}</strong>
+              {pkg?.name}
+              {ord.addons?.customMusic ? " + تغيير مزيكا" : ""} · <strong>{formatEgp(ord.total)}</strong>
             </dd>
             {ord.paymentMethodName && (
               <>

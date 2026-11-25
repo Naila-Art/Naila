@@ -7,7 +7,7 @@ import { TIME_ZONE } from "@/lib/time";
 import type { Template } from "@/lib/types";
 
 /** A template shown exactly as a guest would see it, localized to the visitor's active language. */
-export default function TemplatePreview({ template }: { template: Template }) {
+export default function TemplatePreview({ template, musicUrl }: { template: Template; musicUrl?: string }) {
   const { lang } = useSiteLang();
   const isAr = lang === "ar";
   const date = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
@@ -24,6 +24,7 @@ export default function TemplatePreview({ template }: { template: Template }) {
       lang={lang}
       strings={t(lang)}
       template={template}
+      musicUrl={musicUrl}
       partnerA={isAr ? "أحمد" : "Ahmed"}
       partnerB={isAr ? "سارة" : "Sara"}
       greeting={

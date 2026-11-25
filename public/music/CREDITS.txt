@@ -1,0 +1,63 @@
+Naila Built-in Ceremony Music Library — Commercial Public Domain / CC0 Credits
+==============================================================================
+
+Collections used:
+1. Musopen Collection (MusopenCollectionAsFlac)
+   Source: https://archive.org/details/MusopenCollectionAsFlac
+   License: Creative Commons Public Domain Mark 1.0 (no known copyright)
+
+2. Musopen Complete Chopin Collection (musopen-chopin)
+   Source: https://archive.org/details/musopen-chopin
+   License: Creative Commons Zero 1.0 Universal (CC0 1.0 Public Domain Dedication)
+
+Track Manifest (50 tracks):
+01. silk-road-serenade.m4a | Silk Road Serenade · Borodin | mood=orchestral | default_template=alhambra | seek=0s | MusopenCollectionAsFlac/Borodin_InTheSteppesOfCentralAsia/AlexanderBorodin-InTheSteppesOfCentralAsia.mp3 | Public Domain Mark 1.0
+02. anitra-dream.m4a | Anitra's Dance · Grieg | mood=orchestral | default_template=andalus | seek=0s | MusopenCollectionAsFlac/Greig_PeerGynt/EdvardGrieg-PeerGyntSuiteNo.1Op.46-03-AnitrasDream.mp3 | Public Domain Mark 1.0
+03. morning-mood.m4a | Morning Mood · Grieg | mood=orchestral | default_template=glasshouse | seek=0s | MusopenCollectionAsFlac/Greig_PeerGynt/EdvardGrieg-PeerGyntSuiteNo.1Op.46-01-Morning.mp3 | Public Domain Mark 1.0
+04. vltava-river.m4a | Vltava Flowing River · Smetana | mood=orchestral | default_template=lakeside | seek=55s | MusopenCollectionAsFlac/Smetana_Vltava/BedichSmetana-MVlast-Vltava.mp3 | Public Domain Mark 1.0
+05. italian-sunlight.m4a | Italian Symphony · Mendelssohn | mood=orchestral | default_template=amalfi | seek=0s | MusopenCollectionAsFlac/Mendelssohn_ItalianSymphony/FelixMendelssohn-SymphonyNo.4InAMajorOp.90italian-01-AllegroVivace.mp3 | Public Domain Mark 1.0
+06. italian-procession.m4a | Tuscan Processional · Mendelssohn | mood=orchestral | default_template=oliveto | seek=0s | MusopenCollectionAsFlac/Mendelssohn_ItalianSymphony/FelixMendelssohn-SymphonyNo.4InAMajorOp.90italian-02-AndanteConMoto.mp3 | Public Domain Mark 1.0
+07. italian-minuet.m4a | Garden Minuet · Mendelssohn | mood=orchestral | default_template=orangerie | seek=0s | MusopenCollectionAsFlac/Mendelssohn_ItalianSymphony/FelixMendelssohn-SymphonyNo.4InAMajorOp.90italian-03-ConMotoModerato.mp3 | Public Domain Mark 1.0
+08. hebrides-sea.m4a | Hebrides Sea Overture · Mendelssohn | mood=orchestral | default_template=maree | seek=0s | MusopenCollectionAsFlac/Mendelssohn_Hebrides/FelixMendelssohn-HebridesOvertureFingalsCave.mp3 | Public Domain Mark 1.0
+09. royal-figaro.m4a | Marriage of Figaro · Mozart | mood=orchestral | default_template=grand-stage | seek=0s | MusopenCollectionAsFlac/Mozart_MarriageOfFigaro/WolfgangAmadeusMozart-MarriageOfFigaro.mp3 | Public Domain Mark 1.0
+10. magic-flute.m4a | Magic Flute Overture · Mozart | mood=orchestral | default_template=ballroom | seek=18s | MusopenCollectionAsFlac/Mozart_MagicFluteOverture/WolfgangAmadeusMozart-MagicFluteOverture.mp3 | Public Domain Mark 1.0
+11. brahms-pastorale.m4a | Pastoral Allegretto · Brahms | mood=orchestral | default_template=chateau | seek=0s | MusopenCollectionAsFlac/Brahms_SymphonyNo.2inDMajor/JohannesBrahms-SymphonyNo.2InDMajorOp.73-03-AllegrettoGraziosotake1.mp3 | Public Domain Mark 1.0
+12. brahms-romance.m4a | Symphonic Romance · Brahms | mood=orchestral | default_template=palais | seek=0s | MusopenCollectionAsFlac/Brahms_SymphonyNo.3inFMajor/JohannesBrahms-SymphonyNo.3InFMajorOp.90-03-PocoAllegretto.mp3 | Public Domain Mark 1.0
+13. tchaikovsky-grace.m4a | Imperial Grace Waltz · Tchaikovsky | mood=orchestral | default_template=concerto | seek=0s | MusopenCollectionAsFlac/Tchaikovsky_SymphonyPathetique/PyotrIlyichTchaikovsky-SymphonyNo.6InBMinorOp.74pathtique-02-AllegroConGracia.mp3 | Public Domain Mark 1.0
+14. borodin-notturno.m4a | Nocturne for Strings · Borodin | mood=strings | default_template=arabesque | seek=0s | MusopenCollectionAsFlac/Borodin_StringQuartetNo.2inDMajor/AlexanderBorodin-StringQuartetNo.2InDMajor-03-NocturneAndante.mp3 | Public Domain Mark 1.0
+15. borodin-moderato.m4a | Velvet Strings · Borodin | mood=strings | default_template=dimashqi | seek=0s | MusopenCollectionAsFlac/Borodin_StringQuartetNo.2inDMajor/AlexanderBorodin-StringQuartetNo.2InDMajor-01-AllegroModerato.mp3 | Public Domain Mark 1.0
+16. borodin-andante.m4a | Courtyard Andante · Borodin | mood=strings | default_template=medina | seek=0s | MusopenCollectionAsFlac/Borodin_StringQuartetNo.1inAMajor/AlexanderBorodin-StringQuartetNo.1InAMajor-02-AndanteConMoto.mp3 | Public Domain Mark 1.0
+17. dvorak-romanza.m4a | String Romanza · Dvořák | mood=strings | default_template=mihrab | seek=0s | MusopenCollectionAsFlac/Dvorak_StringQuartetNo.10inEFlatOp.51/AntonnDvorak-StringQuartetNo.10InEFlatOp.51-03-Romanza.mp3 | Public Domain Mark 1.0
+18. dvorak-american-lento.m4a | Twilight Lento · Dvořák | mood=strings | default_template=layal | seek=0s | MusopenCollectionAsFlac/Dvorak_StringQuartetNo.12inFMajorOp.96/AntonnDvorak-StringQuartetNo.12InFMajorOp.96American-02-Lento.mp3 | Public Domain Mark 1.0
+19. dvorak-american-allegro.m4a | Sunlit Horizon · Dvořák | mood=strings | default_template=azure | seek=0s | MusopenCollectionAsFlac/Dvorak_StringQuartetNo.12inFMajorOp.96/AntonnDvorak-StringQuartetNo.12InFMajorOp.96American-01-AllegroMaNonTroppo.mp3 | Public Domain Mark 1.0
+20. suk-meditation.m4a | Candlelight Meditation · Suk | mood=strings | default_template=sahra | seek=0s | MusopenCollectionAsFlac/Suk_Meditation/JosefSuk-Meditation.mp3 | Public Domain Mark 1.0
+21. haydn-lark-adagio.m4a | Lark Adagio · Haydn | mood=strings | default_template=chateau-aquarelle | seek=0s | MusopenCollectionAsFlac/Haydn_StringQuartetInDMajorOp.64/JosephHaydn-StringQuartetInDOp.645H363Lark-02-AdagioCantabile.mp3 | Public Domain Mark 1.0
+22. haydn-lark-minuet.m4a | Palace Minuet · Haydn | mood=strings | default_template=cristal | seek=0s | MusopenCollectionAsFlac/Haydn_StringQuartetInDMajorOp.64/JosephHaydn-StringQuartetInDOp.645H363Lark-03-MenuettoAllegretto.mp3 | Public Domain Mark 1.0
+23. mozart-cantabile.m4a | Andante Cantabile · Mozart | mood=strings | default_template=barakah-engagement | seek=0s | MusopenCollectionAsFlac/Mozart_StringQuartetNo.19inCMajorK465/WolfgangAmadeusMozart-StringQuartetNo.19InCK465Dissonance-02-AndanteCantabile.mp3 | Public Domain Mark 1.0
+24. mozart-quartet-minuet.m4a | Viennese Minuet · Mozart | mood=strings | default_template=fontaine | seek=0s | MusopenCollectionAsFlac/Mozart_StringQuartetNo.19inCMajorK465/WolfgangAmadeusMozart-StringQuartetNo.19InCK465Dissonance-03-MinuettoAllegretto.mp3 | Public Domain Mark 1.0
+25. mozart-symphony-andante.m4a | Classical Andante · Mozart | mood=strings | default_template=beach | seek=0s | MusopenCollectionAsFlac/Mozart_SymphonyNo.40inGMinor/WolfgangAmadeusMozart-SymphonyNo.40InGMinorK.550-02-Andante.mp3 | Public Domain Mark 1.0
+26. beethoven-adagio.m4a | Chamber Adagio · Beethoven | mood=strings | default_template=rivage | seek=0s | MusopenCollectionAsFlac/Beethoven_StringQuartetNo.6inBFlatMajorOp.18/LudwigVanBeethoven-StringQuartetNo.6InBFlatMajorOp.18No.6-02-AdagioMaNonTroppo.mp3 | Public Domain Mark 1.0
+27. chopin-nocturne-9-2.m4a | Nocturne in E-Flat · Chopin | mood=piano | default_template=gardenia | seek=0s | musopen-chopin/Nocturne Op. 9 no. 2 in E flat major.mp3 | CC0 1.0
+28. chopin-nocturne-27-2.m4a | Nocturne in D-Flat · Chopin | mood=piano | default_template=gardenia-couture | seek=0s | musopen-chopin/NocturneOp27No2.mp3 | CC0 1.0
+29. chopin-nocturne-15-1.m4a | Nocturne in F Major · Chopin | mood=piano | default_template=camelia | seek=0s | musopen-chopin/Nocturne Op. 15 no. 1 In F major.mp3 | CC0 1.0
+30. chopin-nocturne-32-1.m4a | Nocturne in B Major · Chopin | mood=piano | default_template=nacre | seek=0s | musopen-chopin/Nocturne Op. 32 no. 1 in B major.mp3 | CC0 1.0
+31. chopin-nocturne-32-2.m4a | Nocturne in A-Flat · Chopin | mood=piano | default_template=lin | seek=0s | musopen-chopin/Nocturne Op. 32 no. 2 in A flat major.mp3 | CC0 1.0
+32. chopin-nocturne-55-2.m4a | Evening Nocturne · Chopin | mood=piano | default_template=minuit | seek=0s | musopen-chopin/Nocturne Op. 55 no. 2 in E flat major.mp3 | CC0 1.0
+33. chopin-nocturne-62-2.m4a | Golden Nocturne · Chopin | mood=piano | default_template=arabian-veil | seek=0s | musopen-chopin/Nocturne Op. 62 no. 2 in E major.mp3 | CC0 1.0
+34. chopin-nocturne-b49.m4a | Lento Espressivo · Chopin | mood=piano | default_template=neige | seek=0s | musopen-chopin/Nocturne B. 49 in C sharp minor 'Lento con gran espressione' (1).mp3 | CC0 1.0
+35. chopin-raindrop.m4a | Raindrop Prelude · Chopin | mood=piano | default_template=coeur-de-perle | seek=0s | musopen-chopin/Prelude Op. 28 no. 15.mp3 | CC0 1.0
+36. chopin-prelude-13.m4a | Prelude in F-Sharp · Chopin | mood=piano | default_template=fulla | seek=0s | musopen-chopin/Prelude Op. 28 no. 13.mp3 | CC0 1.0
+37. chopin-prelude-17.m4a | Prelude in A-Flat · Chopin | mood=piano | default_template=jasmine | seek=0s | musopen-chopin/Prelude Op. 28 no. 17.mp3 | CC0 1.0
+38. chopin-prelude-21.m4a | Cantabile Prelude · Chopin | mood=piano | default_template=bustan | seek=0s | musopen-chopin/Prelude Op. 28 no. 21.mp3 | CC0 1.0
+39. goldberg-aria.m4a | Goldberg Aria · Bach | mood=piano | default_template=douceur | seek=0s | MusopenCollectionAsFlac/Bach_GoldbergVariations/JohannSebastianBach-01-GoldbergVariationsBwv.988-Aria.mp3 | Public Domain Mark 1.0
+40. schubert-andante-664.m4a | Sonata Andante · Schubert | mood=piano | default_template=ciel | seek=0s | MusopenCollectionAsFlac/Schubert_SonataInAMajorD.664/FranzSchubert-SonataInAMajorD.664-02-Andante.mp3 | Public Domain Mark 1.0
+41. chopin-waltz-69-1.m4a | Farewell Waltz · Chopin | mood=waltz | default_template=giverny | seek=0s | musopen-chopin/Waltz Op. 69 no. 1 in A flat major.mp3 | CC0 1.0
+42. chopin-waltz-64-2.m4a | Valse Romantique · Chopin | mood=waltz | default_template=lilas | seek=0s | musopen-chopin/Waltz Op. 64 no. 2 in C sharp minor.mp3 | CC0 1.0
+43. chopin-waltz-64-3.m4a | A-Flat Salon Waltz · Chopin | mood=waltz | default_template=magnolia | seek=0s | musopen-chopin/Waltz no.8 - Op.64 no.3_ Ab-major.mp3 | CC0 1.0
+44. chopin-waltz-70-1.m4a | Springtime Waltz · Chopin | mood=waltz | default_template=glycine | seek=0s | musopen-chopin/Waltz Op. 70 no. 1 in G flat major.mp3 | CC0 1.0
+45. chopin-waltz-70-3.m4a | Velvet Waltz · Chopin | mood=waltz | default_template=rose | seek=0s | musopen-chopin/Waltz Op. 70 no. 3 in D flat major.mp3 | CC0 1.0
+46. chopin-grande-valse.m4a | Grande Valse Brillante · Chopin | mood=waltz | default_template=jukebox | seek=0s | musopen-chopin/Grande Valse Brilliante Op.18 In E flat major.mp3 | CC0 1.0
+47. chopin-waltz-34-3.m4a | Valse Brillante in F · Chopin | mood=waltz | default_template=love-passport | seek=0s | musopen-chopin/WaltzOp.34No.3InFMajor.mp3 | CC0 1.0
+48. chopin-flute-variations.m4a | Flute & Piano Serenade · Chopin | mood=waltz | default_template=la-gare | seek=0s | musopen-chopin/Variations for flute and piano.mp3 | CC0 1.0
+49. chopin-impromptu-1.m4a | Impromptu in A-Flat · Chopin | mood=waltz | default_template=odyssey | seek=0s | musopen-chopin/Impromptu no. 1 - Op. 29.mp3 | CC0 1.0
+50. chopin-waltz-b133.m4a | Sostenuto Waltz · Chopin | mood=waltz | default_template=pivoine | seek=0s | musopen-chopin/Waltz B. 133 in E flat major.mp3 | CC0 1.0

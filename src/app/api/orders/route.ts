@@ -51,10 +51,18 @@ export async function POST(req: Request) {
     if (problem) return bad(problem);
   }
 
+  const customMusicAddon = packageId === 1 && body.customMusicAddon === true;
+  const addons = customMusicAddon ? { customMusic: true } : undefined;
+  const canPickMusic = packageId >= 2 || customMusicAddon;
+
   let musicTrackId: string | undefined;
-  if (packageId >= 2 && typeof body.musicTrackId === "string" && body.musicTrackId) {
-    if (!(await getMusic(body.musicTrackId))) return bad("invalid_music");
-    musicTrackId = body.musicTrackId;
+  if (canPickMusic && typeof body.musicTrackId === "string" && body.musicTrackId) {
+    if (body.musicTrackId === "none") {
+      musicTrackId = "none";
+    } else {
+      if (!(await getMusic(body.musicTrackId))) return bad("invalid_music");
+      musicTrackId = body.musicTrackId;
+    }
   }
 
   const lang = details.value.lang;
@@ -73,7 +81,8 @@ export async function POST(req: Request) {
       clientName,
       clientPhone,
       packageId,
-      total: priceOf(pricing, packageId),
+      ...(addons ? { addons } : {}),
+      total: priceOf(pricing, packageId, addons),
       stage: packageId >= 3 ? "new" : undefined,
       brief:
         packageId >= 3

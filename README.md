@@ -11,6 +11,14 @@ Open http://localhost:3000 (the storefront). Demo links are at http://localhost:
 
 All settings live in `.env.local` (git-ignored); `.env.example` lists them. On Vercel they go in Project → Settings → Environment Variables.
 
+## Storefront analytics
+
+Set `NEXT_PUBLIC_CLARITY_PROJECT_ID=zix47fxhih` before building to enable Microsoft Clarity for the English and Arabic home, samples listing, and public template previews. Leave it blank to disable Clarity.
+
+In the Clarity project, turn **Cookies** off under **Settings → Setup** before enabling tracking. The site sends denied consent for analytics and advertising storage, so Clarity runs in cookieless mode with limited features. [Microsoft Clarity Consent Mode documentation](https://learn.microsoft.com/en-us/clarity/setup-and-installation/consent-mode)
+
+The builder, request form, invitations, orders, and admin use a separate root layout. Crossing into those pages loads a new document. Clarity also skips public visits with a same-origin referrer outside the tracked routes, which could contain a private link.
+
 ## How it works
 1. **Storefront** (`/`): templates by category and packages. Prices are edited in `/admin/{key}/pricing` (defaults: Ziad's PDF). Orders keep the total they were sold with. **No add-ons**: Arabic/English, the location and getting the link on WhatsApp are included in every package.
 2. **Samples** (`/samples`, and "شوف مثال" on each package): one live invitation per package at fixed links (`/i/sample-1` … `/i/sample-4/{guest}`), created on first visit. They always use the newest uploaded design of their category and a date 45 days ahead.

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import { Music } from "lucide-react";
 import m from "../manage/manage.module.css";
 import a from "./admin.module.css";
 import {
@@ -17,6 +18,7 @@ import { UploadError, postJson } from "@/lib/upload-client";
 const ERRORS: Record<string, string> = {
   need_self_serve: "لازم باقة 1 أو 2 تفضل شغالة، عشان الموقع يقدر يبيع.",
   steps_count: "لازم يبقى فيه 3 نقط بالظبط.",
+  music_addon_price: "سعر إضافة تغيير الموسيقى لازم يبقى رقم صحيح.",
 };
 
 function errorText(code: string): string {
@@ -162,6 +164,37 @@ export default function PricingAdmin({ initial }: { initial: Pricing }) {
             </label>
           </section>
         ))}
+
+        <section className={m.panel}>
+          <div className={m.panelHead}>
+            <h2 className={a.musicPanelTitle}>
+              <span className={a.musicPanelIcon} aria-hidden="true">
+                <Music size={17} strokeWidth={1.6} />
+              </span>
+              <span>إضافة مكتبة الألحان — للباقة الأولى</span>
+            </h2>
+          </div>
+          <div className={a.twoCols}>
+            <label className={m.field}>
+              <span>سعر الإضافة (جنيه)</span>
+              <input
+                className={m.input}
+                type="number"
+                min={0}
+                step={1}
+                inputMode="numeric"
+                value={Number.isNaN(p.musicAddonPrice) ? "" : p.musicAddonPrice}
+                onChange={(e) => setP((x) => ({ ...x, musicAddonPrice: toNumber(e.target.value) }))}
+              />
+            </label>
+            <div className={a.addonInfoNote}>
+              <strong>سلوك الباقات مع الموسيقى</strong>
+              <p className={m.hint}>
+                الباقة الأولى تشغّل موسيقى التصميم الافتراضية تلقائياً؛ وتفعيل هذه الإضافة يفتح للعميل اختيار أي مقطوعة من المكتبة أو الدخول الصامت (بينما تأتي المكتبة مشمولة مجاناً في الباقات ٢–٤).
+              </p>
+            </div>
+          </div>
+        </section>
 
         <section className={m.panel}>
           <div className={m.panelHead}>

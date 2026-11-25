@@ -3,6 +3,7 @@ import { randomBytes, randomUUID } from "crypto";
 import { revalidateTag, unstable_cache } from "next/cache";
 import { db, type Collection } from "./db";
 import { builtInTemplates } from "./templates";
+import { BUILT_IN_MUSIC, DEFAULT_TEMPLATE_MUSIC } from "./music-catalog";
 import { withDefaults, type Pricing } from "./pricing";
 import { SAMPLES, isSampleSlug } from "./samples";
 import type {
@@ -465,15 +466,20 @@ export async function resolveChangeRequest(id: string): Promise<boolean> {
 }
 
 // ---------------------------------------------------------------------------
-// Music library (admin)
+// Music library & per-template assignments (admin + built-in 50-track suite)
 // ---------------------------------------------------------------------------
 
 export async function listMusic(): Promise<MusicTrack[]> {
-  return (await db().list<MusicTrack>("music")).sort(byNewest);
+  const uploaded = (await db().list<MusicTrack>("music")).sort(byNewest);
+  return [...uploaded, ...BUILT_IN_MUSIC];
 }
 
-export function getMusic(id: string): Promise<MusicTrack | null> {
-  return one<MusicTrack>("music", "id", id);
+export async function getMusic(id: string): Promise<MusicTrack | null> {
+  if (!id) return null;
+  if (id.startsWith("lib_")) {
+    return BUILT_IN_MUSIC.find((t) => t.id === id) ?? null;
+  }
+  return (await one<MusicTrack>("music", "id", id)) ?? BUILT_IN_MUSIC.find((t) => t.id === id) ?? null;
 }
 
 export async function addMusic(track: MusicTrack): Promise<MusicTrack> {
@@ -482,7 +488,73 @@ export async function addMusic(track: MusicTrack): Promise<MusicTrack> {
 }
 
 export async function deleteMusic(id: string): Promise<boolean> {
-  return (await db().remove("music", "id", id)) > 0;
+  if (!id || id.startsWith("lib_") || BUILT_IN_MUSIC.some((t) => t.id === id)) return false;
+  const removed = (await db().remove("music", "id", id)) > 0;
+  if (removed) {
+    const row = await one<{ id: string; map?: Record<string, string> }>("settings", "id", "templateMusic");
+    if (row?.map) {
+      let changed = false;
+      const nextMap: Record<string, string> = {};
+      for (const [tid, trackId] of Object.entries(row.map)) {
+        if (trackId === id) {
+          changed = true;
+        } else {
+          nextMap[tid] = trackId;
+        }
+      }
+      if (changed) {
+        await put("settings", "templateMusic", { id: "templateMusic", map: nextMap });
+        revalidateTag("template-music");
+      }
+    }
+  }
+  return removed;
+}
+
+const savedTemplateMusic = unstable_cache(
+  async () => (await one<{ id: string; map?: Record<string, string> }>("settings", "id", "templateMusic"))?.map ?? {},
+  ["template-music"],
+  { tags: ["template-music"], revalidate: CATALOG_TTL },
+);
+
+/** Only the templates overridden from their built-in default track. */
+export async function getTemplateMusicOverrides(): Promise<Record<string, string>> {
+  return { ...(await savedTemplateMusic()) };
+}
+
+/** Resolved templateId -> trackId map (including "none" for explicitly silenced templates). */
+export async function getTemplateMusicMap(): Promise<Record<string, string>> {
+  return { ...DEFAULT_TEMPLATE_MUSIC, ...(await savedTemplateMusic()) };
+}
+
+/** Preselected ceremony track for a given template, or null if silenced / missing. */
+export async function getTemplateMusic(templateId: string): Promise<MusicTrack | null> {
+  const map = await getTemplateMusicMap();
+  const trackId = map[templateId] ?? DEFAULT_TEMPLATE_MUSIC["ivory-seal"];
+  if (!trackId || trackId === "none") return null;
+  return (await getMusic(trackId)) ?? null;
+}
+
+/**
+ * Updates per-template default music assignments. Passing "__default__" (or matching the
+ * built-in default track) clears the override so the template inherits its catalog default.
+ */
+export async function saveTemplateMusicAssignments(patch: Record<string, string>): Promise<Record<string, string>> {
+  const currentRow = await one<{ id: string; map?: Record<string, string> }>("settings", "id", "templateMusic");
+  const nextOverrides: Record<string, string> = { ...(currentRow?.map ?? {}) };
+
+  for (const [tid, rawTrackId] of Object.entries(patch)) {
+    const trackId = rawTrackId === "" ? "none" : rawTrackId;
+    if (trackId === "__default__" || (DEFAULT_TEMPLATE_MUSIC[tid] && DEFAULT_TEMPLATE_MUSIC[tid] === trackId)) {
+      delete nextOverrides[tid];
+    } else {
+      nextOverrides[tid] = trackId;
+    }
+  }
+
+  await put("settings", "templateMusic", { id: "templateMusic", map: nextOverrides });
+  revalidateTag("template-music");
+  return { ...DEFAULT_TEMPLATE_MUSIC, ...nextOverrides };
 }
 
 // ---------------------------------------------------------------------------

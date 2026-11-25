@@ -6,7 +6,7 @@ import type { PackageId } from "@/lib/types";
 
 type Ctx = { params: Promise<{ manageToken: string }> };
 
-/** Switch between packages 1 and 2 before paying. Body: { packageId }. */
+/** Switch between packages (and optional Package 1 music add-on) before paying. Body: { packageId, customMusicAddon? }. */
 export async function PUT(req: Request, ctx: Ctx) {
   const found = await manageContext((await ctx.params).manageToken);
   if (!found?.order) return bad("not_found", 404);
@@ -22,9 +22,18 @@ export async function PUT(req: Request, ctx: Ctx) {
   // A package taken off sale can be kept by an order that already has it, but not switched to.
   if (!pkg.active && packageId !== order.packageId) return bad("invalid_package");
 
-  // Package 1 has no music.
-  if (packageId < 2 && event.musicTrackId) await updateEventDetails(event.id, { musicTrackId: undefined });
+  const customMusicAddon = packageId === 1 && body?.customMusicAddon === true;
+  const addons = customMusicAddon ? { customMusic: true } : undefined;
 
-  const updated = await updateOrder(order.id, { packageId, total: priceOf(pricing, packageId) });
+  // Package 1 without add-on uses the template's preselected track only.
+  if (packageId < 2 && !customMusicAddon && event.musicTrackId) {
+    await updateEventDetails(event.id, { musicTrackId: undefined });
+  }
+
+  const updated = await updateOrder(order.id, {
+    packageId,
+    addons,
+    total: priceOf(pricing, packageId, addons),
+  });
   return NextResponse.json({ order: updated });
 }

@@ -22,6 +22,7 @@ import { CEREMONY_TIMES, DETAIL_ERRORS_BY_LANG, STORE_COPY, formatStorePrice, pa
 import { useSiteLang } from "@/lib/site-lang";
 import { normalizePhone } from "@/lib/guests";
 import { getPackage, isSelfServe, priceOf, type Pricing } from "@/lib/pricing";
+import { musicParts } from "@/lib/music-catalog";
 import { TEMPLATE_EDITORIAL_META, templateDisplayName } from "@/lib/templates";
 import { UploadError, contentTypeOf, postJson, putFile } from "@/lib/upload-client";
 import { normalizeSlug, slugProblem, suggestSlug } from "@/lib/slug";
@@ -32,8 +33,10 @@ interface Props {
   pricing: Pricing;
   templates: Template[];
   music: MusicTrack[];
+  templateMusicMap: Record<string, string>;
   initialTemplateId?: string;
   initialPackageId?: PackageId;
+  initialMusicTrackId?: string;
 }
 
 /** Arabic messages, kept for the client order page (OrderPanels) and the request form. */
@@ -271,6 +274,7 @@ interface Draft {
   generalText: string;
   packageId: PackageId;
   musicTrackId: string;
+  customMusicAddon: boolean;
   brief: string;
   /** Package 3+: a link to the client's files (e.g. Google Drive). */
   briefLink: string;
@@ -290,7 +294,15 @@ type SlugState = { slug: string; status: "idle" | "checking" | "ok" | "bad"; rea
  * with an edit button. Right: the chosen design with the couple's details, live. Creates a draft
  * order the client previews (and pays for) on /order/{token}.
  */
-export default function Builder({ pricing, templates, music, initialTemplateId, initialPackageId }: Props) {
+export default function Builder({
+  pricing,
+  templates,
+  music,
+  templateMusicMap,
+  initialTemplateId,
+  initialPackageId,
+  initialMusicTrackId,
+}: Props) {
   const { lang: uiLang, toggleLang } = useSiteLang();
   const isUiAr = uiLang === "ar";
   const copy = STORE_COPY[uiLang];
@@ -301,6 +313,12 @@ export default function Builder({ pricing, templates, music, initialTemplateId, 
   const onSale = pricing.packages.filter((p) => p.active && isSelfServe(p.id)).map((p) => p.id);
   const firstTemplate = templates.some((t) => t.id === initialTemplateId) ? initialTemplateId! : (templates[0]?.id ?? "");
   const firstPackage = initialPackageId && onSale.includes(initialPackageId) ? initialPackageId : (onSale[0] ?? 1);
+  const validInitialTrack =
+    initialMusicTrackId &&
+    (initialMusicTrackId === "none" || music.some((m) => m.id === initialMusicTrackId)) &&
+    initialMusicTrackId !== templateMusicMap[firstTemplate]
+      ? initialMusicTrackId
+      : "";
 
   const [d, setD] = useState<Draft>({
     at: "names",
@@ -316,7 +334,8 @@ export default function Builder({ pricing, templates, music, initialTemplateId, 
     mapsUrl: "",
     generalText: "",
     packageId: firstPackage,
-    musicTrackId: "",
+    musicTrackId: validInitialTrack,
+    customMusicAddon: Boolean(validInitialTrack && firstPackage === 1),
     brief: "",
     briefLink: "",
     rsvp: null,
@@ -364,6 +383,14 @@ export default function Builder({ pricing, templates, music, initialTemplateId, 
                 : saved.packageId && onSale.includes(saved.packageId)
                   ? saved.packageId
                   : x.packageId,
+            musicTrackId: validInitialTrack
+              ? validInitialTrack
+              : typeof saved.musicTrackId === "string"
+                ? saved.musicTrackId
+                : x.musicTrackId,
+            customMusicAddon: validInitialTrack
+              ? firstPackage === 1
+              : Boolean(saved.customMusicAddon),
             skipped: Array.isArray(saved.skipped) ? saved.skipped : [],
             rsvp: typeof saved.rsvp === "boolean" ? saved.rsvp : null,
             slug: typeof saved.slug === "string" ? saved.slug : "",
@@ -428,7 +455,7 @@ export default function Builder({ pricing, templates, music, initialTemplateId, 
   const template = templates.find((t) => t.id === d.templateId) ?? templates[0];
   const category: Category = template?.category ?? "wedding";
   const suggestions = TEXT_SUGGESTIONS[category][d.lang];
-  const total = priceOf(pricing, d.packageId);
+  const total = priceOf(pricing, d.packageId, { customMusic: d.customMusicAddon });
   const pkg = getPackage(pricing, d.packageId);
   const date = d.day ? `${d.day}T${d.time || "19:00"}` : "";
   // Attendance replies come with package 2+; the files question is for packages made by our team (3+).
@@ -541,7 +568,8 @@ export default function Builder({ pricing, templates, music, initialTemplateId, 
         mapsUrl: d.mapsUrl.trim(),
         generalText: d.generalText || suggestions[0],
         packageId: d.packageId,
-        musicTrackId: d.packageId >= 2 ? d.musicTrackId : "",
+        customMusicAddon: d.packageId === 1 ? d.customMusicAddon : false,
+        musicTrackId: d.packageId >= 2 || d.customMusicAddon ? d.musicTrackId : "",
         brief: d.packageId >= 3 ? d.brief : "",
         briefLink: d.packageId >= 3 ? d.briefLink.trim() : "",
         rsvp: d.packageId >= 2 && d.rsvp === true,
@@ -592,8 +620,22 @@ export default function Builder({ pricing, templates, music, initialTemplateId, 
         return d.mapsUrl ? ui.mapsAdded : "";
       case "text":
         return d.generalText || suggestions[0];
-      case "package":
-        return pkg ? `${packageDisplayName(pkg, uiLang)} · ${formatStorePrice(total, uiLang)}` : "";
+      case "package": {
+        if (!pkg) return "";
+        const base = `${packageDisplayName(pkg, uiLang)} · ${formatStorePrice(total, uiLang)}`;
+        const addonActive = d.packageId === 1 && d.customMusicAddon;
+        const canPick = d.packageId >= 2 || addonActive;
+        if (!canPick || !d.musicTrackId) {
+          return addonActive
+            ? `${base} · ${uiLang === "ar" ? "مكتبة الألحان" : "Soundtrack Library"}`
+            : base;
+        }
+        if (d.musicTrackId === "none") {
+          return `${base} · ${copy.options.noMusicLabel}`;
+        }
+        const chosenTrack = music.find((m) => m.id === d.musicTrackId);
+        return chosenTrack ? `${base} · ${musicParts(chosenTrack, uiLang).title}` : base;
+      }
       case "materials":
         return [files.length ? ui.files(files.length) : "", d.briefLink.trim() ? ui.link : "", d.brief.trim() ? ui.notes : ""]
           .filter(Boolean)
@@ -634,6 +676,18 @@ export default function Builder({ pricing, templates, music, initialTemplateId, 
   })();
   const displayPartnerA = d.partnerA.trim() || (d.lang === "ar" ? "أحمد" : "Ahmed");
   const displayPartnerB = d.partnerB.trim() || (d.lang === "ar" ? "سارة" : "Sara");
+  const customTrackForPreview =
+    (d.packageId >= 2 || (d.packageId === 1 && d.customMusicAddon)) &&
+    d.musicTrackId &&
+    d.musicTrackId !== templateMusicMap[template?.id ?? ""];
+  const previewTemplateHref = template
+    ? localeHref(
+        uiLang,
+        customTrackForPreview
+          ? `/t/${template.id}?m=${encodeURIComponent(d.musicTrackId)}`
+          : `/t/${template.id}`,
+      )
+    : "";
   const displayVenue = d.venueName.trim() || (d.lang === "ar" ? "قاعة الماسة · القاهرة الجديدة" : "The Grand Conservatory · New Cairo");
 
   const fileIcon = (f: File) =>
@@ -855,8 +909,11 @@ export default function Builder({ pricing, templates, music, initialTemplateId, 
                 packageId={d.packageId}
                 onPackageChange={(packageId) => set({ packageId })}
                 music={music}
+                defaultTrackId={templateMusicMap[d.templateId] ?? ""}
                 musicTrackId={d.musicTrackId}
                 onMusicChange={(musicTrackId) => set({ musicTrackId })}
+                customMusicAddon={d.customMusicAddon}
+                onCustomMusicAddonChange={(customMusicAddon) => set({ customMusicAddon })}
               />
               {d.packageId >= 3 && <p className={styles.hint}>{ui.package3Note}</p>}
               <p className={styles.hint}>
@@ -1112,7 +1169,7 @@ export default function Builder({ pricing, templates, music, initialTemplateId, 
             </button>
             {template && (
               <Link
-                href={localeHref(uiLang, `/t/${template.id}`)}
+                href={previewTemplateHref}
                 target="_blank"
                 aria-label={b.openDemoAria}
                 title={b.openDemoAria}
@@ -1165,7 +1222,7 @@ export default function Builder({ pricing, templates, music, initialTemplateId, 
                 {d.venueAddress.trim() ? ` · ${d.venueAddress.trim()}` : ""}
               </p>
               {template && (
-                <Link href={localeHref(uiLang, `/t/${template.id}`)} target="_blank" className={styles.previewOpenBtn}>
+                <Link href={previewTemplateHref} target="_blank" className={styles.previewOpenBtn}>
                   <span className={d.lang === "ar" ? styles.previewOpenLabelAr : styles.previewOpenLabelEn}>
                     {d.lang === "ar" ? "افتح الدعوة" : "Open invitation"}
                   </span>

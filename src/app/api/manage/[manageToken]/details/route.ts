@@ -29,7 +29,8 @@ export async function PUT(req: Request, ctx: Ctx) {
   let musicTrackId = event.musicTrackId;
   if (body.musicTrackId !== undefined) {
     if (body.musicTrackId === "" || body.musicTrackId === null) musicTrackId = undefined;
-    else if (typeof body.musicTrackId === "string" && features.music && (await getMusic(body.musicTrackId)))
+    else if (body.musicTrackId === "none" && features.customMusic) musicTrackId = "none";
+    else if (typeof body.musicTrackId === "string" && features.customMusic && (await getMusic(body.musicTrackId)))
       musicTrackId = body.musicTrackId;
     else return bad("invalid_music");
   }

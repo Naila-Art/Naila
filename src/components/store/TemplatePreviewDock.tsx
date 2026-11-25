@@ -1,109 +1,169 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, ArrowUpRight, Languages } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowUpRight, Languages, Music, X } from "lucide-react";
+import styles from "./store.module.css";
+import { MusicPicker } from "./MusicPicker";
 import { STORE_COPY } from "./storeCopy";
 import { useSiteLang } from "@/lib/site-lang";
 import { templateDisplayName } from "@/lib/templates";
-import type { Template } from "@/lib/types";
+import { musicParts } from "@/lib/music-catalog";
+import type { MusicTrack, Template } from "@/lib/types";
 import { localeHref } from "@/lib/locale";
+
+interface DockProps {
+  template: Template;
+  music?: MusicTrack[];
+  defaultTrackId?: string;
+  selectedTrackId?: string;
+  onSelectTrack?: (trackId: string) => void;
+}
 
 export default function TemplatePreviewDock({
   template,
-}: {
-  template: Template;
-}) {
+  music = [],
+  defaultTrackId = "",
+  selectedTrackId = "",
+  onSelectTrack,
+}: DockProps) {
   const { lang, toggleLang } = useSiteLang();
   const isAr = lang === "ar";
   const copy = STORE_COPY[lang];
   const title = templateDisplayName(template, lang);
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const triggerBtnRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!pickerOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPickerOpen(false);
+    };
+    const onPointerDown = (e: PointerEvent) => {
+      const target = e.target as Node;
+      if (popoverRef.current?.contains(target) || triggerBtnRef.current?.contains(target)) {
+        return;
+      }
+      setPickerOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("pointerdown", onPointerDown);
+    };
+  }, [pickerOpen]);
+
+  const activeTrack =
+    selectedTrackId && selectedTrackId !== "none"
+      ? music.find((m) => m.id === selectedTrackId)
+      : undefined;
+
+  const isCustomized = Boolean(selectedTrackId && selectedTrackId !== defaultTrackId);
+  const pairingTitle =
+    selectedTrackId === "none"
+      ? copy.options.noMusicLabel
+      : activeTrack
+        ? musicParts(activeTrack, lang).title
+        : "";
+
+  const createQuery =
+    selectedTrackId && selectedTrackId !== defaultTrackId
+      ? `/create?t=${template.id}&m=${encodeURIComponent(selectedTrackId)}`
+      : `/create?t=${template.id}`;
 
   return (
-    <div
-      dir={isAr ? "rtl" : "ltr"}
-      style={{
-        position: "fixed",
-        bottom: 20,
-        left: "50%",
-        transform: "translateX(-50%)",
-        zIndex: 50,
-        display: "flex",
-        alignItems: "center",
-        gap: 6,
-        padding: 6,
-        borderRadius: 9999,
-        border: "1px solid rgba(252, 247, 237, 0.2)",
-        background: "rgba(41, 35, 31, 0.88)",
-        backdropFilter: "blur(14px)",
-        WebkitBackdropFilter: "blur(14px)",
-        boxShadow: "0 20px 50px rgba(0, 0, 0, 0.36)",
-      }}
-    >
-      <Link
-        href={localeHref(lang, "/#templates")}
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 6,
-          minHeight: 40,
-          padding: "0 14px",
-          borderRadius: 9999,
-          color: "rgba(252, 247, 237, 0.88)",
-          fontSize: 13,
-          fontWeight: 500,
-          textDecoration: "none",
-          whiteSpace: "nowrap",
-        }}
-      >
-        {isAr ? <ArrowRight size={15} /> : <ArrowLeft size={15} />}
-        {copy.previewDock.templates}
-      </Link>
+    <>
+      {pickerOpen && onSelectTrack && (
+        <div
+          ref={popoverRef}
+          dir={isAr ? "rtl" : "ltr"}
+          className={styles.previewDockPopover}
+          data-keep-autoscroll="true"
+          role="dialog"
+          aria-label={copy.previewDock.musicPickerTitle}
+        >
+          <div className={styles.previewDockPopoverHead}>
+            <div className={styles.previewDockPopoverHeadText}>
+              <strong className={styles.previewDockPopoverTitle}>
+                {copy.previewDock.musicPickerTitle}
+              </strong>
+              {pairingTitle && (
+                <span className={styles.previewDockPopoverPairing}>
+                  {isAr ? `اللحن الحالي: ${pairingTitle}` : `Now paired: ${pairingTitle}`}
+                </span>
+              )}
+              <small className={styles.previewDockPopoverHint}>
+                {copy.previewDock.musicPickerHint}
+              </small>
+            </div>
+            <button
+              type="button"
+              className={styles.previewDockClose}
+              onClick={() => setPickerOpen(false)}
+              aria-label={copy.previewDock.closePickerAria}
+            >
+              <X size={15} strokeWidth={1.7} />
+            </button>
+          </div>
+          <div className={styles.previewDockDivider} aria-hidden="true" />
+          <MusicPicker
+            tracks={music}
+            value={selectedTrackId}
+            onChange={onSelectTrack}
+            defaultTrackId={defaultTrackId}
+            lang={lang}
+            variant="dark"
+            defaultValueMode="id"
+          />
+        </div>
+      )}
 
-      <button
-        type="button"
-        onClick={toggleLang}
-        aria-label={copy.switchLangAria}
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 5,
-          minHeight: 36,
-          padding: "0 11px",
-          borderRadius: 9999,
-          border: "1px solid rgba(252, 247, 237, 0.2)",
-          background: "rgba(252, 247, 237, 0.08)",
-          color: "#fcf7ed",
-          fontSize: 12,
-          fontWeight: 500,
-          cursor: "pointer",
-          whiteSpace: "nowrap",
-        }}
+      <div
+        dir={isAr ? "rtl" : "ltr"}
+        className={styles.previewDockBar}
+        data-keep-autoscroll="true"
       >
-        <Languages size={14} strokeWidth={1.7} aria-hidden="true" />
-        <span>{copy.switchLangTitle}</span>
-      </button>
+        <Link href={localeHref(lang, "/#templates")} className={styles.previewDockLink}>
+          {isAr ? <ArrowRight size={14} /> : <ArrowLeft size={14} />}
+          <span>{copy.previewDock.templates}</span>
+        </Link>
 
-      <Link
-        href={localeHref(lang, `/create?t=${template.id}`)}
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 6,
-          minHeight: 40,
-          padding: "0 18px",
-          borderRadius: 9999,
-          background: "#fcf7ed",
-          color: "#2f241b",
-          fontSize: 13,
-          fontWeight: 600,
-          textDecoration: "none",
-          whiteSpace: "nowrap",
-        }}
-      >
-        {copy.previewDock.usePrefix} {title}
-        <ArrowUpRight size={15} />
-      </Link>
-    </div>
+        {music.length > 0 && onSelectTrack && (
+          <button
+            ref={triggerBtnRef}
+            type="button"
+            onClick={() => setPickerOpen((o) => !o)}
+            aria-expanded={pickerOpen}
+            data-customized={isCustomized || undefined}
+            className={styles.previewDockPillBtn}
+            title={pairingTitle || copy.previewDock.musicBtn}
+          >
+            <Music size={13} strokeWidth={1.7} aria-hidden="true" />
+            <span>{copy.previewDock.musicBtn}</span>
+            {isCustomized && <span className={styles.previewDockCustomDot} aria-hidden="true" />}
+          </button>
+        )}
+
+        <button
+          type="button"
+          onClick={toggleLang}
+          aria-label={copy.switchLangAria}
+          className={styles.previewDockPillBtn}
+        >
+          <Languages size={13} strokeWidth={1.7} aria-hidden="true" />
+          <span>{copy.switchLangTitle}</span>
+        </button>
+
+        <Link href={localeHref(lang, createQuery)} className={styles.previewDockCta}>
+          <span className={styles.previewDockCtaText}>
+            {copy.previewDock.usePrefix} {title}
+          </span>
+          <ArrowUpRight size={14} style={{ flexShrink: 0 }} />
+        </Link>
+      </div>
+    </>
   );
 }
