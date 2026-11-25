@@ -9,6 +9,7 @@ import RsvpForm from "../RsvpForm";
 import WishForm from "../WishForm";
 import type { InvitationProps } from "../Invitation";
 import { TIME_ZONE } from "@/lib/time";
+import { AUTO_SCROLL_LEAD_MS, useInviteAutoScroll } from "./useInviteAutoScroll";
 
 /**
  * Doors & Arches family, and its Stationery sibling (family "paper").
@@ -127,24 +128,28 @@ export default function DoorsInvitation(props: InvitationProps) {
   const { strings: s, template, lang } = props;
   const isAr = lang === "ar";
   const [stage, setStage] = useState<Stage>("sealed");
+  const [scrollUnlocked, setScrollUnlocked] = useState(false);
   const [videoDone, setVideoDone] = useState(false);
   const [muted, setMuted] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const pageRef = useRef<HTMLElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const fadeRef = useRef<number>(undefined);
-  const revealAt = template.revealAtMs ?? DEFAULT_REVEAL_MS;
+  const revealAt = Math.max(2400, (template.revealAtMs ?? DEFAULT_REVEAL_MS) - 450);
   const parts = useMemo(() => dateParts(props.dateIso, lang), [props.dateIso, lang]);
   const initials = `${props.partnerA.trim().charAt(0)}${isAr ? " " : "·"}${props.partnerB.trim().charAt(0)}`;
 
-  // Scrolling stays locked until the names are on screen.
-  useEffect(() => {
-    document.body.style.overflow = stage === "revealed" ? "" : "hidden";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [stage]);
+  const { startAutoScroll } = useInviteAutoScroll(pageRef, {
+    locked: !scrollUnlocked,
+    resetTop: stage === "sealed",
+  });
+
+  const unlockAndScroll = useCallback(() => {
+    setScrollUnlocked(true);
+    startAutoScroll();
+  }, [startAutoScroll]);
 
   // The scroll cue bows out as soon as the guest starts reading.
   useEffect(() => {
@@ -207,28 +212,35 @@ export default function DoorsInvitation(props: InvitationProps) {
     if (!video || reduced) {
       setVideoDone(true);
       reveal();
+      unlockAndScroll();
       return;
     }
     video.muted = muted;
     video.play().catch(() => {
       setVideoDone(true);
       reveal();
+      unlockAndScroll();
     });
     timerRef.current = setTimeout(() => {
       setVideoDone(true);
       reveal();
+      unlockAndScroll();
     }, VIDEO_MAX_MS);
   };
 
   const onTimeUpdate = () => {
     const v = videoRef.current;
-    if (v && stage === "opening" && v.currentTime * 1000 >= revealAt) reveal();
+    if (!v || stage === "sealed") return;
+    const ms = v.currentTime * 1000;
+    if (stage === "opening" && ms >= revealAt) reveal();
+    if (ms >= revealAt + AUTO_SCROLL_LEAD_MS) unlockAndScroll();
   };
 
   const onEnded = () => {
     clearTimeout(timerRef.current);
     setVideoDone(true);
     reveal();
+    unlockAndScroll();
   };
 
   const toggleMute = () => {
@@ -270,6 +282,7 @@ export default function DoorsInvitation(props: InvitationProps) {
 
   return (
     <main
+      ref={pageRef}
       className={styles.page}
       style={themeVars}
       dir={isAr ? "rtl" : "ltr"}
@@ -278,6 +291,7 @@ export default function DoorsInvitation(props: InvitationProps) {
       data-start={scene.lightStart ? "light" : undefined}
       data-end={(scene.light ?? paper) ? "light" : undefined}
       data-family={paper ? "paper" : "doors"}
+      data-locked={stage === "sealed" ? "true" : undefined}
     >
       {props.isPreview && (
         <>
@@ -295,6 +309,7 @@ export default function DoorsInvitation(props: InvitationProps) {
           data-done={videoDone || undefined}
           data-scrolled={scrolled || undefined}
           data-reflection={scene.reflectionTop === null ? "off" : undefined}
+          data-autoscroll="true"
         >
           {template.endPosterUrl && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -499,7 +514,14 @@ export default function DoorsInvitation(props: InvitationProps) {
         <>
           {hasMusic && <audio ref={audioRef} src={props.musicUrl} loop preload="auto" />}
           {showSound && (
-            <button type="button" className={styles.sound} onClick={toggleMute} aria-label={muted ? s.unmute : s.mute} aria-pressed={muted}>
+            <button
+              type="button"
+              className={styles.sound}
+              data-keep-autoscroll="true"
+              onClick={toggleMute}
+              aria-label={muted ? s.unmute : s.mute}
+              aria-pressed={muted}
+            >
               {muted ? <VolumeX size={18} strokeWidth={1.5} /> : <Volume2 size={18} strokeWidth={1.5} />}
             </button>
           )}

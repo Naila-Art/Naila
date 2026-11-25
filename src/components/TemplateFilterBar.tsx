@@ -63,6 +63,57 @@ export function useTemplateFilter(templates: Template[]) {
 
 type Filter = ReturnType<typeof useTemplateFilter>;
 
+interface StyleIndexChipsProps {
+  styles: { id: TemplateStyle; count: number }[];
+  value: TemplateStyle | "all";
+  onChange: (style: TemplateStyle | "all") => void;
+  lang: "ar" | "en";
+  allLabel?: string;
+  alignEndOnDesktop?: boolean;
+}
+
+/** Editorial style index: italic words with superscript counts, hairline dividers, and a drawn-in underline. */
+export function StyleIndexChips({
+  styles: styleList,
+  value,
+  onChange,
+  lang,
+  allLabel,
+  alignEndOnDesktop = false,
+}: StyleIndexChipsProps) {
+  if (styleList.length <= 1) return null;
+
+  return (
+    <div
+      className={`${styles.chips} ${alignEndOnDesktop ? styles.chipsEndDesktop : ""}`}
+      data-lang={lang}
+      role="group"
+      aria-label={lang === "ar" ? "النمط" : "Style"}
+    >
+      <button
+        type="button"
+        className={styles.chip}
+        aria-pressed={value === "all"}
+        onClick={() => onChange("all")}
+      >
+        {allLabel ?? ALL_STYLES[lang]}
+      </button>
+      {styleList.map((s) => (
+        <button
+          key={s.id}
+          type="button"
+          className={styles.chip}
+          aria-pressed={value === s.id}
+          onClick={() => onChange(s.id)}
+        >
+          {STYLE_LABELS[s.id][lang]}
+          <span className={styles.count}>{s.count}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 /** Two-tier filter: category tabs with counts, then that category's style chips. */
 export default function TemplateFilterBar({
   filter,
@@ -96,30 +147,12 @@ export default function TemplateFilterBar({
         })}
       </div>
 
-      {filter.styles.length > 1 && (
-        <div className={styles.chips} role="group" aria-label={lang === "ar" ? "النمط" : "Style"}>
-          <button
-            type="button"
-            className={styles.chip}
-            aria-pressed={filter.style === "all"}
-            onClick={() => filter.setStyle("all")}
-          >
-            {ALL_STYLES[lang]}
-          </button>
-          {filter.styles.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              className={styles.chip}
-              aria-pressed={filter.style === s.id}
-              onClick={() => filter.setStyle(s.id)}
-            >
-              {STYLE_LABELS[s.id][lang]}
-              <span className={styles.count}>{s.count}</span>
-            </button>
-          ))}
-        </div>
-      )}
+      <StyleIndexChips
+        styles={filter.styles}
+        value={filter.style}
+        onChange={filter.setStyle}
+        lang={lang}
+      />
     </div>
   );
 }

@@ -52,6 +52,14 @@ function easeInOutSine(t: number) {
   return 0.5 - 0.5 * Math.cos(Math.PI * t);
 }
 
+function templatePreviewVideoUrl(videoUrl?: string): string | undefined {
+  if (!videoUrl) return undefined;
+  if (videoUrl.startsWith("/templates/") && videoUrl.endsWith("/opening.mp4")) {
+    return videoUrl.replace(/\/opening\.mp4$/, "/preview.mp4");
+  }
+  return videoUrl;
+}
+
 export default function LandingExperience({
   brand,
   templates,
@@ -316,6 +324,7 @@ export default function LandingExperience({
           : "Animated opening invitation with curated typography, music, and live RSVP.",
         posterUrl: tpl.posterUrl,
         videoUrl: tpl.videoUrl,
+        previewVideoUrl: templatePreviewVideoUrl(tpl.videoUrl),
         frameBg: meta?.cardFrame ?? tpl.theme.background,
       };
     },

@@ -156,6 +156,8 @@ export default function LandingFooter({
   const wordmarkP = easeOutQuart(clamp01((p - 0.22) / 0.74));
   const taglineP = band(p, 0.34, 0.78);
   const copyP = band(p, 0.68, 0.98);
+  const wordmarkBlur = (1 - wordmarkP) * 11;
+  const taglineBlur = (1 - taglineP) * 4;
 
   const priceLabel = formatLandingPrice(startingPriceEgp, currency, lang);
 
@@ -193,7 +195,7 @@ export default function LandingFooter({
             style={{
               opacity: taglineP,
               transform: `translate3d(0, ${((1 - taglineP) * 18).toFixed(1)}px, 0)`,
-              filter: `blur(${((1 - taglineP) * 4).toFixed(1)}px)`,
+              filter: taglineBlur < 0.05 ? "none" : `blur(${taglineBlur.toFixed(1)}px)`,
             }}
           >
             {copy.footer.tagline}
@@ -280,9 +282,9 @@ export default function LandingFooter({
           className={`notranslate ${styles.footerGiantWordmark}`}
           style={{
             opacity: wordmarkP.toFixed(3),
-            filter: `blur(${((1 - wordmarkP) * 11).toFixed(2)}px)`,
+            filter: wordmarkBlur < 0.05 ? "none" : `blur(${wordmarkBlur.toFixed(2)}px)`,
             letterSpacing: `${(-0.025 - wordmarkP * 0.05).toFixed(4)}em`,
-            transform: `translate3d(0, ${((1 - wordmarkP) * 58).toFixed(2)}%, 0) scale(${(
+            transform: `translate3d(0, ${((1 - wordmarkP) * 0.41).toFixed(3)}em, 0) scale(${(
               0.86 +
               wordmarkP * 0.14
             ).toFixed(4)})`,
@@ -317,9 +319,12 @@ export default function LandingFooter({
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/assets/clouds/cloud-center.png"
+              src="/assets/clouds/cloud-center.webp"
               alt=""
-              loading="lazy"
+              width={1264}
+              height={553}
+              decoding="async"
+              fetchPriority="low"
               className={`${styles.footerCloudCenterImg} ${styles.cloudDriftCenter}`}
             />
           </div>
@@ -347,9 +352,12 @@ export default function LandingFooter({
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/assets/clouds/cloud-left.png"
+              src="/assets/clouds/cloud-left.webp"
               alt=""
-              loading="lazy"
+              width={1264}
+              height={670}
+              decoding="async"
+              fetchPriority="low"
               className={`${styles.footerCloudLeftImg} ${styles.cloudDriftLeft}`}
             />
           </div>
@@ -377,9 +385,12 @@ export default function LandingFooter({
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/assets/clouds/cloud-right.png"
+              src="/assets/clouds/cloud-right.webp"
               alt=""
-              loading="lazy"
+              width={1264}
+              height={686}
+              decoding="async"
+              fetchPriority="low"
               className={`${styles.footerCloudRightImg} ${styles.cloudDriftRight}`}
             />
           </div>

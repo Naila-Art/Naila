@@ -9,6 +9,7 @@ import RsvpForm from "./RsvpForm";
 import type { Strings } from "@/lib/i18n";
 import type { Lang, ScheduleItem, Template } from "@/lib/types";
 import DoorsInvitation from "./families/DoorsInvitation";
+import { useInviteAutoScroll } from "./families/useInviteAutoScroll";
 import Icon from "./Icon";
 
 export interface InvitationProps {
@@ -60,9 +61,15 @@ function EnvelopeInvitation(props: InvitationProps) {
   const { strings: s, template, lang } = props;
   const [stage, setStage] = useState<Stage>("sealed");
   const [muted, setMuted] = useState(false);
+  const pageRef = useRef<HTMLElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  const { startAutoScroll } = useInviteAutoScroll(pageRef, {
+    locked: stage !== "open",
+    resetTop: stage === "sealed",
+  });
 
   const finishOpening = useCallback(() => {
     clearTimeout(timerRef.current);
@@ -71,13 +78,11 @@ function EnvelopeInvitation(props: InvitationProps) {
 
   useEffect(() => () => clearTimeout(timerRef.current), []);
 
-  // Lock scrolling until the invitation is opened.
   useEffect(() => {
-    document.body.style.overflow = stage === "open" ? "" : "hidden";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [stage]);
+    if (stage === "open") {
+      startAutoScroll();
+    }
+  }, [stage, startAutoScroll]);
 
   const open = () => {
     if (stage !== "sealed") return;
@@ -139,7 +144,7 @@ function EnvelopeInvitation(props: InvitationProps) {
   );
 
   return (
-    <main className={styles.page} style={themeVars} dir={lang === "ar" ? "rtl" : "ltr"} lang={lang}>
+    <main ref={pageRef} className={styles.page} style={themeVars} dir={lang === "ar" ? "rtl" : "ltr"} lang={lang}>
       {props.isPreview && (
         <>
           <div className={styles.previewRibbon}>{s.previewRibbon}</div>
@@ -261,7 +266,13 @@ function EnvelopeInvitation(props: InvitationProps) {
         <>
           <audio ref={audioRef} src={props.musicUrl} loop preload="auto" />
           {stage !== "sealed" && (
-            <button type="button" className={styles.mute} onClick={toggleMute} aria-label={muted ? s.unmute : s.mute}>
+            <button
+              type="button"
+              className={styles.mute}
+              data-keep-autoscroll="true"
+              onClick={toggleMute}
+              aria-label={muted ? s.unmute : s.mute}
+            >
               <Icon name={muted ? "volumeOff" : "volume"} size={20} />
             </button>
           )}

@@ -2,14 +2,15 @@
 
 import { useMemo, useState } from "react";
 import { ShowcaseCardGrid, type ShowcaseCardItem } from "./EditorialShowcase";
+import { StyleIndexChips } from "@/components/TemplateFilterBar";
 import type { LandingCopy } from "./copy";
 import {
   CATEGORY_ORDER,
-  STYLE_LABELS,
   type Category,
   type Template,
   type TemplateStyle,
 } from "@/lib/types";
+import { STYLE_LABELS } from "@/lib/types";
 import styles from "./occasionRows.module.css";
 
 const STYLE_ORDER = Object.keys(STYLE_LABELS) as TemplateStyle[];
@@ -94,30 +95,14 @@ function OccasionRow({
           <p className={styles.rowBlurb}>{text.blurb}</p>
         </div>
 
-        {styleList.length > 1 && (
-          <div className={styles.chips} role="group" aria-label={lang === "ar" ? "النمط" : "Style"}>
-            <button
-              type="button"
-              className={styles.chip}
-              aria-pressed={style === "all"}
-              onClick={() => pickStyle("all")}
-            >
-              {copy.allStyles}
-            </button>
-            {styleList.map((s) => (
-              <button
-                key={s.id}
-                type="button"
-                className={styles.chip}
-                aria-pressed={style === s.id}
-                onClick={() => pickStyle(s.id)}
-              >
-                {STYLE_LABELS[s.id][lang]}
-                <span className={styles.chipCount}>{s.count}</span>
-              </button>
-            ))}
-          </div>
-        )}
+        <StyleIndexChips
+          styles={styleList}
+          value={style}
+          onChange={pickStyle}
+          lang={lang}
+          allLabel={copy.allStyles}
+          alignEndOnDesktop
+        />
       </div>
 
       <ShowcaseCardGrid items={cards} aspect="landscape" className={styles.grid} />

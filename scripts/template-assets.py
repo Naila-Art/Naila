@@ -125,6 +125,11 @@ def main() -> None:
     ff("-i", str(src), *trim, "-c:v", "libx264", "-threads", "4", "-profile:v", "high", "-pix_fmt", "yuv420p",
        "-crf", "23", "-preset", "slow", "-maxrate", "3M", "-bufsize", "6M",
        *audio, "-movflags", "+faststart", str(out / "opening.mp4"))
+    # Lightweight silent preview loop for homepage cards (360px wide, 20fps, ~200-300 KB).
+    ff("-i", str(out / "opening.mp4"), "-vf", "scale=360:-2,fps=20",
+       "-c:v", "libx264", "-threads", "4", "-profile:v", "main", "-level", "3.1",
+       "-pix_fmt", "yuv420p", "-crf", "28", "-maxrate", "450k", "-bufsize", "900k",
+       "-preset", "medium", "-an", "-movflags", "+faststart", str(out / "preview.mp4"))
     # mjpeg needs full-range yuvj420p; -sseof -0.3 + -update 1 grabs the true last frame.
     ff("-i", str(src), "-frames:v", "1", "-vf", "format=yuvj420p", "-q:v", "3", str(out / "start.jpg"))
     if a.end_frame:
@@ -135,7 +140,7 @@ def main() -> None:
     ff("-i", str(out / "end.jpg"), "-vf", "scale=360:640,gblur=sigma=24,format=yuvj420p", "-q:v", "8",
        str(out / "end-blur.jpg"))
 
-    for f in ("opening.mp4", "start.jpg", "end.jpg", "end-blur.jpg"):
+    for f in ("opening.mp4", "preview.mp4", "start.jpg", "end.jpg", "end-blur.jpg"):
         print(f"  {f:14} {(out / f).stat().st_size / 1024:8.0f} KB")
     if not has_audio:
         print("warning: the video has no sound; the doors will open silently", file=sys.stderr)

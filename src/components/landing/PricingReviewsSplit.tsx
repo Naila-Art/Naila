@@ -23,9 +23,6 @@ interface PricingReviewsSplitProps {
   steps: PricingStep[];
 }
 
-const ROMAN = ["I", "II", "III", "IV"];
-const ARABIC_NUMERALS = ["١", "٢", "٣", "٤"];
-
 const ENGLISH_TIER_NAMES: Record<number, string> = {
   1: "Essential",
   2: "Signature",
@@ -134,7 +131,7 @@ export default function PricingReviewsSplit({
                   }}
                 />
 
-                {activePackages.map((pkg, idx) => {
+                {activePackages.map((pkg) => {
                   const active = pkg.id === selectedPkg?.id;
                   const displayName =
                     lang === "ar"
@@ -153,11 +150,6 @@ export default function PricingReviewsSplit({
                         active ? styles.tierLedgerCellActive : ""
                       }`}
                     >
-                      <span className={styles.tierLedgerRoman} aria-hidden="true">
-                        {lang === "ar"
-                          ? ARABIC_NUMERALS[idx] ?? idx + 1
-                          : ROMAN[idx] ?? idx + 1}
-                      </span>
                       <span
                         className={`${styles.tierLedgerName} ${
                           isArabicText ? styles.tierLedgerNameAr : ""

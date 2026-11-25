@@ -67,9 +67,6 @@ export function LandingEntranceProvider({
 function charStyle(idx: number, reduced: boolean): CSSProperties | undefined {
   if (reduced) return undefined;
   return {
-    opacity: 0,
-    filter: "blur(16px)",
-    transform: "translateX(40px)",
     animationDelay: `${(0.055 * idx).toFixed(3)}s`,
   };
 }

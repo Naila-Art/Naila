@@ -58,7 +58,6 @@ export default function LandingHeader({
   const morphActive = handoff.progress > 0.005;
   const brandOpacity = handoff.docked ? 0 : 1;
   const ctaOpacity = handoff.docked ? 0 : 1;
-  const italicizeBrand = handoff.progress > 0.55;
 
   return (
     <>
@@ -113,21 +112,7 @@ export default function LandingHeader({
               willChange: morphActive ? "transform, opacity" : undefined,
             }}
           >
-            <span
-              className={styles.brandWordmark}
-              style={{
-                fontStyle: italicizeBrand ? "italic" : "normal",
-              }}
-            >
-              {brand}
-            </span>
-            <span
-              className={`${styles.brandSub} ${
-                scrolled || morphActive ? styles.brandSubHidden : ""
-              }`}
-            >
-              {copy.brandSub}
-            </span>
+            <span className={styles.brandWordmark}>{brand}</span>
           </Link>
 
           {/* Center Nav Links — dissolve cleanly as handoff begins */}

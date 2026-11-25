@@ -1,8 +1,9 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import { useCardAutoplay } from "./useCardAutoplay";
 import styles from "./landing.module.css";
 
 export interface ShowcaseCardItem {
@@ -13,6 +14,7 @@ export interface ShowcaseCardItem {
   description: string;
   posterUrl?: string;
   videoUrl?: string;
+  previewVideoUrl?: string;
   frameBg?: string;
   badge?: string;
   external?: boolean;
@@ -93,6 +95,52 @@ function ShowcaseCard({
   item: ShowcaseCardItem;
   aspect: "landscape" | "portrait";
 }) {
+  const cardRef = useRef<HTMLElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const initialSrc = !item.stationery
+    ? item.previewVideoUrl ?? item.videoUrl
+    : undefined;
+
+  const [videoSrc, setVideoSrc] = useState<string | undefined>(initialSrc);
+  const [videoReady, setVideoReady] = useState(false);
+  const [videoFailed, setVideoFailed] = useState(false);
+
+  useEffect(() => {
+    setVideoSrc(initialSrc);
+    setVideoFailed(false);
+    setVideoReady(false);
+  }, [initialSrc]);
+
+  const { shouldPlay, onPointerEnter, onPointerLeave } = useCardAutoplay(
+    cardRef,
+    Boolean(initialSrc) && !videoFailed
+  );
+
+  useEffect(() => {
+    if (!shouldPlay) {
+      setVideoReady(false);
+    }
+  }, [shouldPlay]);
+
+  const activeVideoSrc = shouldPlay && !videoFailed ? videoSrc : undefined;
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !activeVideoSrc) return;
+
+    video.muted = true;
+    const playAttempt = video.play();
+    if (playAttempt) {
+      playAttempt.catch(() => setVideoReady(false));
+    }
+
+    return () => {
+      video.pause();
+      video.removeAttribute("src");
+      video.load();
+    };
+  }, [activeVideoSrc]);
+
   const CardInner = (
     <>
       <div
@@ -134,13 +182,42 @@ function ShowcaseCard({
             </div>
           </div>
         ) : item.posterUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={item.posterUrl}
-            alt={item.title}
-            loading="lazy"
-            className={styles.showcaseCardImg}
-          />
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={item.posterUrl}
+              alt={item.title}
+              loading="lazy"
+              decoding="async"
+              className={styles.showcaseCardImg}
+            />
+            {activeVideoSrc && (
+              <video
+                ref={videoRef}
+                src={activeVideoSrc}
+                muted
+                loop
+                playsInline
+                autoPlay
+                preload="auto"
+                disablePictureInPicture
+                disableRemotePlayback
+                aria-hidden="true"
+                onPlaying={() => setVideoReady(true)}
+                onError={() => {
+                  if (item.videoUrl && videoSrc !== item.videoUrl) {
+                    setVideoReady(false);
+                    setVideoSrc(item.videoUrl);
+                  } else {
+                    setVideoFailed(true);
+                  }
+                }}
+                className={`${styles.showcaseCardImg} ${styles.showcaseCardVideo} ${
+                  videoReady ? styles.showcaseCardVideoReady : ""
+                }`}
+              />
+            )}
+          </>
         ) : (
           <div className={styles.showcaseFallbackSeal} />
         )}
@@ -161,7 +238,12 @@ function ShowcaseCard({
   );
 
   return (
-    <article className={styles.showcaseGridCard}>
+    <article
+      ref={cardRef}
+      onPointerEnter={onPointerEnter}
+      onPointerLeave={onPointerLeave}
+      className={styles.showcaseGridCard}
+    >
       {item.external ? (
         <a
           href={item.href}
