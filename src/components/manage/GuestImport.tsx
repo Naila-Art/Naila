@@ -62,7 +62,7 @@ export default function GuestImport({ existingKeys, onSave }: Props) {
       if (parsed.length === 0) setError("الملف فاضي");
       setRows(parsed);
     } catch {
-      setError("مقدرناش نقرا الملف. لو ملف ‎.xls قديم، احفظه كـ ‎.xlsx وارفعه تاني");
+      setError("مقدرناش نقرا الملف. لو ملف ‎.xls قديم، احفظيه كـ ‎.xlsx وارفعيه تاني");
     }
   };
 
@@ -82,7 +82,7 @@ export default function GuestImport({ existingKeys, onSave }: Props) {
       await onSave(good);
       reset();
     } catch {
-      setError("حصلت مشكلة في الحفظ، جرب تاني");
+      setError("حصلت مشكلة في الحفظ، جربي تاني");
     } finally {
       setBusy(false);
     }
@@ -101,7 +101,7 @@ export default function GuestImport({ existingKeys, onSave }: Props) {
           <FileSpreadsheet size={17} />
         </span>
         <span>
-          <strong>{fileName || "عندك شيت Excel؟ ارفعه مرة واحدة"}</strong>
+          <strong>{fileName || "عندك شيت Excel؟ ارفعيه مرة واحدة"}</strong>
           <small>اللقب (اختياري) · الاسم · رقم الموبايل (اختياري) · رسالة خاصة (اختياري). ملف ‎.xlsx أو ‎.csv</small>
         </span>
       </label>

@@ -74,18 +74,25 @@ function normalizeOptionalMapsUrl(raw: string): string | null {
   }
 }
 
+/** "YYYY-MM-DD" of an instant in Cairo, for comparing days. */
+const cairoDay = (iso: string) => new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Cairo" }).format(new Date(iso));
+
 /**
  * Validates the editable event details (storefront form and client page).
  * Returns the cleaned values, or an error code.
  */
 export function parseEventDetails(
   body: Record<string, unknown>,
+  opts: { allowPast?: boolean; savedDate?: string } = {},
 ): { ok: true; value: Required<Pick<EventDetailsPatch, "partnerA" | "partnerB" | "date" | "venueName" | "lang">> & EventDetailsPatch } | { ok: false; error: string } {
   const partnerA = cleanText(body.partnerA, 40);
   const partnerB = cleanText(body.partnerB, 40);
   if (!partnerA || !partnerB) return { ok: false, error: "names_required" };
   const date = typeof body.date === "string" ? cairoLocalToIso(body.date) : null;
   if (!date) return { ok: false, error: "date_invalid" };
+  if (!opts.allowPast && date !== opts.savedDate && cairoDay(date) < cairoDay(new Date().toISOString())) {
+    return { ok: false, error: "date_past" };
+  }
   const venueName = cleanText(body.venueName, 80);
   if (!venueName) return { ok: false, error: "venue_required" };
   const lang: Lang = body.lang === "en" ? "en" : "ar";

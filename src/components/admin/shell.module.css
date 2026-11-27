@@ -4,6 +4,14 @@
   --sh-side: #2b2420;
   --sh-side-text: #e9e1d6;
   --sh-accent: #8a5a2b;
+  --m-surface: #fff;
+  --m-line: #e7e0d7;
+  --m-text: #2b2420;
+  --m-muted: #7a6f68;
+  --m-accent: #8a5a2b;
+  --m-bad: #b3261e;
+  --m-ok: #2e7d4f;
+  --m-bg: #f6f3ee;
   min-height: 100svh;
   background: var(--sh-bg);
   font-family: "Tajawal", system-ui, sans-serif;

@@ -14,12 +14,12 @@ export const TIER_POINTS_EN: Record<PackageId, string[]> = {
     "Animated wax-seal opening",
     "Curated signature soundtrack",
     "Your names & evening details",
-    "Instant RSVP & live countdown",
+    "Live countdown to the day",
   ],
   2: [
     "Everything in Essential",
     "Choose any soundtrack from our library",
-    "Heartfelt guest wishes keepsake",
+    "Guest RSVPs & heartfelt wishes",
   ],
   3: [
     "Your own photos & videos woven in",
@@ -42,7 +42,7 @@ export const INCLUDED_IN_ALL_COPY: Record<Lang, string[]> = {
     "Crisp WhatsApp invitation link",
   ],
   ar: [
-    "عربي وإنجليزي مجاناً",
+    "عربي وإنجليزي",
     "لوكيشن القاعة على جوجل ماب",
     "لينك أنيق جاهز للواتساب",
   ],
@@ -88,6 +88,7 @@ export const DETAIL_ERRORS_BY_LANG: Record<Lang, Record<string, string>> = {
   en: {
     names_required: "Please enter both partner names.",
     date_invalid: "Please select your celebration date and time.",
+    date_past: "This date has already passed. Please pick a coming date.",
     venue_required: "Please enter your venue name.",
     address_invalid: "The address is a little too long.",
     maps_invalid:
@@ -114,6 +115,7 @@ export const DETAIL_ERRORS_BY_LANG: Record<Lang, Record<string, string>> = {
   ar: {
     names_required: "من فضلك اكتبي اسمَي العروسين أولاً.",
     date_invalid: "اختاري تاريخ وميعاد الليلة.",
+    date_past: "التاريخ ده فات. اختاري يوم جاي.",
     venue_required: "اكتبي اسم القاعة أو مكان الحفل.",
     address_invalid: "العنوان أطول من اللازم — اختصريه شوية.",
     maps_invalid:
@@ -210,8 +212,10 @@ export const STORE_COPY = {
       yourNamePlaceholder: "Your full name",
       whatsappLabel: "WhatsApp number",
       totalNote: "One-time payment only after you love the preview",
-      bespokePrompt: "Dreaming of a custom suite matched to your exact wedding palette?",
-      bespokeLink: "Commission a bespoke suite ↗",
+      bespokePrompt: "Want a design made from scratch just for you?",
+      bespokeSub: "made with our designer until it's exactly what you imagine",
+      bespokeWa: "Talk to us on WhatsApp",
+      bespokeLink: "or send a request",
       back: "Back",
       continueBtn: "Continue",
       submit: "See my live preview",
@@ -334,8 +338,10 @@ export const STORE_COPY = {
       yourNamePlaceholder: "اسمك للتواصل",
       whatsappLabel: "رقم الواتساب",
       totalNote: "دفعة واحدة بعد ما تعجبك المعاينة بس",
-      bespokePrompt: "بتحلمي بتصميم حصري من الصفر على ألوان قاعتك ووردك؟",
-      bespokeLink: "اطلبي تصميمك الخاص ↖",
+      bespokePrompt: "عايزة تصميم خاص من الصفر؟",
+      bespokeSub: "مع المصمم لحد ما يطلع زي ما في دماغك",
+      bespokeWa: "كلمينا على واتساب",
+      bespokeLink: "أو ابعتي طلب",
       back: "رجوع",
       continueBtn: "التالي",
       submit: "ورّيني المعاينة الحيّة",

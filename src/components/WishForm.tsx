@@ -22,7 +22,7 @@ export default function WishForm({ slug, token, strings: s, ui }: Props) {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!body.trim()) return;
+    if (!body.trim()) return setError(s.wishRequired);
     if (!token && !name.trim()) {
       setError(s.nameRequired);
       return;

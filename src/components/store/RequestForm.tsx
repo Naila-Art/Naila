@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { ArrowUpRight, Check, Heart, Languages, X } from "lucide-react";
 import styles from "./store.module.css";
@@ -45,6 +45,24 @@ export default function RequestForm({
   const [sent, setSent] = useState(false);
 
   const errorText = errorCode ? errors[errorCode] ?? errors.failed : "";
+
+  // Coming from the builder: start from what she already typed there (same key as Builder's DRAFT_KEY).
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("builder-draft-v3") ?? "null") as Record<string, unknown> | null;
+      if (!saved) return;
+      const str = (k: string) => (typeof saved[k] === "string" ? (saved[k] as string).trim() : "");
+      if (str("clientName")) setClientName(str("clientName"));
+      if (str("clientPhone")) setClientPhone(str("clientPhone"));
+      const now = new Date();
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(str("day")) && str("day") >= today) setDate(str("day"));
+      if (str("partnerA") && str("partnerB")) {
+        setNotes((n) => n || (isAr ? `الأسامي: ${str("partnerA")} و ${str("partnerB")}\n` : `Names: ${str("partnerA")} & ${str("partnerB")}\n`));
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only once, on arrival
+  }, []);
 
   async function submit(e: FormEvent) {
     e.preventDefault();

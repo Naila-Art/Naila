@@ -230,7 +230,7 @@
 .drawer {
   width: min(520px, 100%);
   height: 100%;
-  background: var(--m-bg);
+  background: var(--m-bg, #f6f3ee);
   box-shadow: 0 0 40px rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
@@ -243,7 +243,7 @@
   align-items: flex-start;
   gap: 12px;
   padding: 16px 18px;
-  background: var(--m-surface);
+  background: var(--m-surface, #fff);
   border-bottom: 1px solid var(--m-line);
 }
 

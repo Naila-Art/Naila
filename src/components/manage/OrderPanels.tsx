@@ -113,16 +113,16 @@ const ERRORS: Record<string, string> = {
   ...DETAIL_ERRORS,
   ...UPLOAD_ERRORS,
   already_paid: "الطلب ده اتدفع خلاص.",
-  paymob_unavailable: "الدفع بالفيزا مش متاح دلوقتي، اختار طريقة تانية.",
-  paymob_failed: "مقدرناش نفتح صفحة الدفع. جرب تاني أو اختار طريقة تانية.",
-  invalid_method: "طريقة الدفع دي مش متاحة دلوقتي، اختار غيرها.",
-  locked: "الطلب اتدفع، والتعديل دلوقتي من عندنا بس. كلمنا على واتساب.",
+  paymob_unavailable: "الدفع بالفيزا مش متاح دلوقتي، اختاري طريقة تانية.",
+  paymob_failed: "مقدرناش نفتح صفحة الدفع. جربي تاني أو اختاري طريقة تانية.",
+  invalid_method: "طريقة الدفع دي مش متاحة دلوقتي، اختاري غيرها.",
+  locked: "الطلب اتدفع، والتعديل دلوقتي من عندنا بس. كلمينا على واتساب.",
   link_invalid: "اللينك لازم يبدأ بـ https://",
-  invalid_message: "اكتب التعديل اللي عايزه.",
+  invalid_message: "اكتبي التعديل اللي عايزاه.",
   not_included: "ده مش في باقتك.",
   reference_wrong_type: "الملف لازم يكون صورة (JPG/PNG) أو فيديو (MP4/MOV) أو أغنية (MP3/M4A).",
   reference_too_large: "الملف أكبر من 50 ميجا.",
-  too_many_files: "وصلت لأقصى عدد ملفات (30).",
+  too_many_files: "وصلتي لأقصى عدد ملفات (30).",
 };
 const errorText = (err: unknown) => ERRORS[err instanceof UploadError ? err.code : "failed"] ?? ERRORS.failed;
 
@@ -150,12 +150,12 @@ export default function OrderCheckout(props: Props) {
             <section className={s.card} aria-labelledby="edits-title">
               <div>
                 <p className={s.eyebrow}>
-                  قبل ما تدفع
+                  قبل ما تدفعي
                 </p>
                 <h2 id="edits-title" className={s.cardTitle}>
-                  عدّل اللي عايزه
+                  عدّلي اللي عايزاه
                 </h2>
-                <p className={s.lead}>كل حاجة تتعدّل لحد ما تدفع، والمعاينة بتتحدّث على طول.</p>
+                <p className={s.lead}>كل حاجة تتعدّل لحد ما تدفعي، والمعاينة بتتحدّث على طول.</p>
               </div>
               <div className={s.drawers}>
                 {order.kind === "self" && (
@@ -173,14 +173,14 @@ export default function OrderCheckout(props: Props) {
                   <DetailsEditor {...props} api={api} />
                 </Drawer>
                 {order.packageId >= 3 && (
-                  <Drawer icon={Images} title="صورك وفيديوهاتك وطلباتك" sub="ارفع ملفاتك واكتب الستايل اللي عايزه">
+                  <Drawer icon={Images} title="صورك وفيديوهاتك وطلباتك" sub="ارفعي ملفاتك واكتبي الستايل اللي عايزاه">
                     <ReferencesPanel api={api} order={order} />
                   </Drawer>
                 )}
                 <Drawer
                   icon={MessageSquareText}
-                  title="محتاج تعديل مش عارف تعمله؟"
-                  sub="ابعتهولنا وفريقنا هيعمله"
+                  title="محتاجة تعديل مش عارفة تعمليه؟"
+                  sub="ابعتيهولنا وفريقنا هيعمله"
                   defaultOpen={props.changeRequests.some((r) => !r.resolvedAt)}
                 >
                   <ChangeRequests api={api} initial={props.changeRequests} whatsappUrl={props.whatsappUrl} />
@@ -244,7 +244,7 @@ function PreviewCard(props: Props) {
           </p>
           <h2 className={s.cardTitle}>{design.name}</h2>
         </div>
-        <a className={s.iconBtn} href={href} target="_blank" rel="noopener noreferrer" aria-label={paid ? "افتح الدعوة" : "افتح المعاينة"}>
+        <a className={s.iconBtn} href={href} target="_blank" rel="noopener noreferrer" aria-label={paid ? "افتحي الدعوة" : "افتحي المعاينة"}>
           <ArrowUpRight size={17} strokeWidth={1.7} aria-hidden="true" />
         </a>
       </div>
@@ -283,7 +283,7 @@ function PreviewCard(props: Props) {
 
       <a className={`${s.ghost} ${s.ctaWide}`} href={href} target="_blank" rel="noopener noreferrer">
         {paid ? <ExternalLink size={17} aria-hidden="true" /> : <Eye size={17} aria-hidden="true" />}
-        {paid ? "افتح الدعوة" : "شوف المعاينة كاملة"}
+        {paid ? "افتحي الدعوة" : "شوفي المعاينة كاملة"}
       </a>
       {!paid && (
         <p className={s.hint}>
@@ -375,7 +375,7 @@ function PaymentPanel(props: Props & { api: string }) {
           <Bookmark size={20} strokeWidth={1.5} aria-hidden="true" />
           <div>
             <strong>دعوتك جاهزة للمعاينة</strong>
-            دي صفحة طلبك، <b>احفظ اللينك ده عندك</b>. شوف المعاينة، عدّل اللي عايزه، وادفع لما تبقى مبسوط بيها.
+            دي صفحة طلبك، <b>احفظي اللينك ده عندك</b>. شوفي المعاينة، عدّلي اللي عايزاه، وادفعي لما تبقي مبسوطة بيها.
           </div>
         </div>
       )}
@@ -450,12 +450,12 @@ function PaymentPanel(props: Props & { api: string }) {
         <>
           {props.returnedFromPayment && (
             <p className={s.note} role="status">
-              <Clock size={16} aria-hidden="true" /> لو دفعت بالفيزا، التأكيد بيوصل خلال دقيقة. حدّث الصفحة.
+              <Clock size={16} aria-hidden="true" /> لو دفعتي بالفيزا، التأكيد بيوصل خلال دقيقة. حدّثي الصفحة.
             </p>
           )}
           {order.rejectReason && (
             <p className={s.error} role="alert">
-              <CircleAlert size={16} aria-hidden="true" /> التحويل اللي بعته ماتأكدش: {order.rejectReason}
+              <CircleAlert size={16} aria-hidden="true" /> التحويل اللي بعتيه ماتأكدش: {order.rejectReason}
             </p>
           )}
 
@@ -465,10 +465,10 @@ function PaymentPanel(props: Props & { api: string }) {
                 {approved ? <Check size={16} strokeWidth={2.2} /> : "١"}
               </span>
               <div className={s.stepBody}>
-                <h2 className={s.stepTitle}>راجع المعاينة</h2>
+                <h2 className={s.stepTitle}>راجعي المعاينة</h2>
                 <div className={s.actions}>
                   <a className={`${s.ghost} ${s.small}`} href={previewUrl} target="_blank" rel="noopener noreferrer">
-                    <Eye size={15} aria-hidden="true" /> شوف المعاينة
+                    <Eye size={15} aria-hidden="true" /> شوفي المعاينة
                   </a>
                 </div>
                 <label className={s.approve}>
@@ -476,7 +476,7 @@ function PaymentPanel(props: Props & { api: string }) {
                   <span className={s.checkbox} aria-hidden="true">
                     <Check size={14} strokeWidth={2.6} />
                   </span>
-                  <span>شفت المعاينة والبيانات مظبوطة، وموافق عليها</span>
+                  <span>شفت المعاينة والبيانات مظبوطة، وموافقة عليها</span>
                 </label>
               </div>
             </div>
@@ -489,16 +489,16 @@ function PaymentPanel(props: Props & { api: string }) {
                 {methods.length === 0 ? (
                   <>
                     <h2 className={s.stepTitle}>الدفع</h2>
-                    <p className={s.lead}>كلمنا على واتساب عشان تدفع.</p>
+                    <p className={s.lead}>كلمينا على واتساب عشان تدفعي.</p>
                     {props.whatsappUrl && (
                       <a className={`${s.ghost} ${s.small}`} href={props.whatsappUrl} target="_blank" rel="noopener noreferrer">
-                        <MessageCircle size={15} aria-hidden="true" /> كلمنا واتساب
+                        <MessageCircle size={15} aria-hidden="true" /> كلمينا واتساب
                       </a>
                     )}
                   </>
                 ) : (
                   <fieldset className={s.methods} disabled={!approved || busy}>
-                    <legend className={s.stepTitle}>اختار طريقة الدفع</legend>
+                    <legend className={s.stepTitle}>اختاري طريقة الدفع</legend>
                     <div className={s.methodGrid} role="radiogroup" aria-label="طريقة الدفع">
                       {methods.map((pm) => {
                         const MIcon = methodIcon(pm);
@@ -510,7 +510,7 @@ function PaymentPanel(props: Props & { api: string }) {
                             </span>
                             <span className={s.methodText}>
                               <strong>{pm.name}</strong>
-                              <small>{pm.kind === "card" ? "ادفع أونلاين وتتفتح على طول" : "حوّل وارفع صورة التحويل"}</small>
+                              <small>{pm.kind === "card" ? "ادفعي أونلاين وتتفتح على طول" : "حوّلي وارفعي صورة التحويل"}</small>
                             </span>
                             <span className={s.radio} aria-hidden="true" />
                           </label>
@@ -522,7 +522,7 @@ function PaymentPanel(props: Props & { api: string }) {
                       <>
                         <button type="button" className={`${s.cta} ${s.ctaWide}`} onClick={payWithCard}>
                           <Lock size={16} aria-hidden="true" />
-                          {busy ? "بنفتح صفحة الدفع..." : "ادفع"} <span className={s.ctaPrice}>{formatEgp(order.total)}</span>
+                          {busy ? "بنفتح صفحة الدفع..." : "ادفعي"} <span className={s.ctaPrice}>{formatEgp(order.total)}</span>
                         </button>
                         <p className={s.trust}>
                           <ShieldCheck size={14} aria-hidden="true" /> دفع آمن عن طريق Paymob، وبيانات الكارت مش بتعدي علينا
@@ -533,7 +533,7 @@ function PaymentPanel(props: Props & { api: string }) {
                     {method?.kind === "transfer" && (
                       <form className={s.transfer} onSubmit={sendProof}>
                         <p>
-                          حوّل <strong>{formatEgp(order.total)}</strong> {method.name} على:
+                          حوّلي <strong>{formatEgp(order.total)}</strong> {method.name} على:
                         </p>
                         <CopyField value={method.account} icon={methodIcon(method)} />
                         {method.instructions && (
@@ -547,12 +547,12 @@ function PaymentPanel(props: Props & { api: string }) {
                             {proof ? <FileImage size={17} /> : <Upload size={17} />}
                           </span>
                           <span>
-                            <strong>{proof ? proof.name : "ارفع صورة التحويل"}</strong>
-                            <small>{proof ? "دوس عشان تغيّرها" : "سكرين شوت من الأبلكيشن (JPG أو PNG)"}</small>
+                            <strong>{proof ? proof.name : "ارفعي صورة التحويل"}</strong>
+                            <small>{proof ? "دوسي عشان تغيّريها" : "سكرين شوت من الأبلكيشن (JPG أو PNG)"}</small>
                           </span>
                         </label>
                         <button type="submit" className={`${s.cta} ${s.ctaWide}`} disabled={!proof}>
-                          <Send size={16} aria-hidden="true" /> {busy ? "بيترفع..." : "ابعت صورة التحويل"}
+                          <Send size={16} aria-hidden="true" /> {busy ? "بيترفع..." : "ابعتي صورة التحويل"}
                         </button>
                       </form>
                     )}
@@ -560,7 +560,7 @@ function PaymentPanel(props: Props & { api: string }) {
                 )}
                 {!approved && methods.length > 0 && (
                   <p className={s.hint}>
-                    <Lock size={14} aria-hidden="true" /> علّم على الموافقة الأول عشان تقدر تدفع.
+                    <Lock size={14} aria-hidden="true" /> علّمي على الموافقة الأول عشان تقدري تدفعي.
                   </p>
                 )}
               </div>
@@ -704,7 +704,7 @@ function DetailsEditor(props: Props & { api: string }) {
             value={time ?? ""}
             onChange={(t) => set({ date: `${day}T${t}` })}
             options={timeOptions}
-            placeholder="اختار الساعة"
+            placeholder="اختاري الساعة"
             ariaLabel="الساعة"
             dir="rtl"
             icon={<Clock size={15} strokeWidth={1.5} aria-hidden="true" />}
@@ -775,7 +775,7 @@ function DetailsEditor(props: Props & { api: string }) {
               track={defaultTrack}
               lang="ar"
               label="موسيقى هذا التصميم"
-              sublabel="لتغيير المقطوعة، فعّل مكتبة الألحان أو اختار الباقة المميزة من قسم الباقة"
+              sublabel="لتغيير المقطوعة، فعّلي مكتبة الألحان أو اختاري الباقة المميزة من قسم الباقة"
             />
           </div>
         )
@@ -831,8 +831,8 @@ export function ChangeRequests({ api, initial, whatsappUrl }: { api: string; ini
           onChange={(e) => setText(e.target.value)}
           maxLength={1000}
           rows={3}
-          aria-label="التعديل اللي عايزه"
-          placeholder="مثلاً: عايز لون الختم دهبي، أو التصميم يبقى من غير..."
+          aria-label="التعديل اللي عايزاه"
+          placeholder="مثلاً: عايزة لون الختم دهبي، أو التصميم يبقى من غير..."
         />
         {error && (
           <p className={s.error}>
@@ -841,11 +841,11 @@ export function ChangeRequests({ api, initial, whatsappUrl }: { api: string; ini
         )}
         <div className={s.actions}>
           <button type="submit" className={s.cta} disabled={busy || !text.trim()}>
-            <Send size={16} aria-hidden="true" /> ابعت طلب التعديل
+            <Send size={16} aria-hidden="true" /> ابعتي طلب التعديل
           </button>
           {whatsappUrl && (
             <a className={s.quiet} href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-              <MessageCircle size={16} aria-hidden="true" /> أو كلمنا واتساب
+              <MessageCircle size={16} aria-hidden="true" /> أو كلمينا واتساب
             </a>
           )}
         </div>
@@ -915,7 +915,7 @@ export function ReferencesPanel({ api, order, locked = false }: { api: string; o
   }
 
   async function remove(url: string) {
-    if (!confirm("تمسح الملف ده؟")) return;
+    if (!confirm("تمسحي الملف ده؟")) return;
     await fetch(`${api}/references?url=${encodeURIComponent(url)}`, { method: "DELETE" });
     router.refresh();
   }
@@ -930,7 +930,7 @@ export function ReferencesPanel({ api, order, locked = false }: { api: string; o
             ملفاتك
           </p>
           <h2 className={s.cardTitle}>اللي بعتهولنا</h2>
-          <p className={s.lead}>فريقنا شغال عليه. لو محتاج تضيف حاجة كلمنا على واتساب.</p>
+          <p className={s.lead}>فريقنا شغال عليه. لو محتاجة تضيفي حاجة كلمينا على واتساب.</p>
         </div>
         {order.brief?.notes && <p className={s.briefText}>{order.brief.notes}</p>}
         {order.brief?.link && (
@@ -941,7 +941,7 @@ export function ReferencesPanel({ api, order, locked = false }: { api: string; o
         {files.length > 0 ? (
           <ReferenceList files={files} />
         ) : (
-          !order.brief?.notes && !order.brief?.link && <p className={s.hint}>مابعتش ملفات.</p>
+          !order.brief?.notes && !order.brief?.link && <p className={s.hint}>مابعتيش ملفات.</p>
         )}
       </>
     );
@@ -949,7 +949,7 @@ export function ReferencesPanel({ api, order, locked = false }: { api: string; o
 
   return (
     <>
-      <p className={s.lead}>اكتب الستايل اللي عايزه وارفع صورك وفيديوهاتك والأغاني وأي ريفرنسات، أو حط لينك درايف.</p>
+      <p className={s.lead}>اكتبي الستايل اللي عايزاه وارفعي صورك وفيديوهاتك والأغاني وأي ريفرنسات، أو حطي لينك درايف.</p>
       <label className={store.field}>
         <span>الستايل اللي في دماغك</span>
         <textarea rows={4} maxLength={2000} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="الألوان، الستايل، لينكات ريفرنسات..." />
@@ -977,7 +977,7 @@ export function ReferencesPanel({ api, order, locked = false }: { api: string; o
         <span className={s.dropIcon} aria-hidden="true">
           <Upload size={18} />
         </span>
-        <strong>{progress ?? "ارفع صور أو فيديوهات أو أغاني"}</strong>
+        <strong>{progress ?? "ارفعي صور أو فيديوهات أو أغاني"}</strong>
         <small>لحد 50 ميجا للملف · لحد 30 ملف</small>
       </label>
       {error && (
@@ -1060,7 +1060,7 @@ function PaidLinks(props: Props) {
         <h3>
           <Link2 size={18} aria-hidden="true" /> لينك الدعوة
         </h3>
-        <p className={s.hint}>ابعته لأي حد، في أي مكان.</p>
+        <p className={s.hint}>ابعتيه لأي حد، في أي مكان.</p>
         <CopyField value={invitation} />
       </div>
       {order.packageId >= 2 && (
@@ -1070,11 +1070,11 @@ function PaidLinks(props: Props) {
           </h3>
           <p className={s.hint}>
             {order.packageId >= 3
-              ? "منها تضيف ضيوفك بالاسم ورسالة خاصة لكل واحد، وتشوف مين فتح الدعوة والتهاني."
-              : "منها تشوف مين فتح الدعوة والتهاني اللي اتكتبت."}
+              ? "منها تضيفي ضيوفك بالاسم ورسالة خاصة لكل واحد، وتشوفي مين فتح الدعوة والتهاني."
+              : "منها تشوفي مين فتح الدعوة والتهاني اللي اتكتبت."}
           </p>
           <a className={`${s.cta} ${s.ctaWide}`} href={page}>
-            <ArrowUpRight size={16} aria-hidden="true" /> افتح صفحتك
+            <ArrowUpRight size={16} aria-hidden="true" /> افتحي صفحتك
           </a>
         </div>
       )}

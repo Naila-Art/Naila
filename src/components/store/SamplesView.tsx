@@ -110,7 +110,7 @@ export default function SamplesView({
                   <Link
                     href={localeHref(
                       lang,
-                      s.packageId <= 2 ? `/create?p=${s.packageId}` : `/request?p=${s.packageId}`,
+                      s.packageId <= 3 ? `/create?p=${s.packageId}` : "/request",
                     )}
                     className={styles.ctaGhost}
                   >

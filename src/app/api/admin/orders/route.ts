@@ -65,7 +65,7 @@ export async function PATCH(req: Request) {
 
     case "edit_event": {
       if (!order.eventId) return bad("no_event", 409);
-      const details = parseEventDetails(body ?? {});
+      const details = parseEventDetails(body ?? {}, { allowPast: true });
       if (!details.ok) return bad(details.error);
       const generalText = cleanText(body?.generalText, 200);
       if (!generalText) return bad("text_invalid");

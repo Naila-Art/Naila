@@ -70,7 +70,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
       )}
       {whatsappUrl && (
         <a className={s.dockLink} href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-          <MessageCircle size={15} aria-hidden="true" /> محتاج مساعدة؟
+          <MessageCircle size={15} aria-hidden="true" /> محتاجة مساعدة؟
         </a>
       )}
     </>

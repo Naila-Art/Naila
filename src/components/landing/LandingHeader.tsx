@@ -131,18 +131,23 @@ export default function LandingHeader({
           </div>
 
           <div className={styles.navActions}>
-            {/* Mobile inline language toggle */}
+            {/* Language switch: labelled with the language it switches to */}
             <button
               type="button"
               onClick={() => onLangChange(lang === "en" ? "ar" : "en")}
               aria-label={lang === "en" ? "Switch to Arabic" : "Switch to English"}
-              title={lang === "en" ? "العربية" : "English"}
-              className={`${styles.mobileLangBtn} ${
+              lang={lang === "en" ? "ar" : "en"}
+              className={`notranslate ${styles.langBtn} ${
                 isLightText ? styles.glassBtnLight : styles.glassBtnDark
               }`}
-              style={{ opacity: chromeOpacity }}
+              translate="no"
+              style={{
+                opacity: chromeOpacity,
+                pointerEvents: chromeOpacity < 0.1 ? "none" : undefined,
+              }}
             >
               <Languages size={15} strokeWidth={1.8} aria-hidden="true" />
+              <span>{lang === "en" ? "العربية" : "English"}</span>
             </button>
 
             {/* Currency Toggle Pill — dissolves cleanly as handoff begins */}
@@ -212,20 +217,6 @@ export default function LandingHeader({
         </nav>
       </header>
 
-      {/* Desktop Floating Bottom-Right Language Switcher */}
-      <div className={styles.floatingLangWrap}>
-        <button
-          type="button"
-          onClick={() => onLangChange(lang === "en" ? "ar" : "en")}
-          aria-label={lang === "en" ? "Switch to Arabic" : "Switch to English"}
-          title={lang === "en" ? "العربية" : "English"}
-          className={`${styles.floatingLangBtn} ${
-            isLightText ? styles.floatingLangLight : styles.floatingLangDark
-          }`}
-        >
-          <Languages size={19} strokeWidth={1.75} aria-hidden="true" />
-        </button>
-      </div>
     </>
   );
 }

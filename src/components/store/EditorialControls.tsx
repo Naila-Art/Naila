@@ -246,6 +246,8 @@ interface EditorialDatePickerProps {
    * (e.g. the builder's Back / Next buttons) moves down instead of being covered.
    */
   inline?: boolean;
+  /** Days before today can't be picked (an invitation is always for a coming date). Default on. */
+  disablePast?: boolean;
 }
 
 export function EditorialDatePicker({
@@ -256,6 +258,7 @@ export function EditorialDatePicker({
   clearable = false,
   locale = "en",
   inline = false,
+  disablePast = true,
 }: EditorialDatePickerProps) {
   const now = useMemo(() => new Date(), []);
   const parsedVal = useMemo(() => parseYmd(value), [value]);
@@ -483,11 +486,13 @@ export function EditorialDatePicker({
                   const ymd = `${viewYear}-${pad2(viewMonth + 1)}-${pad2(day)}`;
                   const isSelected = ymd === value;
                   const isToday = ymd === todayYmd;
+                  const isPast = disablePast && ymd < todayYmd;
 
                   return (
                     <button
                       key={ymd}
                       type="button"
+                      disabled={isPast}
                       aria-pressed={isSelected}
                       onClick={() => {
                         onChange(ymd);

@@ -15,7 +15,7 @@ export async function PUT(req: Request, ctx: Ctx) {
   const body = await readJson(req);
   if (!body) return bad("invalid_body");
 
-  const details = parseEventDetails(body);
+  const details = parseEventDetails(body, { savedDate: event.date });
   if (!details.ok) return bad(details.error);
   const { features } = await eventContext(event);
 

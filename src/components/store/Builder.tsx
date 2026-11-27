@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
+import Icon from "../Icon";
 import {
   ArrowUpRight,
   ChevronLeft,
@@ -37,6 +38,8 @@ interface Props {
   initialTemplateId?: string;
   initialPackageId?: PackageId;
   initialMusicTrackId?: string;
+  /** Our business WhatsApp (digits only), for the "fully custom" card. */
+  whatsappNumber?: string;
 }
 
 /** Arabic messages, kept for the client order page (OrderPanels) and the request form. */
@@ -302,6 +305,7 @@ export default function Builder({
   initialTemplateId,
   initialPackageId,
   initialMusicTrackId,
+  whatsappNumber = "",
 }: Props) {
   const { lang: uiLang, toggleLang } = useSiteLang();
   const isUiAr = uiLang === "ar";
@@ -474,8 +478,12 @@ export default function Builder({
         return !d.partnerA.trim() || !d.partnerB.trim() ? "names_required" : "";
       case "design":
         return template ? "" : "invalid_template";
-      case "date":
-        return d.day ? "" : "date_invalid";
+      case "date": {
+        if (!d.day) return "date_invalid";
+        const now = new Date();
+        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+        return d.day < today ? "date_past" : "";
+      }
       case "venue":
         return d.venueName.trim() ? "" : "venue_required";
       case "maps":
@@ -602,6 +610,25 @@ export default function Builder({
       setErrorCode(code);
       setBusy(false);
     }
+  }
+
+  /** Package 4 is arranged with us directly: shown as a small card under the packages. */
+  const bespoke = pricing.packages.find((p) => p.id === 4 && p.active);
+  function bespokeWhatsapp(): string {
+    const lines = isUiAr
+      ? [
+          "أهلاً، عايزة أعمل دعوة بالباقة الخاصة.",
+          names ? `الأسامي: ${d.partnerA.trim()} و ${d.partnerB.trim()}` : "",
+          date ? `التاريخ: ${formatPicked(date, uiLang)}` : "",
+          template ? `التصميم اللي عجبني: ${templateDisplayName(template, uiLang)}` : "",
+        ]
+      : [
+          "Hello, I'd like a fully custom invitation (bespoke package).",
+          names ? `Names: ${d.partnerA.trim()} & ${d.partnerB.trim()}` : "",
+          date ? `Date: ${formatPicked(date, uiLang)}` : "",
+          template ? `Design I liked: ${templateDisplayName(template, uiLang)}` : "",
+        ];
+    return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(lines.filter(Boolean).join("\n"))}`;
   }
 
   /** One-line answer for the chat history and the review page. */
@@ -916,12 +943,29 @@ export default function Builder({
                 onCustomMusicAddonChange={(customMusicAddon) => set({ customMusicAddon })}
               />
               {d.packageId >= 3 && <p className={styles.hint}>{ui.package3Note}</p>}
-              <p className={styles.hint}>
-                {b.bespokePrompt}{" "}
-                <Link href={localeHref(uiLang, "/request")} className={styles.inlineLink}>
-                  {b.bespokeLink}
-                </Link>
-              </p>
+              {bespoke && (
+                <div className={styles.bespokeCard}>
+                  <div className={styles.bespokeText}>
+                    <strong>{b.bespokePrompt}</strong>
+                    <span>
+                      {packageDisplayName(bespoke, uiLang)} · {formatStorePrice(bespoke.price, uiLang, bespoke.priceNote)}
+                      {" · "}
+                      {b.bespokeSub}
+                    </span>
+                  </div>
+                  <div className={styles.bespokeActions}>
+                    {whatsappNumber && (
+                      <a className={styles.bespokeWa} href={bespokeWhatsapp()} target="_blank" rel="noopener noreferrer">
+                        <Icon name="whatsapp" size={17} strokeWidth={1.9} />
+                        {b.bespokeWa}
+                      </a>
+                    )}
+                    <Link href={localeHref(uiLang, "/request")} className={styles.inlineLink}>
+                      {b.bespokeLink}
+                    </Link>
+                  </div>
+                </div>
+              )}
             </>
           )}
 
@@ -1043,7 +1087,7 @@ export default function Builder({
                   value={d.slug}
                   onChange={(e) => set({ slug: e.target.value.toLowerCase() })}
                   maxLength={50}
-                  placeholder="omar-salma"
+                  placeholder="ahmed-and-sara"
                   autoCapitalize="none"
                   autoCorrect="off"
                   spellCheck={false}

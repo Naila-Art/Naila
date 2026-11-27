@@ -412,21 +412,31 @@
   background-color: var(--bg-ivory);
 }
 
-.mobileLangBtn {
+.langBtn {
   display: inline-flex;
   height: 2rem;
-  width: 2rem;
   align-items: center;
-  justify-content: center;
+  gap: 0.4rem;
   border-radius: var(--radius-pill);
   border: 1px solid;
+  padding-inline: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
   cursor: pointer;
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   transition: all 0.25s ease;
 }
 
-@media (min-width: 640px) {
-  .mobileLangBtn {
+/* Small phones: icon only, so the header keeps room for the main button. */
+@media (max-width: 380px) {
+  .langBtn {
+    width: 2rem;
+    padding-inline: 0;
+    justify-content: center;
+  }
+  .langBtn span {
     display: none;
   }
 }
@@ -472,58 +482,6 @@
 }
 
 /* Floating Bottom-Right Language Switcher */
-.floatingLangWrap {
-  display: none;
-}
-
-@media (min-width: 640px) {
-  .floatingLangWrap {
-    display: block;
-    position: fixed;
-    bottom: calc(1rem + env(safe-area-inset-bottom));
-    right: calc(1rem + env(safe-area-inset-right));
-    z-index: 80;
-  }
-}
-
-.floatingLangBtn {
-  display: inline-flex;
-  height: 2.75rem;
-  width: 2.75rem;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-pill);
-  border: 1px solid;
-  cursor: pointer;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  transition: all 0.25s ease;
-}
-
-.floatingLangLight {
-  border-color: rgba(255, 255, 255, 0.2);
-  background-color: rgba(0, 0, 0, 0.22);
-  color: rgba(255, 255, 255, 0.88);
-}
-
-.floatingLangLight:hover {
-  border-color: rgba(255, 255, 255, 0.36);
-  background-color: rgba(255, 255, 255, 0.14);
-  color: #ffffff;
-}
-
-.floatingLangDark {
-  border-color: rgba(47, 36, 27, 0.14);
-  background-color: rgba(255, 250, 241, 0.8);
-  color: var(--ink-primary);
-  box-shadow: var(--shadow-pill);
-}
-
-.floatingLangDark:hover {
-  border-color: rgba(138, 90, 43, 0.32);
-  background-color: var(--bg-ivory);
-}
-
 /* ============================================================================
    RECESSED DOUBLE-PILL TRIAL CTA (MarketingTrialCta)
    ============================================================================ */

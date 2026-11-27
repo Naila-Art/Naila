@@ -3,6 +3,7 @@ import styles from "@/components/store/store.module.css";
 import { getPricing, getTemplateMusicMap, listMusic, listTemplates } from "@/lib/store";
 import type { PackageId } from "@/lib/types";
 import { storefrontMetadata } from "@/lib/seo";
+import { getSiteSettings } from "@/lib/site";
 
 // One canonical /create: the ?t=, ?p=, and ?m= preselections are the same page.
 export function generateMetadata() {
@@ -21,11 +22,12 @@ type Props = { searchParams: Promise<{ t?: string; p?: string; m?: string }> };
 
 export default async function CreatePage({ searchParams }: Props) {
   const { t, p, m } = await searchParams;
-  const [templates, music, templateMusicMap, pricing] = await Promise.all([
+  const [templates, music, templateMusicMap, pricing, site] = await Promise.all([
     listTemplates(),
     listMusic(),
     getTemplateMusicMap(),
     getPricing(),
+    getSiteSettings(),
   ]);
 
   return (
@@ -40,6 +42,7 @@ export default async function CreatePage({ searchParams }: Props) {
         initialTemplateId={t}
         initialPackageId={Number(p) as PackageId}
         initialMusicTrackId={m}
+        whatsappNumber={site.whatsapp}
       />
     </main>
   );

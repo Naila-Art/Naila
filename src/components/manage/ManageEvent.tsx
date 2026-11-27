@@ -33,6 +33,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import s from "./studio.module.css";
+import Icon from "../Icon";
 import GuestImport from "./GuestImport";
 import { CopyField, StudioShell } from "./Studio";
 import { MAX_GUEST_MESSAGE, guestKey, toCsv, validateGuest, type ParsedGuest } from "@/lib/guests";
@@ -137,6 +138,9 @@ export default function ManageEvent({
 
   const generalLink = `${origin}/i/${slug}`;
   const linkFor = (g: GuestWithStatus) => `${origin}/i/${slug}/${g.token}`;
+  /** Opens a WhatsApp chat with this guest, their named link already written. */
+  const whatsappFor = (g: GuestWithStatus) =>
+    `https://wa.me/${(g.phone ?? "").replace(/\D/g, "")}?text=${encodeURIComponent(`أهلاً ${displayName(g)}، يسعدنا تشريفك. دي دعوتك:\n${linkFor(g)}`)}`;
   const previewBase = `/c/${encodeURIComponent(manageToken)}/preview`;
   const previewFor = (g: GuestWithStatus) => `${previewBase}?guest=${encodeURIComponent(g.id)}`;
   const existingKeys = useMemo(() => new Set(data.guests.map(guestKey)), [data.guests]);
@@ -173,7 +177,7 @@ export default function ManageEvent({
   };
 
   const removeGuest = async (g: GuestWithStatus) => {
-    if (!window.confirm(`تمسح ${displayName(g)}؟ اللينك بتاعه هيبطل يشتغل.`)) return;
+    if (!window.confirm(`تمسحي ${displayName(g)}؟ اللينك بتاعه هيبطل يشتغل.`)) return;
     const res = await fetch(`${api}/guests?id=${encodeURIComponent(g.id)}`, { method: "DELETE" });
     if (res.ok) {
       setToast("اتمسح");
@@ -276,7 +280,7 @@ export default function ManageEvent({
               <span className={s.heroLinkLabel}>اللينك العام · لينك واحد لأي حد، من غير اسم</span>
               {locked ? (
                 <p className={s.lockedNote}>
-                  <Lock size={15} aria-hidden="true" /> لينك الدعوة بيتفتح بعد الدفع. لحد كده تقدر تشوف المعاينة بس.
+                  <Lock size={15} aria-hidden="true" /> لينك الدعوة بيتفتح بعد الدفع. لحد كده تقدري تشوفي المعاينة بس.
                 </p>
               ) : (
                 <CopyField value={generalLink} icon={Link2} dark onCopied={(ok) => setToast(ok ? "اتنسخ" : "مقدرناش ننسخ")} />
@@ -306,14 +310,14 @@ export default function ManageEvent({
                   </div>
                 )}
               </div>
-              <p className={s.lead}>كل ضيف ليه لينك باسمه، وتقدر تكتبله رسالة خاصة تظهر في دعوته هو بس.</p>
+              <p className={s.lead}>كل ضيف ليه لينك باسمه، وتقدري تكتبيله رسالة خاصة تظهر في دعوته هو بس.</p>
 
               <AddGuestForm onAdd={(g) => saveGuests([g])} existingKeys={existingKeys} />
               <GuestImport existingKeys={existingKeys} onSave={saveGuests} />
 
               {locked && data.guests.length > 0 && (
                 <p className={s.note}>
-                  <Lock size={16} aria-hidden="true" /> لينكات الضيوف ونسخها وتصديرها بيتفتحوا بعد الدفع. تقدر تشوف معاينة أي ضيف.
+                  <Lock size={16} aria-hidden="true" /> لينكات الضيوف ونسخها وتصديرها بيتفتحوا بعد الدفع. تقدري تشوفي معاينة أي ضيف.
                 </p>
               )}
 
@@ -323,7 +327,7 @@ export default function ManageEvent({
                     <UserPlus size={22} strokeWidth={1.5} />
                   </span>
                   <strong>لسه مفيش ضيوف بالاسم</strong>
-                  ضيف بإيدك أو ارفع شيت Excel.
+                  ضيفي بإيدك أو ارفعي شيت Excel.
                 </div>
               ) : (
                 <>
@@ -398,6 +402,18 @@ export default function ManageEvent({
                                 >
                                   <Copy size={15} aria-hidden="true" /> نسخ اللينك
                                 </button>
+                                {g.phone && (
+                                  <a
+                                    className={`${s.iconBtn} ${s.iconBtnWa}`}
+                                    href={whatsappFor(g)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    aria-label={`ابعتي الدعوة لـ ${displayName(g)} على واتساب`}
+                                    title="ابعتي على واتساب"
+                                  >
+                                    <Icon name="whatsapp" size={16} strokeWidth={1.9} />
+                                  </a>
+                                )}
                                 <a className={s.iconBtn} href={linkFor(g)} target="_blank" rel="noopener noreferrer" aria-label="فتح الدعوة">
                                   <ExternalLink size={15} aria-hidden="true" />
                                 </a>
@@ -547,7 +563,7 @@ function AddGuestForm({ onAdd, existingKeys }: { onAdd: (g: ParsedGuest) => Prom
     e.preventDefault();
     const g = validateGuest({ title, name, phone, message });
     if (g.error) {
-      setError(g.error === "phone_invalid" ? "الرقم مش صحيح" : g.error === "message_too_long" ? "الرسالة طويلة (300 حرف بحد أقصى)" : "اكتب الاسم");
+      setError(g.error === "phone_invalid" ? "الرقم مش صحيح" : g.error === "message_too_long" ? "الرسالة طويلة (300 حرف بحد أقصى)" : "اكتبي الاسم");
       return;
     }
     if (existingKeys.has(guestKey(g))) {
@@ -562,7 +578,7 @@ function AddGuestForm({ onAdd, existingKeys }: { onAdd: (g: ParsedGuest) => Prom
       setPhone("");
       setMessage("");
     } catch {
-      setError("حصلت مشكلة، جرب تاني");
+      setError("حصلت مشكلة، جربي تاني");
     } finally {
       setBusy(false);
     }
@@ -659,7 +675,7 @@ function GuestMessage({ api, guest, onSaved }: { api: string; guest: GuestWithSt
       setEditing(false);
       await onSaved(value.trim() || null);
     } catch {
-      setError("ماتحفظتش، جرب تاني");
+      setError("ماتحفظتش، جربي تاني");
     } finally {
       setBusy(false);
     }
@@ -706,7 +722,7 @@ function GuestMessage({ api, guest, onSaved }: { api: string; guest: GuestWithSt
         </button>
         {guest.message && (
           <button type="button" className={`${s.ghost} ${s.small}`} disabled={busy} onClick={() => save("")}>
-            <Trash2 size={14} aria-hidden="true" /> شيل الرسالة
+            <Trash2 size={14} aria-hidden="true" /> شيلي الرسالة
           </button>
         )}
         <button type="button" className={s.quiet} onClick={() => setEditing(false)}>

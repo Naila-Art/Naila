@@ -937,6 +937,11 @@
   transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
+.iconBtnWa {
+  border-color: rgba(18, 140, 74, 0.35);
+  color: #128c4a;
+}
+
 .iconBtn:hover {
   background: var(--bg-sand);
   border-color: var(--border-bronze);

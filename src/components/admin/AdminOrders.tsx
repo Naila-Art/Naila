@@ -76,6 +76,7 @@ const ERRORS: Record<string, string> = {
   reason_required: "اكتب السبب.",
   names_required: "اكتب الاسمين.",
   date_invalid: "اختار التاريخ والساعة.",
+  date_past: "التاريخ ده فات.",
   venue_required: "اكتب المكان.",
   maps_invalid: "لينك الخريطة لازم يكون من جوجل ماب أو آبل ماب.",
   text_invalid: "اكتب الجملة اللي في أول الدعوة.",
